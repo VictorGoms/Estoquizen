@@ -1,0 +1,66 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js build
+/.next/
+/out/
+
+# Variáveis de ambiente — NUNCA subir ao git
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Vercel
+.vercel
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Claude Code
+CLAUDE.md
+
+# Certificados SSL locais (mkcert)
+certificates/
+certs/
+*.pem
+*.key
+*.crt
+mkcert.exe
+
+# Skills / templates UI baixados
+ui-ux*/
+*-ui-ux*
+*pro-max*/
+*skill*/
+templates/
+design-system/
+figma-*/
+
+# AI tool config dirs (não são código do projeto)
+.agent/
+.claude/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.gemini/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.windsurf/
