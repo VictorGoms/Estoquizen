@@ -9,9 +9,9 @@ import BottomNav from "@/components/dashboard/BottomNav";
 import StatCard from "@/components/dashboard/StatCard";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
-import { api } from "@/lib/api";
 import { getWorkspace, setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { can } from "@/hooks/useRole";
+import { useStats } from "@/hooks/useStats";
 
 /* ─── Icons ─── */
 const DocumentIcon = () => (
@@ -75,14 +75,21 @@ interface Stats { produtos: number; alertas: number; ultimaMov: number }
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [greeting, setGreeting] = useState("");
-  const [userName, setUserName] = useState("");
-  const [wsName, setWsName]     = useState("");
-  const [role, setRole]         = useState<WorkspaceRole>("member");
-  const [stats, setStats]       = useState<Stats>({ produtos: 0, alertas: 0, ultimaMov: 0 });
+  const [greeting, setGreeting]     = useState("");
+  const [userName, setUserName]     = useState("");
+  const [wsName, setWsName]         = useState("");
+  const [wsId, setWsId]             = useState<string | undefined>(undefined);
+  const [role, setRole]             = useState<WorkspaceRole>("member");
   const [loading, setLoading]       = useState(true);
-  const [statsLoading, setStatsLoading] = useState(true);
   const [showAddMenu, setShowAddMenu] = useState(false);
+
+  /* ── Cache SWR: stats aparecem instantâneo ao voltar ao dashboard ── */
+  const { stats: rawStats, loading: statsLoading } = useStats(wsId);
+  const stats: Stats = {
+    produtos:  rawStats?.produtos  ?? 0,
+    alertas:   rawStats?.alertas   ?? 0,
+    ultimaMov: rawStats?.movimentacoes ?? 0,
+  };
 
   useEffect(() => {
     setGreeting(getGreeting(new Date().getHours()));
@@ -91,14 +98,11 @@ export default function DashboardPage() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
       setWsName(ws.name);
+      setWsId(ws.id);
 
-      // Auth + stats em paralelo — não espera um para começar o outro
-      const [{ data: { user } }] = await Promise.all([
-        supabase.auth.getUser(),
-      ]);
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // Profile + role em paralelo, não bloqueia o render
         Promise.all([
           supabase.from("profiles").select("name").eq("id", user.id).single(),
           supabase.from("workspace_members").select("role").eq("workspace_id", ws.id).eq("user_id", user.id).eq("status", "ativo").single(),
@@ -110,19 +114,7 @@ export default function DashboardPage() {
         });
       }
 
-      setLoading(false); // mostra a página imediatamente
-
-      // Stats carregam em background — sem bloquear a UI
-      try {
-        const s = await api.get<{ produtos: number; alertas: number; movimentacoes: number }>(
-          `/workspaces/${ws.id}/stats`
-        );
-        setStats({ produtos: s.produtos, alertas: s.alertas, ultimaMov: s.movimentacoes });
-      } catch {
-        // mantém zeros se falhar
-      } finally {
-        setStatsLoading(false);
-      }
+      setLoading(false);
     }
     load();
   }, [router]);

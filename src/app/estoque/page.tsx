@@ -9,6 +9,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
+import { useProducts, mutateProducts } from "@/hooks/useProducts";
 
 /* ─── Icons ─── */
 const PlusIcon = () => (
@@ -76,20 +77,28 @@ function deriveStatus(qty: number, minQty: number): StockStatus {
 
 export default function EstoquePage() {
   const router = useRouter();
-  const [search, setSearch]         = useState("");
+  const [search, setSearch]             = useState("");
   const [activeFilter, setActiveFilter] = useState("todos");
-  const [products, setProducts]     = useState<Product[]>([]);
-  const [wsName, setWsName]         = useState("");
-  const [userName, setUserName]     = useState("");
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
-  const [fabOpen, setFabOpen]       = useState(false);
+  const [wsId, setWsId]                 = useState<string | undefined>(undefined);
+  const [wsName, setWsName]             = useState("");
+  const [userName, setUserName]         = useState("");
+  const [fabOpen, setFabOpen]           = useState(false);
+
+  /* ── Cache SWR: dados aparecem instantâneo ao voltar para a tela ── */
+  const { products: raw, loading, error } = useProducts(wsId);
+
+  const products: Product[] = raw.map((p) => ({
+    ...p,
+    price:  Number(p.price),
+    status: deriveStatus(p.qty, p.min_qty ?? 0),
+  }));
 
   useEffect(() => {
     async function load() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
       setWsName(ws.name);
+      setWsId(ws.id);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -100,24 +109,6 @@ export default function EstoquePage() {
           .single();
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
       }
-
-      const { data, error: err } = await supabase
-        .from("products")
-        .select("id, name, code, qty, min_qty, unit, price, image_url")
-        .eq("workspace_id", ws.id)
-        .order("name");
-
-      if (err) { setError(err.message); setLoading(false); return; }
-
-      setProducts(
-        (data ?? []).map((p) => ({
-          ...p,
-          price:     Number(p.price),
-          status:    deriveStatus(p.qty, p.min_qty ?? 0),
-          image_url: p.image_url ?? null,
-        }))
-      );
-      setLoading(false);
     }
     load();
   }, [router]);
@@ -188,7 +179,7 @@ export default function EstoquePage() {
             {loading ? (
               <PageLoader />
             ) : error ? (
-              <PageError message={error} onRetry={() => { setError(""); setLoading(true); }} />
+              <PageError message={error.message} onRetry={() => mutateProducts(wsId!)} />
             ) : (
               <>
                 <div className="flex flex-col sm:flex-row gap-3">
