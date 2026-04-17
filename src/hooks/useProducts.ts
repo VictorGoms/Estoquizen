@@ -1,35 +1,43 @@
 import useSWR, { mutate } from "swr";
-import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 export interface Product {
-  id:          string;
+  id:           string;
   workspace_id: string;
-  name:        string;
-  source_name: string | null;
-  code:        string;
-  unit:        string;
-  price:       number;
-  qty:         number;
-  min_qty:     number;
-  max_qty:     number | null;
-  location:    string | null;
-  supplier:    string | null;
-  image_url:   string | null;
-  nota_fiscal: string | null;
-  created_at:  string;
-  updated_at:  string;
+  name:         string;
+  source_name:  string | null;
+  code:         string;
+  unit:         string;
+  price:        number;
+  qty:          number;
+  min_qty:      number;
+  max_qty:      number | null;
+  location:     string | null;
+  supplier:     string | null;
+  image_url:    string | null;
+  nota_fiscal:  string | null;
+  created_at:   string;
+  updated_at:   string;
 }
 
-const fetcher = (workspaceId: string) =>
-  api.get<Product[]>(`/products?workspace_id=${workspaceId}`);
+const fetcher = async (workspaceId: string): Promise<Product[]> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, workspace_id, name, source_name, code, unit, price, qty, min_qty, max_qty, location, supplier, image_url, nota_fiscal, created_at, updated_at")
+    .eq("workspace_id", workspaceId)
+    .order("name");
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => ({ ...p, price: Number(p.price) }));
+};
 
 export function useProducts(workspaceId: string | undefined) {
   const { data, error, isLoading } = useSWR(
     workspaceId ? ["products", workspaceId] : null,
     ([, id]: [string, string]) => fetcher(id),
     {
-      dedupingInterval: 2 * 60 * 1000, // dados repetidos em até 2min são servidos do cache
-      revalidateOnFocus: false,          // não refaz o fetch ao trocar de aba
+      dedupingInterval: 2 * 60 * 1000,
+      revalidateOnFocus: false,
     }
   );
 
