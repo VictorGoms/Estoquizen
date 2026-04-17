@@ -20,12 +20,14 @@ const nextConfig: NextConfig = {
   // Permite acesso pelo IP local (teste no celular na mesma rede Wi-Fi)
   allowedDevOrigins: ["192.168.0.6"],
 
-  // Proxy: celular fala HTTPS com Next.js; Next.js fala HTTP com o Fastify internamente
+  // Proxy: frontend fala com o backend via rewrite (evita CORS e mixed-content)
+  // Em produção, API_URL aponta para o Railway. Em dev, usa localhost.
   async rewrites() {
+    const apiUrl = process.env.API_URL ?? "http://localhost:3001";
     return [
       {
         source: "/api/v1/:path*",
-        destination: "http://localhost:3001/api/v1/:path*",
+        destination: `${apiUrl}/api/v1/:path*`,
       },
     ];
   },
