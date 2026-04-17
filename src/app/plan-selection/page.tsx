@@ -6,7 +6,7 @@ import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import PlanCard from "@/components/onboarding/PlanCard";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
-import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 
 const PLANS = [
   {
@@ -91,8 +91,26 @@ export default function PlanSelectionPage() {
     const name = sessionStorage.getItem("pendingWorkspaceName") ?? "Minha Empresa";
     setLoading(true);
     setError("");
+
     try {
-      await api.post("/workspaces", { name, plan: selectedPlan });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) throw new Error("Sessão expirada. Faça login novamente.");
+
+      const { data: ws, error: wsErr } = await supabase
+        .from("workspaces")
+        .insert({ name, plan: selectedPlan, created_by: userId })
+        .select()
+        .single();
+
+      if (wsErr) throw new Error(wsErr.message);
+
+      const { error: memberErr } = await supabase
+        .from("workspace_members")
+        .insert({ workspace_id: ws.id, user_id: userId, role: "owner", status: "ativo" });
+
+      if (memberErr) throw new Error(memberErr.message);
+
       sessionStorage.removeItem("pendingWorkspaceName");
       router.push("/select-workspace");
     } catch (err) {
