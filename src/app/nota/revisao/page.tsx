@@ -92,13 +92,13 @@ export default function NotaRevisaoPage() {
     const ws = getWorkspace();
     if (!ws || sessionProducts.length === 0) return;
 
-    api.get<{ id: string; code: string; name: string; unit: string; price: number }[]>(
+    api.get<{ id: string; code: string; name: string; source_name?: string; unit: string; price: number }[]>(
       `/products?workspace_id=${ws.id}`
     ).then((existing) => {
-      const byCode = Object.fromEntries(existing.filter((p) => p.code).map((p) => [p.code, p]));
-      const byName = Object.fromEntries(existing.map((p) => [normName(p.name), p]));
+      const byCode       = Object.fromEntries(existing.filter((p) => p.code).map((p) => [p.code, p]));
+      const bySourceName = Object.fromEntries(existing.map((p) => [normName(p.source_name ?? p.name), p]));
       setProducts(sessionProducts.map((p) => {
-        const match = (p.code ? byCode[p.code] : undefined) ?? byName[normName(p.name)];
+        const match = (p.code ? byCode[p.code] : undefined) ?? bySourceName[normName(p.name)];
         if (!match) return { ...p, status: "novo" as const };
         const divergente = match.unit !== p.unit || Math.abs(match.price - p.unitPrice) > 0.01;
         return { ...p, status: divergente ? "divergente" as const : "existente" as const };
@@ -125,15 +125,15 @@ export default function NotaRevisaoPage() {
 
     try {
       /* Busca produtos existentes para cruzar por código ou nome */
-      const existing = await api.get<{ id: string; code: string; name: string }[]>(
+      const existing = await api.get<{ id: string; code: string; name: string; source_name?: string }[]>(
         `/products?workspace_id=${ws.id}`
       );
-      const byCode = Object.fromEntries(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
-      const byName = Object.fromEntries(existing.map((p) => [normName(p.name), p.id]));
+      const byCode       = Object.fromEntries(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
+      const bySourceName = Object.fromEntries(existing.map((p) => [normName(p.source_name ?? p.name), p.id]));
 
       await Promise.all(
         products.map((p) => {
-          const existingId = (p.code ? byCode[p.code] : undefined) ?? byName[normName(p.name)];
+          const existingId = (p.code ? byCode[p.code] : undefined) ?? bySourceName[normName(p.name)];
           if (!existingId) {
             /* Cria produto novo com a quantidade da NF-e */
             return api.post("/products", {
