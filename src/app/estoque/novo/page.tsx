@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -55,7 +55,7 @@ async function lookupBarcode(ean: string): Promise<string | null> {
   }
 }
 
-export default function NovoItemPage() {
+function NovoItemContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const [wsName, setWsName]     = useState("");
@@ -417,5 +417,13 @@ export default function NovoItemPage() {
       </main>
       <BottomNav />
     </div>
+  );
+}
+
+export default function NovoItemPage() {
+  return (
+    <Suspense>
+      <NovoItemContent />
+    </Suspense>
   );
 }
