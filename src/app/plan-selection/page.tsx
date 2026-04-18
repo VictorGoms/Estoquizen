@@ -93,8 +93,9 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionErr } = await supabase.auth.refreshSession();
       if (sessionErr || !session) throw new Error("Sessão expirada. Faça login novamente.");
+      console.log("[plan-selection] userId:", session.user.id, "token prefix:", session.access_token.slice(0, 20));
 
       const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
