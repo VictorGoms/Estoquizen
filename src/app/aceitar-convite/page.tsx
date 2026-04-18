@@ -1,5 +1,8 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -8,14 +11,14 @@ import { markSessionActive } from "@/lib/session";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import PageLoader from "@/components/ui/PageLoader";
 
-export default function AceitarConvitePage() {
+function AceitarConviteInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const workspaceId  = searchParams.get("workspace_id");
 
-  const [loading,      setLoading]      = useState(false);
-  const [checking,     setChecking]     = useState(true);
-  const [error,        setError]        = useState("");
+  const [loading,       setLoading]       = useState(false);
+  const [checking,      setChecking]      = useState(true);
+  const [error,         setError]         = useState("");
   const [workspaceName, setWorkspaceName] = useState("");
 
   useEffect(() => {
@@ -126,5 +129,13 @@ export default function AceitarConvitePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AceitarConvitePage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <AceitarConviteInner />
+    </Suspense>
   );
 }
