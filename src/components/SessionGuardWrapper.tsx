@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import SessionGuard from "@/components/SessionGuard";
 import { UserProvider } from "@/lib/userContext";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/register-company", "/plan-selection", "/auth/callback", "/forgot-password", "/reset-password", "/convite-invalido", "/set-password"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/register-company", "/plan-selection", "/auth/callback", "/forgot-password", "/reset-password", "/convite-invalido", "/set-password", "/aceitar-convite"];
 
 export default function SessionGuardWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
