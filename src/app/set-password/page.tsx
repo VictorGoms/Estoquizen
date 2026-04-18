@@ -23,15 +23,30 @@ export default function SetPasswordPage() {
         return;
       }
 
-      // Busca nome do workspace para exibir na tela
-      const wsId = session.user.user_metadata.workspace_id as string;
-      if (wsId) {
-        const { data } = await supabase
+      const wsId  = session.user.user_metadata.workspace_id as string;
+      const userId = session.user.id;
+
+      // Verifica se o convite ainda existe (pode ter sido revogado)
+      if (wsId && userId) {
+        const { data: membership } = await supabase
+          .from("workspace_members")
+          .select("id")
+          .eq("workspace_id", wsId)
+          .eq("user_id", userId)
+          .eq("status", "pendente")
+          .maybeSingle();
+
+        if (!membership) {
+          router.replace("/convite-invalido");
+          return;
+        }
+
+        const { data: ws } = await supabase
           .from("workspaces")
           .select("name")
           .eq("id", wsId)
           .single();
-        if (data) setWorkspaceName(data.name);
+        if (ws) setWorkspaceName(ws.name);
       }
 
       setChecking(false);
