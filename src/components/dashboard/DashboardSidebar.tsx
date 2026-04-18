@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { type WorkspaceRole } from "@/hooks/useWorkspace";
+import { getWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
-import { supabase } from "@/lib/supabase";
+import { useUser } from "@/lib/userContext";
 
 interface DashboardSidebarProps {
-  workspaceName: string;
+  workspaceName?: string;
   userInitials?: string;
   userName?: string;
   userEmail?: string;
@@ -100,24 +99,19 @@ function getInitials(name: string): string {
 }
 
 export default function DashboardSidebar({
-  workspaceName,
+  workspaceName: workspaceNameProp = "",
   userInitials,
-  userName = "",
-  userEmail = "",
+  userName: userNameProp,
+  userEmail: userEmailProp,
 }: DashboardSidebarProps) {
+  const { userName: ctxName, userEmail: ctxEmail, avatarUrl } = useUser();
+  const userName    = userNameProp  ?? ctxName;
+  const userEmail   = userEmailProp ?? ctxEmail;
+  const workspaceName = workspaceNameProp || getWorkspace()?.name || "";
   const initials = userInitials ?? getInitials(userName || "?");
   const router = useRouter();
   const pathname = usePathname();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const role: WorkspaceRole = useRole() ?? "member";
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
-        .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url); });
-    });
-  }, []);
 
   return (
     <aside

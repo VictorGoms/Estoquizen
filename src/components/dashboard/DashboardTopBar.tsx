@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { supabase } from "@/lib/supabase";
+import { getWorkspace } from "@/hooks/useWorkspace";
 import { useAlertCount } from "@/hooks/useAlertCount";
+import { useUser } from "@/lib/userContext";
 
 interface DashboardTopBarProps {
-  workspaceName: string;
+  workspaceName?: string;
   userInitials?: string;
   userName?: string;
 }
@@ -22,19 +22,13 @@ function getInitials(name: string): string {
   return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
 }
 
-export default function DashboardTopBar({ workspaceName, userName = "" }: DashboardTopBarProps) {
+export default function DashboardTopBar({ workspaceName: workspaceNameProp = "", userName: userNameProp }: DashboardTopBarProps) {
+  const { userName: ctxName, avatarUrl } = useUser();
+  const userName = userNameProp ?? ctxName;
+  const workspaceName = workspaceNameProp || getWorkspace()?.name || "";
   const router = useRouter();
   const alertCount = useAlertCount();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const initials = getInitials(userName || "U");
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
-        .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url); });
-    });
-  }, []);
+  const initials = getInitials(userName || "?");
 
   return (
     <header

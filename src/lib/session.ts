@@ -33,5 +33,6 @@ export function touchActivity() {
 /** Clear all session data (call before signing out) */
 export function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
+  sessionStorage.removeItem("estoquizen_user_profile");
   localStorage.removeItem(ACTIVITY_KEY);
 }
