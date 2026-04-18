@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
-import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
-import { sanitizeText, sanitizeEmail } from "@/lib/sanitize";
+import { sanitizeEmail } from "@/lib/sanitize";
 import { useRole, can } from "@/hooks/useRole";
 import AccessDenied from "@/components/ui/AccessDenied";
 import PageLoader from "@/components/ui/PageLoader";
@@ -90,12 +90,12 @@ export default function NovoMembroPage() {
     setLoading(true);
     setError("");
     try {
-      await api.post("/members/invite", {
-        email: sanitizeEmail(email),
-        name:  sanitizeText(name, 100) || undefined,
-        role,
-        workspace_id: ws.id,
+      const { error: rpcErr } = await supabase.rpc("invite_member", {
+        p_workspace_id: ws.id,
+        p_email:        sanitizeEmail(email),
+        p_role:         role,
       });
+      if (rpcErr) throw new Error(rpcErr.message);
       setSent(true);
       setTimeout(() => router.push("/membros"), 1500);
     } catch (err) {
