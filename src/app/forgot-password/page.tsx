@@ -31,14 +31,10 @@ export default function ForgotPasswordPage() {
 
     const clean = email.trim().toLowerCase();
 
-    /* Verifica se o email está cadastrado */
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .ilike("email", clean)
-      .maybeSingle();
+    /* Verifica se o email está cadastrado em auth.users */
+    const { data: exists } = await supabase.rpc("email_exists", { p_email: clean });
 
-    if (!profile) {
+    if (!exists) {
       setError("Este email não está cadastrado no Estoquizen.");
       setLoading(false);
       return;
