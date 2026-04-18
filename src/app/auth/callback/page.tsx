@@ -25,6 +25,10 @@ export default function AuthCallbackPage() {
     }
 
     supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        router.replace("/reset-password");
+        return;
+      }
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         redirect(session);
       }
