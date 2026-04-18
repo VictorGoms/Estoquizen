@@ -36,9 +36,8 @@ const UserContext = createContext<UserContextValue>({
 });
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const cached = readCache();
   const [profile, setProfileState] = useState<UserProfile>(
-    cached ?? { userName: "", userEmail: "", avatarUrl: null }
+    { userName: "", userEmail: "", avatarUrl: null }
   );
 
   function setProfile(partial: Partial<UserProfile>) {
@@ -50,6 +49,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    /* Load from cache first (instant), then refresh from Supabase */
+    const cached = readCache();
+    if (cached) setProfileState(cached);
+
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
 
