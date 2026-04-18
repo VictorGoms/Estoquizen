@@ -103,21 +103,11 @@ export default function NovoMembroPage() {
         const isNotFound = rpcErr.message.includes("não encontrado");
         if (!isNotFound) throw new Error(rpcErr.message);
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/invite-member`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":  "application/json",
-              "Authorization": `Bearer ${session?.access_token}`,
-              "apikey":        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            },
-            body: JSON.stringify({ email: cleanEmail, workspace_id: ws.id, role }),
-          }
-        );
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? "Erro ao enviar convite");
+        const { data, error: fnErr } = await supabase.functions.invoke("invite-member", {
+          body: { email: cleanEmail, workspace_id: ws.id, role },
+        });
+        if (fnErr) throw new Error(fnErr.message);
+        if (data?.error) throw new Error(data.error);
       }
       setSent(true);
       setTimeout(() => router.push("/membros"), 1500);
