@@ -35,7 +35,10 @@ export default function AuthCallbackPage() {
     });
 
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) redirect(data.session);
+      if (!data.session) return;
+      // Se a URL contém type=recovery, deixa o onAuthStateChange tratar
+      if (window.location.hash.includes("type=recovery")) return;
+      redirect(data.session);
     });
   }, [router]);
 
