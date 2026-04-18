@@ -6,7 +6,6 @@ import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import PlanCard from "@/components/onboarding/PlanCard";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
-import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 const PLANS = [
@@ -97,30 +96,36 @@ export default function PlanSelectionPage() {
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr || !session) throw new Error("Sessão expirada. Faça login novamente.");
 
-      // Client isolado com JWT explícito — sem session management para não sobrescrever o header
-      const db = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-        }
-      );
+      const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      const headers = {
+        "Content-Type":  "application/json",
+        "apikey":        anon,
+        "Authorization": `Bearer ${session.access_token}`,
+        "Prefer":        "return=representation",
+      };
       const userId = session.user.id;
 
-      const { data: ws, error: wsErr } = await db
-        .from("workspaces")
-        .insert({ name, plan: selectedPlan, created_by: userId })
-        .select()
-        .single();
+      const wsRes = await fetch(`${url}/rest/v1/workspaces?select=*`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ name, plan: selectedPlan, created_by: userId }),
+      });
+      if (!wsRes.ok) {
+        const e = await wsRes.json().catch(() => ({}));
+        throw new Error(e.message ?? "Erro ao criar workspace");
+      }
+      const [ws] = await wsRes.json();
 
-      if (wsErr) throw new Error(wsErr.message);
-
-      const { error: memberErr } = await db
-        .from("workspace_members")
-        .insert({ workspace_id: ws.id, user_id: userId, role: "owner", status: "ativo" });
-
-      if (memberErr) throw new Error(memberErr.message);
+      const memberRes = await fetch(`${url}/rest/v1/workspace_members`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ workspace_id: ws.id, user_id: userId, role: "owner", status: "ativo" }),
+      });
+      if (!memberRes.ok) {
+        const e = await memberRes.json().catch(() => ({}));
+        throw new Error(e.message ?? "Erro ao adicionar membro");
+      }
 
       sessionStorage.removeItem("pendingWorkspaceName");
       router.push("/select-workspace");
