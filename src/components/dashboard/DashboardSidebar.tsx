@@ -95,12 +95,17 @@ const NAV_SECTIONS = [
   },
 ];
 
+function getInitials(name: string): string {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+}
+
 export default function DashboardSidebar({
   workspaceName,
-  userInitials = "V",
-  userName = "Victor",
-  userEmail = "victor@email.com",
+  userInitials,
+  userName = "",
+  userEmail = "",
 }: DashboardSidebarProps) {
+  const initials = userInitials ?? getInitials(userName || "?");
   const router = useRouter();
   const pathname = usePathname();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -257,7 +262,7 @@ export default function DashboardSidebar({
           >
             {avatarUrl
               ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-              : userInitials}
+              : initials}
           </div>
           <div className="flex-1 min-w-0 text-left">
             <p className="text-xs font-semibold text-slate-300 truncate leading-none">{userName}</p>

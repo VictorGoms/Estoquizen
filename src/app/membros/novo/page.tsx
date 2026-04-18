@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
@@ -64,13 +64,6 @@ const ROLES: Array<{ id: Role; label: string; description: string; bg: string; t
   },
 ];
 
-const MOCK_WORKSPACE = {
-  name: "Loja Central",
-  initials: "V",
-  userName: "Victor",
-  email: "victor@email.com",
-};
-
 export default function NovoMembroPage() {
   const router = useRouter();
   const [name, setName]       = useState("");
@@ -80,9 +73,22 @@ export default function NovoMembroPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent]       = useState(false);
   const [error, setError]     = useState("");
+  const [wsName, setWsName]   = useState("");
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    const ws = getWorkspace();
+    if (ws) setWsName(ws.name);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("name").eq("id", user.id).single()
+        .then(({ data }) => setUserName(data?.name ?? user.email?.split("@")[0] ?? ""));
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!name.trim())  { setError("Nome é obrigatório."); return; }
     if (!email.trim()) return;
     const ws = getWorkspace();
     if (!ws) { setError("Nenhum workspace selecionado."); return; }
@@ -104,7 +110,7 @@ export default function NovoMembroPage() {
         if (!isNotFound) throw new Error(rpcErr.message);
 
         const { data, error: fnErr } = await supabase.functions.invoke("invite-member", {
-          body: { email: cleanEmail, workspace_id: ws.id, role },
+          body: { email: cleanEmail, workspace_id: ws.id, role, name: name.trim() },
         });
         if (fnErr) {
           const errBody = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.().catch(() => null);
@@ -139,18 +145,8 @@ export default function NovoMembroPage() {
         }}
       />
 
-      <DashboardSidebar
-        workspaceName={MOCK_WORKSPACE.name}
-        userInitials={MOCK_WORKSPACE.initials}
-        userName={MOCK_WORKSPACE.userName}
-        userEmail={MOCK_WORKSPACE.email}
-      />
-
-      <DashboardTopBar
-        workspaceName={MOCK_WORKSPACE.name}
-        userInitials={MOCK_WORKSPACE.initials}
-        userName={MOCK_WORKSPACE.userName}
-      />
+      <DashboardSidebar workspaceName={wsName} userName={userName} />
+      <DashboardTopBar  workspaceName={wsName} userName={userName} />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,7 +204,7 @@ export default function NovoMembroPage() {
                   {/* Name field */}
                   <div>
                     <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">
-                      Nome (opcional)
+                      Nome <span className="text-rose-400">*</span>
                     </label>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none">
