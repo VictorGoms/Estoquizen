@@ -6,10 +6,6 @@ import { supabase } from "@/lib/supabase";
 import PageLoader from "@/components/ui/PageLoader";
 import { markSessionActive } from "@/lib/session";
 
-/**
- * Supabase redireciona aqui após OAuth (Google, etc.).
- * Troca o `code` da URL por uma sessão real e segue para o app.
- */
 export default function AuthCallbackPage() {
   const router = useRouter();
 
@@ -24,7 +20,24 @@ export default function AuthCallbackPage() {
       }
     }
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const isRecovery = params.get("type") === "recovery";
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) { router.replace("/login"); return; }
+        if (isRecovery) {
+          router.replace("/reset-password");
+        } else {
+          supabase.auth.getSession().then(({ data }) => redirect(data.session));
+        }
+      });
+      return;
+    }
+
+    // Fluxo sem code (OAuth antigo / hash fragment)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         router.replace("/reset-password");
         return;
@@ -35,11 +48,10 @@ export default function AuthCallbackPage() {
     });
 
     supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) return;
-      // Se a URL contém type=recovery, deixa o onAuthStateChange tratar
-      if (window.location.hash.includes("type=recovery")) return;
-      redirect(data.session);
+      if (data.session) redirect(data.session);
     });
+
+    return () => subscription.unsubscribe();
   }, [router]);
 
   return <PageLoader />;
