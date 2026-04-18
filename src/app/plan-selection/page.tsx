@@ -93,43 +93,11 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const { data: { session }, error: sessionErr } = await supabase.auth.refreshSession();
-      if (sessionErr || !session) throw new Error("Sessão expirada. Faça login novamente.");
-      console.log("[plan-selection] userId:", session.user.id, "token prefix:", session.access_token.slice(0, 20));
-
-      const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-      const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-      const headers = {
-        "Content-Type":  "application/json",
-        "apikey":        anon,
-        "Authorization": `Bearer ${session.access_token}`,
-        "Prefer":        "return=representation",
-      };
-      const userId = session.user.id;
-
-      const payload = { name, plan: selectedPlan, created_by: userId };
-      console.log("[plan-selection] payload:", JSON.stringify(payload));
-      console.log("[plan-selection] headers:", JSON.stringify({ ...headers, Authorization: headers.Authorization.slice(0, 30) + "..." }));
-
-      const wsRes = await fetch(`${url}/rest/v1/workspaces?select=*`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
+      const { error: rpcErr } = await supabase.rpc("create_workspace", {
+        p_name: name,
+        p_plan: selectedPlan,
       });
-      const wsBody = await wsRes.json().catch(() => ({}));
-      console.log("[plan-selection] response status:", wsRes.status, "body:", JSON.stringify(wsBody));
-      if (!wsRes.ok) throw new Error(wsBody.message ?? "Erro ao criar workspace");
-      const [ws] = wsBody;
-
-      const memberRes = await fetch(`${url}/rest/v1/workspace_members`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ workspace_id: ws.id, user_id: userId, role: "owner", status: "ativo" }),
-      });
-      if (!memberRes.ok) {
-        const e = await memberRes.json().catch(() => ({}));
-        throw new Error(e.message ?? "Erro ao adicionar membro");
-      }
+      if (rpcErr) throw new Error(rpcErr.message);
 
       sessionStorage.removeItem("pendingWorkspaceName");
       router.push("/select-workspace");
