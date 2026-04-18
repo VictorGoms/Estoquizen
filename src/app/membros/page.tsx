@@ -7,7 +7,6 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
-import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { api } from "@/lib/api";
 
@@ -71,11 +70,6 @@ const ROLE_CONFIG: Record<Role, { label: string; bg: string; text: string }> = {
   member: { label: "Membro",        bg: "rgba(5,150,105,0.18)",  text: "#6EE7B7" },
 };
 
-const STATUS_CONFIG: Record<Status, { label: string; dot: string }> = {
-  ativo:    { label: "Ativo",    dot: "#10B981" },
-  pendente: { label: "Pendente", dot: "#F59E0B" },
-  inativo:  { label: "Inativo",  dot: "#475569" },
-};
 
 const ROLE_FILTERS = [
   { id: "todos",  label: "Todos" },
@@ -101,7 +95,6 @@ export default function MembrosPage() {
   const [members, setMembers]       = useState<Member[]>([]);
   const [wsName, setWsName]         = useState("");
   const [wsId, setWsId]             = useState("");
-  const [userName, setUserName]     = useState("");
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
   const [revoking, setRevoking]     = useState<string | null>(null);
@@ -114,35 +107,19 @@ export default function MembrosPage() {
       setWsName(ws.name);
       setWsId(ws.id);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .single();
-        setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
+      let memberRows: MemberRow[];
+      try {
+        memberRows = await api.get<MemberRow[]>(`/members?workspace_id=${ws.id}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar membros");
+        setLoading(false);
+        return;
       }
 
-      const { data: memberRows, error: err } = await supabase
-        .from("workspace_members")
-        .select("id, role, status, user_id")
-        .eq("workspace_id", ws.id)
-        .order("created_at");
-
-      if (err) { setError(err.message); setLoading(false); return; }
-
-      const userIds = (memberRows ?? []).map((r: { user_id: string }) => r.user_id);
-      const { data: profileRows } = userIds.length > 0
-        ? await supabase.from("profiles").select("id, name, email, avatar_color, avatar_url").in("id", userIds)
-        : { data: [] };
-
-      const profileMap = new Map((profileRows ?? []).map((p: { id: string; name: string | null; email: string | null; avatar_color: string | null; avatar_url: string | null }) => [p.id, p]));
-
       setMembers(
-        ((memberRows ?? []) as unknown as MemberRow[]).map((row) => {
-          const prof = profileMap.get(row.user_id);
-          const name = prof?.name ?? prof?.email?.split("@")[0] ?? "Sem nome";
+        (memberRows ?? []).map((row) => {
+          const prof = (row as unknown as { profiles?: { name?: string; email?: string; avatar_color?: string; avatar_url?: string } }).profiles;
+          const name = prof?.name ?? prof?.email?.split("@")[0] ?? "Convite pendente";
           return {
             id:          row.id,
             userId:      row.user_id,
@@ -201,8 +178,8 @@ export default function MembrosPage() {
         }}
       />
 
-      <DashboardSidebar workspaceName={wsName} userName={userName} />
-      <DashboardTopBar  workspaceName={wsName} userName={userName} />
+      <DashboardSidebar workspaceName={wsName} />
+      <DashboardTopBar  workspaceName={wsName} />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -322,7 +299,6 @@ export default function MembrosPage() {
                     <div className="flex flex-col gap-2">
                       {filtered.map((member) => {
                         const role = ROLE_CONFIG[member.role];
-                        const st   = STATUS_CONFIG[member.status];
                         const isPending = member.status === "pendente";
                         return (
                           <div
