@@ -97,11 +97,14 @@ export default function PlanSelectionPage() {
       const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
       if (sessionErr || !session) throw new Error("Sessão expirada. Faça login novamente.");
 
-      // Cria client com o JWT do usuário explícito para garantir que o RLS receba auth.uid()
+      // Client isolado com JWT explícito — sem session management para não sobrescrever o header
       const db = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { global: { headers: { Authorization: `Bearer ${session.access_token}` } } }
+        {
+          global: { headers: { Authorization: `Bearer ${session.access_token}` } },
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        }
       );
       const userId = session.user.id;
 
