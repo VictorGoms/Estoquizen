@@ -93,9 +93,9 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const { data: { user }, error: userErr } = await supabase.auth.getUser();
-      if (userErr || !user) throw new Error("Sessão expirada. Faça login novamente.");
-      const userId = user.id;
+      const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr || !refreshData.session) throw new Error("Sessão expirada. Faça login novamente.");
+      const userId = refreshData.user!.id;
 
       const { data: ws, error: wsErr } = await supabase
         .from("workspaces")
