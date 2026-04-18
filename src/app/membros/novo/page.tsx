@@ -106,7 +106,11 @@ export default function NovoMembroPage() {
         const { data, error: fnErr } = await supabase.functions.invoke("invite-member", {
           body: { email: cleanEmail, workspace_id: ws.id, role },
         });
-        if (fnErr) throw new Error(fnErr.message);
+        if (fnErr) {
+          const errBody = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.().catch(() => null);
+          console.error("[invite-member] fn error:", fnErr.message, "body:", errBody);
+          throw new Error(errBody?.error ?? fnErr.message);
+        }
         if (data?.error) throw new Error(data.error);
       }
       setSent(true);
