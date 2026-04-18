@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
-import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { sanitizeEmail } from "@/lib/sanitize";
+import { api } from "@/lib/api";
 import { useRole, can } from "@/hooks/useRole";
 import AccessDenied from "@/components/ui/AccessDenied";
 import PageLoader from "@/components/ui/PageLoader";
@@ -74,16 +74,10 @@ export default function NovoMembroPage() {
   const [sent, setSent]       = useState(false);
   const [error, setError]     = useState("");
   const [wsName, setWsName]   = useState("");
-  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const ws = getWorkspace();
     if (ws) setWsName(ws.name);
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("profiles").select("name").eq("id", user.id).single()
-        .then(({ data }) => setUserName(data?.name ?? user.email?.split("@")[0] ?? ""));
-    });
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -98,27 +92,13 @@ export default function NovoMembroPage() {
     try {
       const cleanEmail = sanitizeEmail(email);
 
-      const { error: rpcErr } = await supabase.rpc("invite_member", {
-        p_workspace_id: ws.id,
-        p_email:        cleanEmail,
-        p_role:         role,
+      await api.post("/members/invite", {
+        email:        cleanEmail,
+        name:         name.trim(),
+        role,
+        workspace_id: ws.id,
       });
 
-      // Se o usuário não tem conta ainda, envia convite por email via Edge Function
-      if (rpcErr) {
-        const isNotFound = rpcErr.message.includes("não encontrado");
-        if (!isNotFound) throw new Error(rpcErr.message);
-
-        const { data, error: fnErr } = await supabase.functions.invoke("invite-member", {
-          body: { email: cleanEmail, workspace_id: ws.id, role, name: name.trim() },
-        });
-        if (fnErr) {
-          const errBody = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.().catch(() => null);
-          console.error("[invite-member] fn error:", fnErr.message, "body:", errBody);
-          throw new Error(errBody?.error ?? fnErr.message);
-        }
-        if (data?.error) throw new Error(data.error);
-      }
       setSent(true);
       setTimeout(() => router.push("/membros"), 1500);
     } catch (err) {
@@ -145,8 +125,8 @@ export default function NovoMembroPage() {
         }}
       />
 
-      <DashboardSidebar workspaceName={wsName} userName={userName} />
-      <DashboardTopBar  workspaceName={wsName} userName={userName} />
+      <DashboardSidebar workspaceName={wsName} />
+      <DashboardTopBar  workspaceName={wsName} />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { getWorkspace } from "@/hooks/useWorkspace";
@@ -25,10 +26,15 @@ function getInitials(name: string): string {
 export default function DashboardTopBar({ workspaceName: workspaceNameProp = "", userName: userNameProp }: DashboardTopBarProps) {
   const { userName: ctxName, avatarUrl } = useUser();
   const userName = userNameProp ?? ctxName;
-  const workspaceName = workspaceNameProp || getWorkspace()?.name || "";
+  const [wsName, setWsName] = useState(workspaceNameProp || "");
   const router = useRouter();
   const alertCount = useAlertCount();
   const initials = getInitials(userName || "?");
+
+  useEffect(() => {
+    if (!workspaceNameProp) setWsName(getWorkspace()?.name || "");
+    else setWsName(workspaceNameProp);
+  }, [workspaceNameProp]);
 
   return (
     <header
@@ -51,7 +57,7 @@ export default function DashboardTopBar({ workspaceName: workspaceNameProp = "",
                   Workspace ativo
                 </p>
                 <p className="text-sm font-display font-semibold text-white group-hover:text-brand-300 transition-colors duration-200 truncate max-w-[140px] sm:max-w-[200px]">
-                  {workspaceName}
+                  {wsName}
                 </p>
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -63,7 +69,7 @@ export default function DashboardTopBar({ workspaceName: workspaceNameProp = "",
                 Workspace ativo
               </p>
               <p className="text-sm font-display font-semibold text-white truncate">
-                {workspaceName}
+                {wsName}
               </p>
             </div>
           </div>

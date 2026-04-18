@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
 import { getWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
@@ -107,11 +108,16 @@ export default function DashboardSidebar({
   const { userName: ctxName, userEmail: ctxEmail, avatarUrl } = useUser();
   const userName    = userNameProp  ?? ctxName;
   const userEmail   = userEmailProp ?? ctxEmail;
-  const workspaceName = workspaceNameProp || getWorkspace()?.name || "";
+  const [wsName, setWsName] = useState(workspaceNameProp || "");
   const initials = userInitials ?? getInitials(userName || "?");
   const router = useRouter();
   const pathname = usePathname();
   const role: WorkspaceRole = useRole() ?? "member";
+
+  useEffect(() => {
+    if (!workspaceNameProp) setWsName(getWorkspace()?.name || "");
+    else setWsName(workspaceNameProp);
+  }, [workspaceNameProp]);
 
   return (
     <aside
@@ -160,10 +166,10 @@ export default function DashboardSidebar({
             className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
             style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)" }}
           >
-            {workspaceName.charAt(0).toUpperCase()}
+            {wsName.charAt(0).toUpperCase()}
           </div>
           <span className="text-xs font-semibold text-slate-300 truncate flex-1 text-left">
-            {workspaceName}
+            {wsName}
           </span>
           <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-slate-600 flex-shrink-0 group-hover:text-slate-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
