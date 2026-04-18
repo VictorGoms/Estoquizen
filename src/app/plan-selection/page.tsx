@@ -6,6 +6,7 @@ import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import PlanCard from "@/components/onboarding/PlanCard";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 const PLANS = [
@@ -93,11 +94,18 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
-      if (refreshErr || !refreshData.session) throw new Error("Sessão expirada. Faça login novamente.");
-      const userId = refreshData.user!.id;
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr || !session) throw new Error("Sessão expirada. Faça login novamente.");
 
-      const { data: ws, error: wsErr } = await supabase
+      // Cria client com o JWT do usuário explícito para garantir que o RLS receba auth.uid()
+      const db = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { global: { headers: { Authorization: `Bearer ${session.access_token}` } } }
+      );
+      const userId = session.user.id;
+
+      const { data: ws, error: wsErr } = await db
         .from("workspaces")
         .insert({ name, plan: selectedPlan, created_by: userId })
         .select()
@@ -105,7 +113,7 @@ export default function PlanSelectionPage() {
 
       if (wsErr) throw new Error(wsErr.message);
 
-      const { error: memberErr } = await supabase
+      const { error: memberErr } = await db
         .from("workspace_members")
         .insert({ workspace_id: ws.id, user_id: userId, role: "owner", status: "ativo" });
 
