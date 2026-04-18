@@ -107,16 +107,19 @@ export default function PlanSelectionPage() {
       };
       const userId = session.user.id;
 
+      const payload = { name, plan: selectedPlan, created_by: userId };
+      console.log("[plan-selection] payload:", JSON.stringify(payload));
+      console.log("[plan-selection] headers:", JSON.stringify({ ...headers, Authorization: headers.Authorization.slice(0, 30) + "..." }));
+
       const wsRes = await fetch(`${url}/rest/v1/workspaces?select=*`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ name, plan: selectedPlan, created_by: userId }),
+        body: JSON.stringify(payload),
       });
-      if (!wsRes.ok) {
-        const e = await wsRes.json().catch(() => ({}));
-        throw new Error(e.message ?? "Erro ao criar workspace");
-      }
-      const [ws] = await wsRes.json();
+      const wsBody = await wsRes.json().catch(() => ({}));
+      console.log("[plan-selection] response status:", wsRes.status, "body:", JSON.stringify(wsBody));
+      if (!wsRes.ok) throw new Error(wsBody.message ?? "Erro ao criar workspace");
+      const [ws] = wsBody;
 
       const memberRes = await fetch(`${url}/rest/v1/workspace_members`, {
         method: "POST",
