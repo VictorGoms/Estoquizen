@@ -20,28 +20,18 @@ export default function AuthCallbackPage() {
       }
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const isRecovery = params.get("type") === "recovery";
+    const code = new URLSearchParams(window.location.search).get("code");
 
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
         if (error) { router.replace("/login"); return; }
-        if (isRecovery) {
-          router.replace("/reset-password");
-        } else {
-          supabase.auth.getSession().then(({ data }) => redirect(data.session));
-        }
+        redirect(data.session);
       });
       return;
     }
 
-    // Fluxo sem code (OAuth antigo / hash fragment)
+    // Fluxo sem code (OAuth via hash fragment)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
-        router.replace("/reset-password");
-        return;
-      }
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         redirect(session);
       }

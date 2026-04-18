@@ -17,6 +17,18 @@ export default function ResetPasswordPage() {
   const [error, setError]       = useState("");
 
   useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("code");
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error: exchErr }) => {
+        if (exchErr) { router.replace("/login"); return; }
+        // Limpa o code da URL sem recarregar a página
+        window.history.replaceState({}, "", "/reset-password");
+        setChecking(false);
+      });
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.replace("/login"); return; }
       setChecking(false);
