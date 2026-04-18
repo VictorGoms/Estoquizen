@@ -90,12 +90,35 @@ export default function NovoMembroPage() {
     setLoading(true);
     setError("");
     try {
+      const cleanEmail = sanitizeEmail(email);
+
       const { error: rpcErr } = await supabase.rpc("invite_member", {
         p_workspace_id: ws.id,
-        p_email:        sanitizeEmail(email),
+        p_email:        cleanEmail,
         p_role:         role,
       });
-      if (rpcErr) throw new Error(rpcErr.message);
+
+      // Se o usuário não tem conta ainda, envia convite por email via Edge Function
+      if (rpcErr) {
+        const isNotFound = rpcErr.message.includes("não encontrado");
+        if (!isNotFound) throw new Error(rpcErr.message);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/invite-member`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":  "application/json",
+              "Authorization": `Bearer ${session?.access_token}`,
+              "apikey":        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({ email: cleanEmail, workspace_id: ws.id, role }),
+          }
+        );
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? "Erro ao enviar convite");
+      }
       setSent(true);
       setTimeout(() => router.push("/membros"), 1500);
     } catch (err) {

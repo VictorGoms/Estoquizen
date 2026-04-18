@@ -14,19 +14,24 @@ export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        markSessionActive();
+    function redirect(session: { user?: { user_metadata?: Record<string, unknown> } } | null) {
+      if (!session) return;
+      markSessionActive();
+      if (session.user?.user_metadata?.from_invite) {
+        router.replace("/set-password");
+      } else {
         router.replace("/select-workspace");
+      }
+    }
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        redirect(session);
       }
     });
 
-    /* Força a troca do code pelo token — necessário no PKCE flow */
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        markSessionActive();
-        router.replace("/select-workspace");
-      }
+      if (data.session) redirect(data.session);
     });
   }, [router]);
 
