@@ -1,31 +1,57 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import AuthLayout from "@/components/auth/AuthLayout";
 import InputField from "@/components/auth/InputField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 
+const COOLDOWN_S = 60;
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [email, setEmail]     = useState("");
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent]       = useState(false);
-  const [error, setError]     = useState("");
+  const [email, setEmail]         = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [sent, setSent]           = useState(false);
+  const [error, setError]         = useState("");
+  const [cooldown, setCooldown]   = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (cooldown > 0) return;
     setLoading(true);
     setError("");
 
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+    const clean = email.trim().toLowerCase();
+
+    /* Verifica se o email está cadastrado */
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("email", clean)
+      .maybeSingle();
+
+    if (!profile) {
+      setError("Este email não está cadastrado no Estoquizen.");
+      setLoading(false);
+      return;
+    }
+
+    const { error: err } = await supabase.auth.resetPasswordForEmail(clean, {
       redirectTo: `${window.location.origin}/auth/callback`,
     });
 
     setLoading(false);
-    if (err) { setError("Não foi possível enviar o email. Verifique o endereço e tente novamente."); return; }
+    if (err) { setError("Não foi possível enviar o email. Tente novamente."); return; }
     setSent(true);
+    setCooldown(COOLDOWN_S);
   }
 
   if (sent) {
@@ -72,8 +98,8 @@ export default function ForgotPasswordPage() {
 
         {error && <p className="text-xs text-red-400 text-center -mb-1">{error}</p>}
 
-        <PrimaryButton type="submit" loading={loading} disabled={!email.trim()}>
-          Enviar link de redefinição
+        <PrimaryButton type="submit" loading={loading} disabled={!email.trim() || cooldown > 0}>
+          {cooldown > 0 ? `Aguarde ${cooldown}s` : "Enviar link de redefinição"}
         </PrimaryButton>
 
         <p className="text-center text-sm text-slate-500">
