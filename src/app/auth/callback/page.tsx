@@ -25,9 +25,11 @@ export default function AuthCallbackPage() {
     const code = new URLSearchParams(window.location.search).get("code");
 
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+      supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
         if (error) { router.replace("/login"); return; }
-        redirect(data.session);
+        const session = data.session ?? (await supabase.auth.getSession()).data.session;
+        if (!session) { router.replace("/login"); return; }
+        redirect(session);
       });
       return;
     }
