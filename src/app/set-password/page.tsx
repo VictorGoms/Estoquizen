@@ -17,7 +17,12 @@ export default function SetPasswordPage() {
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    async function init() {
+      // refreshSession inicializa o estado interno do cliente antes de updateUser
+      // (evita "auth session missing" após redirect do callback)
+      let { data: { session } } = await supabase.auth.refreshSession();
+      if (!session) ({ data: { session } } = await supabase.auth.getSession());
+
       if (!session?.user?.user_metadata?.from_invite) {
         router.replace("/select-workspace");
         return;
@@ -50,7 +55,8 @@ export default function SetPasswordPage() {
       }
 
       setChecking(false);
-    });
+    }
+    init();
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
