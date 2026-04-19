@@ -26,6 +26,9 @@ export default function AuthCallbackPage() {
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
+        console.log("[callback] exchange error:", error?.message);
+        console.log("[callback] session:", data.session ? "OK" : "NULL");
+        console.log("[callback] user_metadata:", JSON.stringify(data.session?.user?.user_metadata));
         if (error) { router.replace("/login"); return; }
         const session = data.session ?? (await supabase.auth.getSession()).data.session;
         if (!session) { router.replace("/login"); return; }
