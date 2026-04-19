@@ -65,10 +65,13 @@ const PlusIcon = () => (
   </svg>
 );
 
-function getGreeting(hour: number) {
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
+function getGreeting() {
+  const h = Number(
+    new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "numeric", hour12: false })
+  );
+  if (h >= 6 && h < 12) return "Bom dia";
+  if (h >= 12 && h < 18) return "Boa tarde";
+  return "Boa noite"; // 18–23 e 00–05
 }
 
 interface Stats { produtos: number; alertas: number; ultimaMov: number }
@@ -92,7 +95,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    setGreeting(getGreeting(new Date().getHours()));
+    setGreeting(getGreeting());
 
     async function load() {
       const ws = getWorkspace();
