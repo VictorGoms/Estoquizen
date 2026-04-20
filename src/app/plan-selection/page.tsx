@@ -6,13 +6,13 @@ import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import PlanCard from "@/components/onboarding/PlanCard";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 
 const PLANS = [
   {
     id: "basic",
     name: "Basic",
-    price: "R$ 19",
+    price: "R$ 19,90",
     priceNote: "/mês",
     description: "Para começar sem complicação",
     highlighted: false,
@@ -31,9 +31,9 @@ const PLANS = [
     ],
   },
   {
-    id: "intermediate",
+    id: "growth",
     name: "Growth",
-    price: "R$ 29",
+    price: "R$ 29,90",
     priceNote: "/mês",
     description: "Para negócios em crescimento",
     highlighted: true,
@@ -54,7 +54,7 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "R$ 59",
+    price: "R$ 59,90",
     priceNote: "/mês",
     description: "Para operações completas",
     highlighted: false,
@@ -82,7 +82,7 @@ const BackIcon = () => (
 
 export default function PlanSelectionPage() {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>("intermediate");
+  const [selectedPlan, setSelectedPlan] = useState<string | null>("growth");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -93,11 +93,7 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const { error: rpcErr } = await supabase.rpc("create_workspace", {
-        p_name: name,
-        p_plan: selectedPlan,
-      });
-      if (rpcErr) throw new Error(rpcErr.message);
+      await api.post("/workspaces", { name, plan: selectedPlan });
 
       sessionStorage.removeItem("pendingWorkspaceName");
       router.push("/select-workspace");

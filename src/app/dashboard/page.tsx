@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { getWorkspace, setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { can } from "@/hooks/useRole";
 import { useStats } from "@/hooks/useStats";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 
 /* ─── Icons ─── */
 const DocumentIcon = () => (
@@ -143,6 +144,8 @@ export default function DashboardPage() {
 
             {loading ? <PageLoader /> : (
               <>
+                {wsId && <TrialBanner workspaceId={wsId} />}
+
                 <div>
                   <p suppressHydrationWarning className="text-white font-display font-bold text-xl">{greeting || "Bem-vindo de volta"}{userName ? `, ${userName}` : ""} 👋</p>
                   <p className="text-slate-500 text-sm mt-1">Sua operação está rodando suavemente.</p>
