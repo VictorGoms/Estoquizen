@@ -31,12 +31,12 @@ const ExternalIcon = () => (
 );
 
 /* ─── Plan config ─── */
-type Plan = "basic" | "intermediate" | "pro";
+type Plan = "basic" | "growth" | "pro";
 
 const PLAN_CONFIG: Record<Plan, { label: string; limit: string; color: string; bg: string; border: string }> = {
-  basic:        { label: "Basic",        limit: "até 100 produtos",    color: "#94A3B8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.2)" },
-  intermediate: { label: "Intermediate", limit: "até 500 produtos",    color: "#93C5FD", bg: "rgba(37,99,235,0.12)",   border: "rgba(59,130,246,0.25)"  },
-  pro:          { label: "Pro",          limit: "produtos ilimitados",  color: "#FCD34D", bg: "rgba(217,119,6,0.12)",   border: "rgba(245,158,11,0.25)"  },
+  basic:  { label: "Basic",  limit: "até 50 produtos",    color: "#94A3B8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.2)" },
+  growth: { label: "Growth", limit: "até 300 produtos",   color: "#93C5FD", bg: "rgba(37,99,235,0.12)",   border: "rgba(59,130,246,0.25)" },
+  pro:    { label: "Pro",    limit: "até 2000 produtos",  color: "#FCD34D", bg: "rgba(217,119,6,0.12)",   border: "rgba(245,158,11,0.25)" },
 };
 
 interface Workspace {
@@ -147,8 +147,8 @@ export default function ConfiguracoesPage() {
   );
 
   const plan = PLAN_CONFIG[workspace?.plan ?? "basic"];
-  const limit = workspace?.plan === "pro" ? -1 : workspace?.plan === "intermediate" ? 500 : 100;
-  const usagePct = limit === -1 ? 0 : Math.min(100, Math.round((productCount / limit) * 100));
+  const limit = workspace?.plan === "pro" ? 2000 : workspace?.plan === "growth" ? 300 : 50;
+  const usagePct = Math.min(100, Math.round((productCount / limit) * 100));
   const usageColor = usagePct >= 90 ? "#FCA5A5" : usagePct >= 70 ? "#FCD34D" : "#6EE7B7";
 
   if (!can(wsRole, "canAccessConfiguracoes")) return <AccessDenied />;
@@ -208,15 +208,13 @@ export default function ConfiguracoesPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-slate-500">Produtos cadastrados</span>
                   <span className="text-xs font-semibold" style={{ color: usageColor }}>
-                    {productCount}{limit !== -1 ? ` / ${limit}` : " (ilimitado)"}
+                    {productCount} / {limit}
                   </span>
                 </div>
-                {limit !== -1 && (
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                    <div className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${usagePct}%`, background: usageColor }} />
-                  </div>
-                )}
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${usagePct}%`, background: usageColor }} />
+                </div>
               </div>
 
               {/* Billing actions */}
