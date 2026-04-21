@@ -51,6 +51,17 @@ export default function SelectWorkspacePage() {
   const [saving, setSaving]           = useState(false);
   const [selectedId, setSelectedId]   = useState<string | null>(null);
   const [accepting, setAccepting]     = useState<string | null>(null);
+  const [checkoutStatus, setCheckoutStatus] = useState<"success" | "canceled" | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("checkout");
+    if (status === "success" || status === "canceled") {
+      setCheckoutStatus(status);
+      /* Remove o parâmetro da URL sem recarregar */
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -125,6 +136,19 @@ export default function SelectWorkspacePage() {
 
       <main className="pt-14 pb-28 md:pb-12 min-h-screen flex flex-col justify-center">
         <LayoutContainer className="py-10">
+
+          {checkoutStatus === "success" && (
+            <div className="mb-6 px-4 py-3 rounded-xl text-sm font-medium text-center"
+              style={{ background: "rgba(5,150,105,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#6EE7B7" }}>
+              Pagamento confirmado! Selecione seu workspace para continuar.
+            </div>
+          )}
+          {checkoutStatus === "canceled" && (
+            <div className="mb-6 px-4 py-3 rounded-xl text-sm font-medium text-center"
+              style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#FCA5A5" }}>
+              Pagamento cancelado. Você pode tentar novamente nas configurações.
+            </div>
+          )}
 
           <div className="mb-8 text-center">
             <div
