@@ -93,9 +93,19 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      await api.post("/workspaces", { name, plan: selectedPlan });
-
+      const ws = await api.post<{ id: string }>("/workspaces", { name, plan: selectedPlan });
       sessionStorage.removeItem("pendingWorkspaceName");
+
+      if (selectedPlan !== "growth") {
+        /* basic e pro não têm trial — redireciona direto para o checkout */
+        const checkout = await api.post<{ url: string }>("/billing/checkout", {
+          workspace_id: ws.id,
+          plan:         selectedPlan,
+        });
+        window.location.href = checkout.url;
+        return;
+      }
+
       router.push("/select-workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar workspace");
@@ -189,7 +199,10 @@ export default function PlanSelectionPage() {
 
           {/* Reassurance line */}
           <p className="text-center text-xs text-slate-700 mt-5">
-            14 dias grátis no plano Growth&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade
+            {selectedPlan === "growth"
+              ? <>Trial grátis de 30 dias no Growth&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade</>
+              : <>Pagamento necessário para ativar&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade</>
+            }
           </p>
 
         </div>
