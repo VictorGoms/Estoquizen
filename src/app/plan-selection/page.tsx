@@ -94,8 +94,7 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const body: Record<string, string> = { name, plan: selectedPlan };
-      if (selectedPlan === "growth") body.cpf = cpf.replace(/\D/g, "");
+      const body: Record<string, string> = { name, plan: selectedPlan, cpf: cpf.replace(/\D/g, "") };
 
       const ws = await api.post<{ id: string }>("/workspaces", body);
       sessionStorage.removeItem("pendingWorkspaceName");
@@ -156,12 +155,14 @@ export default function PlanSelectionPage() {
             ))}
           </div>
 
-          {/* CPF — obrigatório apenas para o trial do Growth */}
-          {selectedPlan === "growth" && (
+          {/* CPF — obrigatório para todos os planos */}
+          {selectedPlan && (
             <div className="max-w-sm mx-auto w-full mb-2">
               <label className="block text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1.5">
                 CPF <span className="text-brand-400">*</span>
-                <span className="normal-case font-normal text-slate-600 ml-1">— necessário para o trial gratuito (1 trial por CPF)</span>
+                {selectedPlan === "growth" && (
+                  <span className="normal-case font-normal text-slate-600 ml-1">— 1 trial gratuito por CPF</span>
+                )}
               </label>
               <input
                 type="text"
@@ -214,7 +215,7 @@ export default function PlanSelectionPage() {
             <PrimaryButton
               onClick={handleContinue}
               loading={loading}
-              disabled={!selectedPlan || (selectedPlan === "growth" && cpf.replace(/\D/g, "").length !== 11)}
+              disabled={!selectedPlan || cpf.replace(/\D/g, "").length !== 11}
               className="flex-1"
             >
               {!loading && (
