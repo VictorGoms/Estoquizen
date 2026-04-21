@@ -83,6 +83,7 @@ const BackIcon = () => (
 export default function PlanSelectionPage() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<string | null>("growth");
+  const [cpf, setCpf] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -93,7 +94,10 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const ws = await api.post<{ id: string }>("/workspaces", { name, plan: selectedPlan });
+      const body: Record<string, string> = { name, plan: selectedPlan };
+      if (selectedPlan === "growth") body.cpf = cpf.replace(/\D/g, "");
+
+      const ws = await api.post<{ id: string }>("/workspaces", body);
       sessionStorage.removeItem("pendingWorkspaceName");
 
       if (selectedPlan !== "growth") {
@@ -152,6 +156,31 @@ export default function PlanSelectionPage() {
             ))}
           </div>
 
+          {/* CPF — obrigatório apenas para o trial do Growth */}
+          {selectedPlan === "growth" && (
+            <div className="max-w-sm mx-auto w-full mb-2">
+              <label className="block text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1.5">
+                CPF <span className="text-brand-400">*</span>
+                <span className="normal-case font-normal text-slate-600 ml-1">— necessário para o trial gratuito (1 trial por CPF)</span>
+              </label>
+              <input
+                type="text"
+                value={cpf}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  setCpf(v.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+                           .replace(/(\d{3})(\d{3})(\d{1,3})/, "$1.$2.$3")
+                           .replace(/(\d{3})(\d{1,3})/, "$1.$2"));
+                }}
+                placeholder="000.000.000-00"
+                className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200"
+                style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
+                onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
+              />
+            </div>
+          )}
+
           {/* Selected hint */}
           <div className="h-5 text-center mb-6">
             {selected && (
@@ -185,7 +214,7 @@ export default function PlanSelectionPage() {
             <PrimaryButton
               onClick={handleContinue}
               loading={loading}
-              disabled={!selectedPlan}
+              disabled={!selectedPlan || (selectedPlan === "growth" && cpf.replace(/\D/g, "").length !== 11)}
               className="flex-1"
             >
               {!loading && (
