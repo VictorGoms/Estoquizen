@@ -38,7 +38,7 @@ const BENEFITS = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
-    text: "14 dias gratuitos, sem cartão",
+    text: "30 dias gratuitos no Growth, sem cartão",
   },
 ];
 
@@ -94,6 +94,7 @@ export default function RegisterCompanyPage() {
       return;
     }
     sessionStorage.setItem("pendingWorkspaceName", values.name.trim());
+    sessionStorage.setItem("pendingCpf", values.cpf.replace(/\D/g, ""));
     setLoading(true);
     router.push("/plan-selection");
   }

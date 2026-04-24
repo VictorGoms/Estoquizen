@@ -1,15 +1,13 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/components/ui/PageLoader";
 import { markSessionActive } from "@/lib/session";
 
-/**
- * Supabase redireciona aqui após OAuth (Google, etc.).
- * Troca o `code` da URL por uma sessão real e segue para o app.
- */
 export default function AuthCallbackPage() {
   const router = useRouter();
 
@@ -24,7 +22,23 @@ export default function AuthCallbackPage() {
       }
     }
 
-    supabase.auth.onAuthStateChange((event, session) => {
+    const code = new URLSearchParams(window.location.search).get("code");
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
+        console.log("[callback] exchange error:", error?.message);
+        console.log("[callback] session:", data.session ? "OK" : "NULL");
+        console.log("[callback] user_metadata:", JSON.stringify(data.session?.user?.user_metadata));
+        if (error) { router.replace("/login"); return; }
+        const session = data.session ?? (await supabase.auth.getSession()).data.session;
+        if (!session) { router.replace("/login"); return; }
+        redirect(session);
+      });
+      return;
+    }
+
+    // Fluxo sem code (OAuth via hash fragment)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         redirect(session);
       }
@@ -33,6 +47,8 @@ export default function AuthCallbackPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) redirect(data.session);
     });
+
+    return () => subscription.unsubscribe();
   }, [router]);
 
   return <PageLoader />;

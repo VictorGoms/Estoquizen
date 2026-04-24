@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { supabase } from "@/lib/supabase";
+import { getWorkspace } from "@/hooks/useWorkspace";
 import { useAlertCount } from "@/hooks/useAlertCount";
+import { useUser } from "@/lib/userContext";
 
 interface DashboardTopBarProps {
-  workspaceName: string;
+  workspaceName?: string;
   userInitials?: string;
   userName?: string;
 }
@@ -22,19 +23,18 @@ function getInitials(name: string): string {
   return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
 }
 
-export default function DashboardTopBar({ workspaceName, userName = "" }: DashboardTopBarProps) {
+export default function DashboardTopBar({ workspaceName: workspaceNameProp = "", userName: userNameProp }: DashboardTopBarProps) {
+  const { userName: ctxName, avatarUrl } = useUser();
+  const userName = userNameProp ?? ctxName;
+  const [wsName, setWsName] = useState(workspaceNameProp || "");
   const router = useRouter();
   const alertCount = useAlertCount();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const initials = getInitials(userName || "U");
+  const initials = getInitials(userName || "?");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
-        .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url); });
-    });
-  }, []);
+    if (!workspaceNameProp) setWsName(getWorkspace()?.name || "");
+    else setWsName(workspaceNameProp);
+  }, [workspaceNameProp]);
 
   return (
     <header
@@ -57,7 +57,7 @@ export default function DashboardTopBar({ workspaceName, userName = "" }: Dashbo
                   Workspace ativo
                 </p>
                 <p className="text-sm font-display font-semibold text-white group-hover:text-brand-300 transition-colors duration-200 truncate max-w-[140px] sm:max-w-[200px]">
-                  {workspaceName}
+                  {wsName}
                 </p>
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -69,7 +69,7 @@ export default function DashboardTopBar({ workspaceName, userName = "" }: Dashbo
                 Workspace ativo
               </p>
               <p className="text-sm font-display font-semibold text-white truncate">
-                {workspaceName}
+                {wsName}
               </p>
             </div>
           </div>

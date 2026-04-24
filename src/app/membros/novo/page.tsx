@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
-import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { sanitizeEmail } from "@/lib/sanitize";
+import { api } from "@/lib/api";
 import { useRole, can } from "@/hooks/useRole";
 import AccessDenied from "@/components/ui/AccessDenied";
 import PageLoader from "@/components/ui/PageLoader";
@@ -64,13 +64,6 @@ const ROLES: Array<{ id: Role; label: string; description: string; bg: string; t
   },
 ];
 
-const MOCK_WORKSPACE = {
-  name: "Loja Central",
-  initials: "V",
-  userName: "Victor",
-  email: "victor@email.com",
-};
-
 export default function NovoMembroPage() {
   const router = useRouter();
   const [name, setName]       = useState("");
@@ -80,9 +73,16 @@ export default function NovoMembroPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent]       = useState(false);
   const [error, setError]     = useState("");
+  const [wsName, setWsName]   = useState("");
+
+  useEffect(() => {
+    const ws = getWorkspace();
+    if (ws) setWsName(ws.name);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!name.trim())  { setError("Nome é obrigatório."); return; }
     if (!email.trim()) return;
     const ws = getWorkspace();
     if (!ws) { setError("Nenhum workspace selecionado."); return; }
@@ -92,27 +92,13 @@ export default function NovoMembroPage() {
     try {
       const cleanEmail = sanitizeEmail(email);
 
-      const { error: rpcErr } = await supabase.rpc("invite_member", {
-        p_workspace_id: ws.id,
-        p_email:        cleanEmail,
-        p_role:         role,
+      await api.post("/members/invite", {
+        email:        cleanEmail,
+        name:         name.trim(),
+        role,
+        workspace_id: ws.id,
       });
 
-      // Se o usuário não tem conta ainda, envia convite por email via Edge Function
-      if (rpcErr) {
-        const isNotFound = rpcErr.message.includes("não encontrado");
-        if (!isNotFound) throw new Error(rpcErr.message);
-
-        const { data, error: fnErr } = await supabase.functions.invoke("invite-member", {
-          body: { email: cleanEmail, workspace_id: ws.id, role },
-        });
-        if (fnErr) {
-          const errBody = await (fnErr as { context?: { json?: () => Promise<{ error?: string }> } }).context?.json?.().catch(() => null);
-          console.error("[invite-member] fn error:", fnErr.message, "body:", errBody);
-          throw new Error(errBody?.error ?? fnErr.message);
-        }
-        if (data?.error) throw new Error(data.error);
-      }
       setSent(true);
       setTimeout(() => router.push("/membros"), 1500);
     } catch (err) {
@@ -139,18 +125,8 @@ export default function NovoMembroPage() {
         }}
       />
 
-      <DashboardSidebar
-        workspaceName={MOCK_WORKSPACE.name}
-        userInitials={MOCK_WORKSPACE.initials}
-        userName={MOCK_WORKSPACE.userName}
-        userEmail={MOCK_WORKSPACE.email}
-      />
-
-      <DashboardTopBar
-        workspaceName={MOCK_WORKSPACE.name}
-        userInitials={MOCK_WORKSPACE.initials}
-        userName={MOCK_WORKSPACE.userName}
-      />
+      <DashboardSidebar workspaceName={wsName} />
+      <DashboardTopBar  workspaceName={wsName} />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -208,7 +184,7 @@ export default function NovoMembroPage() {
                   {/* Name field */}
                   <div>
                     <label className="block text-xs font-medium text-slate-400 uppercase tracking-wide mb-1.5">
-                      Nome (opcional)
+                      Nome <span className="text-rose-400">*</span>
                     </label>
                     <div className="relative">
                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-600 pointer-events-none">

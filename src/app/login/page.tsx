@@ -39,7 +39,17 @@ export default function LoginPage() {
     });
 
     setLoading(false);
-    if (authError) { setError(authError.message); return; }
+    if (authError) {
+      const msg = authError.message.toLowerCase();
+      if (msg.includes("invalid login") || msg.includes("invalid credentials") || msg.includes("wrong password")) {
+        setError("Email ou senha incorretos.");
+      } else if (msg.includes("email not confirmed")) {
+        setError("Email não confirmado. Verifique sua caixa de entrada.");
+      } else {
+        setError("Não foi possível entrar. Tente novamente.");
+      }
+      return;
+    }
     markSessionActive();
     router.push("/select-workspace");
   }
@@ -74,7 +84,7 @@ export default function LoginPage() {
           rightSlot={
             <button
               type="button"
-              onClick={() => {/* TODO: forgot password flow */}}
+              onClick={() => router.push("/forgot-password")}
               className="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer"
             >
               Esqueceu?

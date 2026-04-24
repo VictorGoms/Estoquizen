@@ -17,25 +17,46 @@ export default function SetPasswordPage() {
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    async function init() {
+      // refreshSession inicializa o estado interno do cliente antes de updateUser
+      // (evita "auth session missing" após redirect do callback)
+      let { data: { session } } = await supabase.auth.refreshSession();
+      if (!session) ({ data: { session } } = await supabase.auth.getSession());
+
       if (!session?.user?.user_metadata?.from_invite) {
         router.replace("/select-workspace");
         return;
       }
 
-      // Busca nome do workspace para exibir na tela
-      const wsId = session.user.user_metadata.workspace_id as string;
-      if (wsId) {
-        const { data } = await supabase
+      const wsId  = session.user.user_metadata.workspace_id as string;
+      const userId = session.user.id;
+
+      // Verifica se o convite ainda existe (pode ter sido revogado)
+      if (wsId && userId) {
+        const { data: membership } = await supabase
+          .from("workspace_members")
+          .select("id")
+          .eq("workspace_id", wsId)
+          .eq("user_id", userId)
+          .eq("status", "pendente")
+          .maybeSingle();
+
+        if (!membership) {
+          router.replace("/convite-invalido");
+          return;
+        }
+
+        const { data: ws } = await supabase
           .from("workspaces")
           .select("name")
           .eq("id", wsId)
           .single();
-        if (data) setWorkspaceName(data.name);
+        if (ws) setWorkspaceName(ws.name);
       }
 
       setChecking(false);
-    });
+    }
+    init();
   }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {

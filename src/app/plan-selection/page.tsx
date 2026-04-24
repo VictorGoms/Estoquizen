@@ -6,13 +6,13 @@ import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import PlanCard from "@/components/onboarding/PlanCard";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
-import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 
 const PLANS = [
   {
     id: "basic",
     name: "Basic",
-    price: "R$ 19",
+    price: "R$ 19,90",
     priceNote: "/mês",
     description: "Para começar sem complicação",
     highlighted: false,
@@ -31,14 +31,14 @@ const PLANS = [
     ],
   },
   {
-    id: "intermediate",
+    id: "growth",
     name: "Growth",
-    price: "R$ 29",
+    price: "R$ 29,90",
     priceNote: "/mês",
     description: "Para negócios em crescimento",
     highlighted: true,
     badge: "Mais popular",
-    trialNote: "14 dias grátis",
+    trialNote: "30 dias grátis",
     features: [
       { text: "Até 300 produtos", included: true },
       { text: "Até 7 membros", included: true },
@@ -54,7 +54,7 @@ const PLANS = [
   {
     id: "pro",
     name: "Pro",
-    price: "R$ 59",
+    price: "R$ 59,90",
     priceNote: "/mês",
     description: "Para operações completas",
     highlighted: false,
@@ -82,7 +82,7 @@ const BackIcon = () => (
 
 export default function PlanSelectionPage() {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<string | null>("intermediate");
+  const [selectedPlan, setSelectedPlan] = useState<string | null>("growth");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -93,13 +93,22 @@ export default function PlanSelectionPage() {
     setError("");
 
     try {
-      const { error: rpcErr } = await supabase.rpc("create_workspace", {
-        p_name: name,
-        p_plan: selectedPlan,
-      });
-      if (rpcErr) throw new Error(rpcErr.message);
+      const cpf = sessionStorage.getItem("pendingCpf") ?? "";
+      const body: Record<string, string> = { name, plan: selectedPlan, cpf };
 
+      const ws = await api.post<{ id: string }>("/workspaces", body);
       sessionStorage.removeItem("pendingWorkspaceName");
+
+      if (selectedPlan !== "growth") {
+        /* basic e pro não têm trial — redireciona direto para o checkout */
+        const checkout = await api.post<{ url: string }>("/billing/checkout", {
+          workspace_id: ws.id,
+          plan:         selectedPlan,
+        });
+        window.location.href = checkout.url;
+        return;
+      }
+
       router.push("/select-workspace");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar workspace");
@@ -193,7 +202,10 @@ export default function PlanSelectionPage() {
 
           {/* Reassurance line */}
           <p className="text-center text-xs text-slate-700 mt-5">
-            14 dias grátis no plano Growth&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade
+            {selectedPlan === "growth"
+              ? <>Trial grátis de 30 dias no Growth&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade</>
+              : <>Pagamento necessário para ativar&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade</>
+            }
           </p>
 
         </div>

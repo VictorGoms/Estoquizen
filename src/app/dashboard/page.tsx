@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { getWorkspace, setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { can } from "@/hooks/useRole";
 import { useStats } from "@/hooks/useStats";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 
 /* ─── Icons ─── */
 const DocumentIcon = () => (
@@ -65,10 +66,13 @@ const PlusIcon = () => (
   </svg>
 );
 
-function getGreeting(hour: number) {
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
+function getGreeting() {
+  const h = Number(
+    new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "numeric", hour12: false })
+  );
+  if (h >= 6 && h < 12) return "Bom dia";
+  if (h >= 12 && h < 18) return "Boa tarde";
+  return "Boa noite"; // 18–23 e 00–05
 }
 
 interface Stats { produtos: number; alertas: number; ultimaMov: number }
@@ -92,7 +96,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    setGreeting(getGreeting(new Date().getHours()));
+    setGreeting(getGreeting());
 
     async function load() {
       const ws = getWorkspace();
@@ -140,6 +144,8 @@ export default function DashboardPage() {
 
             {loading ? <PageLoader /> : (
               <>
+                {wsId && <TrialBanner workspaceId={wsId} />}
+
                 <div>
                   <p suppressHydrationWarning className="text-white font-display font-bold text-xl">{greeting || "Bem-vindo de volta"}{userName ? `, ${userName}` : ""} 👋</p>
                   <p className="text-slate-500 text-sm mt-1">Sua operação está rodando suavemente.</p>

@@ -7,9 +7,8 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
-import { supabase } from "@/lib/supabase";
-import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
+import { api } from "@/lib/api";
 
 /* ─── Icons ─── */
 const PlusIcon = () => (
@@ -52,13 +51,13 @@ type Role   = "owner" | "admin" | "member";
 type Status = "ativo" | "pendente" | "inativo";
 
 interface Member {
-  id:          string;  // workspace_members.id
-  userId:      string;  // auth user id (para DELETE /members/:userId/invite)
-  name:        string;
-  email:       string;
-  role:        Role;
-  status:      Status;
-  initials:    string;
+  id: string;        // workspace_members.id
+  userId: string;    // auth user id
+  name: string;
+  email: string;
+  role: Role;
+  status: Status;
+  initials: string;
   avatarColor: string;
   avatarUrl:   string | null;
 }
@@ -100,11 +99,6 @@ const ROLE_CONFIG: Record<Role, { label: string; bg: string; text: string }> = {
   member: { label: "Membro",        bg: "rgba(5,150,105,0.18)",  text: "#6EE7B7" },
 };
 
-const STATUS_CONFIG: Record<Status, { label: string; dot: string }> = {
-  ativo:    { label: "Ativo",    dot: "#10B981" },
-  pendente: { label: "Pendente", dot: "#F59E0B" },
-  inativo:  { label: "Inativo",  dot: "#475569" },
-};
 
 const ROLE_FILTERS = [
   { id: "todos",  label: "Todos" },
@@ -124,80 +118,82 @@ function getInitials(name: string): string {
 
 export default function MembrosPage() {
   const router = useRouter();
+  const [tab, setTab]               = useState<"ativos" | "pendentes">("ativos");
   const [search, setSearch]         = useState("");
   const [roleFilter, setRoleFilter] = useState("todos");
   const [members, setMembers]       = useState<Member[]>([]);
   const [wsName, setWsName]         = useState("");
-  const [userName, setUserName]     = useState("");
-  const [wsPlan, setWsPlan]         = useState<string>("");
+  const [wsId, setWsId]             = useState("");
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
-  const [canceling, setCanceling]   = useState<Set<string>>(new Set());
-
-  const ws = getWorkspace();
-  const canRevoke = ws?.role === "owner" || ws?.role === "admin";
+  const [revoking, setRevoking]     = useState<string | null>(null);
+  const [confirmId, setConfirmId]   = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const workspace = getWorkspace();
-      if (!workspace) { router.push("/select-workspace"); return; }
-      setWsName(workspace.name);
+      const ws = getWorkspace();
+      if (!ws) { router.push("/select-workspace"); return; }
+      setWsName(ws.name);
+      setWsId(ws.id);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .single();
-        setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
-      }
-
-      const { data: wsData } = await supabase
-        .from("workspaces")
-        .select("plan")
-        .eq("id", workspace.id)
-        .single();
-      if (wsData) setWsPlan(wsData.plan);
-
+      let memberRows: MemberRow[];
       try {
-        const rows = await api.get<ApiMemberRow[]>(`/members?workspace_id=${workspace.id}`);
-        setMembers(rows.map(rowToMember));
+        memberRows = await api.get<MemberRow[]>(`/members?workspace_id=${ws.id}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar membros");
+        setLoading(false);
+        return;
       }
+
+      setMembers(
+        (memberRows ?? []).map((row) => {
+          const prof = (row as unknown as { profiles?: { name?: string; email?: string; avatar_color?: string; avatar_url?: string } }).profiles;
+          const name = prof?.name ?? prof?.email?.split("@")[0] ?? "Convite pendente";
+          return {
+            id:          row.id,
+            userId:      row.user_id,
+            name,
+            email:       prof?.email ?? "",
+            role:        row.role as Role,
+            status:      row.status as Status,
+            initials:    getInitials(name),
+            avatarColor: prof?.avatar_color ?? "rgba(37,99,235,0.5)",
+            avatarUrl:   prof?.avatar_url ?? null,
+          };
+        })
+      );
       setLoading(false);
     }
     load();
   }, [router]);
 
-  async function handleCancelInvite(userId: string) {
-    const workspace = getWorkspace();
-    if (!workspace) return;
-    setCanceling((prev) => new Set(prev).add(userId));
+  async function handleRevoke(member: Member) {
+    setRevoking(member.userId);
     try {
-      await api.delete(`/members/${userId}/invite?workspace_id=${workspace.id}`);
-      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+      await api.delete(`/members/${member.userId}/invite?workspace_id=${wsId}`);
+      setMembers((prev) => prev.filter((m) => m.userId !== member.userId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao revogar convite");
+      alert(err instanceof Error ? err.message : "Erro ao revogar convite");
     } finally {
-      setCanceling((prev) => { const s = new Set(prev); s.delete(userId); return s; });
+      setRevoking(null);
+      setConfirmId(null);
     }
   }
 
-  const filtered = members.filter((m) => {
+  const ativos    = members.filter((m) => m.status === "ativo");
+  const pendentes = members.filter((m) => m.status === "pendente");
+
+  const filtered = (tab === "ativos" ? ativos : pendentes).filter((m) => {
     const matchSearch =
       m.name.toLowerCase().includes(search.toLowerCase()) ||
       m.email.toLowerCase().includes(search.toLowerCase());
-    const matchRole = roleFilter === "todos" || m.role === roleFilter;
+    const matchRole = tab === "pendentes" || roleFilter === "todos" || m.role === roleFilter;
     return matchSearch && matchRole;
   });
 
-  const totalAtivos    = members.filter((m) => m.status === "ativo").length;
+  const totalAtivos    = ativos.length;
   const totalAdmins    = members.filter((m) => m.role === "owner" || m.role === "admin").length;
-  const totalPendentes = members.filter((m) => m.status === "pendente").length;
-  const membersUsed    = members.filter((m) => m.status === "ativo" || m.status === "pendente").length;
-  const memberLimit    = wsPlan ? (MEMBER_LIMITS[wsPlan] ?? 12) : null;
+  const totalPendentes = pendentes.length;
 
   return (
     <div className="min-h-screen bg-navy-900 relative overflow-hidden">
@@ -211,8 +207,8 @@ export default function MembrosPage() {
         }}
       />
 
-      <DashboardSidebar workspaceName={wsName} userName={userName} />
-      <DashboardTopBar  workspaceName={wsName} userName={userName} />
+      <DashboardSidebar workspaceName={wsName} />
+      <DashboardTopBar  workspaceName={wsName} />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -248,6 +244,43 @@ export default function MembrosPage() {
 
                 {/* ── LEFT: list ── */}
                 <div className="lg:col-span-2 flex flex-col gap-5">
+
+                  {/* Tabs */}
+                  <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "rgba(30,41,59,0.7)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    {([
+                      { id: "ativos",    label: "Ativos",    count: totalAtivos },
+                      { id: "pendentes", label: "Pendentes", count: totalPendentes },
+                    ] as const).map((t) => {
+                      const active = tab === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => { setTab(t.id); setSearch(""); setRoleFilter("todos"); }}
+                          className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer"
+                          style={{
+                            background: active ? "rgba(37,99,235,0.25)" : "transparent",
+                            color: active ? "#93C5FD" : "#64748B",
+                            border: active ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
+                          }}
+                        >
+                          {t.label}
+                          {t.count > 0 && (
+                            <span
+                              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                              style={{
+                                background: active ? "rgba(37,99,235,0.4)" : "rgba(255,255,255,0.08)",
+                                color: active ? "#93C5FD" : "#64748B",
+                              }}
+                            >
+                              {t.count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <div className="flex flex-col sm:flex-row gap-3">
                     <div className="relative flex-1">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
@@ -267,63 +300,51 @@ export default function MembrosPage() {
                         onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
                       />
                     </div>
-                    <div className="flex gap-2 overflow-x-auto scrollbar-none">
-                      {ROLE_FILTERS.map((f) => {
-                        const active = roleFilter === f.id;
-                        return (
-                          <button
-                            key={f.id}
-                            type="button"
-                            onClick={() => setRoleFilter(f.id)}
-                            className="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200"
-                            style={{
-                              background: active ? "rgba(37,99,235,0.2)" : "rgba(30,41,59,0.7)",
-                              border: active ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                              color: active ? "#93C5FD" : "#64748B",
-                            }}
-                          >
-                            {f.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {tab === "ativos" && (
+                      <div className="flex gap-2 overflow-x-auto scrollbar-none">
+                        {ROLE_FILTERS.map((f) => {
+                          const active = roleFilter === f.id;
+                          return (
+                            <button
+                              key={f.id}
+                              type="button"
+                              onClick={() => setRoleFilter(f.id)}
+                              className="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200"
+                              style={{
+                                background: active ? "rgba(37,99,235,0.2)" : "rgba(30,41,59,0.7)",
+                                border: active ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                                color: active ? "#93C5FD" : "#64748B",
+                              }}
+                            >
+                              {f.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {filtered.length > 0 ? (
                     <div className="flex flex-col gap-2">
                       {filtered.map((member) => {
-                        const roleCfg    = ROLE_CONFIG[member.role];
-                        const st         = STATUS_CONFIG[member.status];
-                        const isPending  = member.status === "pendente";
-                        const isCanceling = canceling.has(member.userId);
+                        const role = ROLE_CONFIG[member.role];
+                        const isPending = member.status === "pendente";
                         return (
                           <div
                             key={member.id}
-                            className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 ${!isPending ? "cursor-pointer hover:-translate-y-0.5" : ""}`}
+                            className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200"
                             style={{
                               background: "rgba(22,32,52,0.8)",
-                              border: "1px solid rgba(255,255,255,0.08)",
-                            }}
-                            onClick={() => !isPending && router.push(`/membros/${member.id}`)}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = "rgba(59,130,246,0.3)";
-                              e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.3)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                              e.currentTarget.style.boxShadow = "none";
+                              border: `1px solid ${isPending ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.08)"}`,
                             }}
                           >
-                            {member.avatarUrl && !isPending ? (
-                              <img
-                                src={member.avatarUrl}
-                                alt={member.name}
-                                className="flex-shrink-0 w-10 h-10 rounded-xl object-cover"
-                              />
+                            {/* Avatar */}
+                            {member.avatarUrl ? (
+                              <img src={member.avatarUrl} alt={member.name} className="flex-shrink-0 w-10 h-10 rounded-xl object-cover" />
                             ) : (
                               <div
-                                className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
-                                style={{ background: isPending ? "rgba(245,158,11,0.15)" : member.avatarColor, color: "white" }}
+                                className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+                                style={{ background: isPending ? "rgba(245,158,11,0.2)" : member.avatarColor }}
                               >
                                 {isPending ? (
                                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#F59E0B" strokeWidth={1.8}>
@@ -333,52 +354,67 @@ export default function MembrosPage() {
                               </div>
                             )}
 
-                            <div className="flex-1 min-w-0">
+                            {/* Info — clicável apenas em ativos */}
+                            <div
+                              className={`flex-1 min-w-0 ${!isPending ? "cursor-pointer group" : ""}`}
+                              onClick={() => !isPending && router.push(`/membros/${member.id}`)}
+                            >
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-sm font-semibold truncate ${isPending ? "text-slate-400" : "text-white group-hover:text-brand-300 transition-colors duration-200"}`}>
-                                  {isPending ? (member.email || "Convite pendente") : member.name}
+                                <span className={`text-sm font-semibold truncate ${!isPending ? "text-white group-hover:text-brand-300 transition-colors" : "text-slate-300"}`}>
+                                  {member.name}
                                 </span>
-                                <span
-                                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                                  style={{ background: st.dot }}
-                                  title={st.label}
-                                />
                               </div>
                               <p className="text-xs truncate mt-0.5" style={{ color: isPending ? "#F59E0B" : "#475569" }}>
                                 {isPending ? "Aguardando aceite" : member.email}
                               </p>
                             </div>
 
-                            <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                              <span
-                                className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                                style={{ background: roleCfg.bg, color: roleCfg.text }}
-                              >
-                                {roleCfg.label}
-                              </span>
-                              {isPending && canRevoke && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); handleCancelInvite(member.userId); }}
-                                  disabled={isCanceling}
-                                  className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-all duration-200 disabled:opacity-50"
-                                  style={{ background: "rgba(239,68,68,0.1)", color: "#F87171", border: "1px solid rgba(239,68,68,0.2)" }}
-                                >
-                                  <XCircleIcon />
-                                  {isCanceling ? "…" : "Revogar"}
-                                </button>
-                              )}
-                            </div>
-
+                            {/* Role badge */}
                             <span
-                              className="sm:hidden flex-shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                              style={{ background: roleCfg.bg, color: roleCfg.text }}
+                              className="hidden sm:inline-flex flex-shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
+                              style={{ background: role.bg, color: role.text }}
                             >
                               {roleCfg.label}
                             </span>
 
-                            {!isPending && (
-                              <span className="text-slate-700 group-hover:text-brand-400 transition-colors duration-200 hidden sm:block">
+                            {/* Revogar (só pendentes) ou seta (ativos) */}
+                            {isPending ? (
+                              confirmId === member.userId ? (
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <span className="text-xs text-slate-500">Confirmar?</span>
+                                  <button
+                                    type="button"
+                                    disabled={revoking === member.userId}
+                                    onClick={() => handleRevoke(member)}
+                                    className="text-[11px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer transition-all duration-200"
+                                    style={{ background: "rgba(239,68,68,0.15)", color: "#FCA5A5", border: "1px solid rgba(239,68,68,0.3)" }}
+                                  >
+                                    {revoking === member.userId ? "…" : "Sim"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmId(null)}
+                                    className="text-[11px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer transition-all duration-200"
+                                    style={{ background: "rgba(30,41,59,0.7)", color: "#64748B", border: "1px solid rgba(255,255,255,0.08)" }}
+                                  >
+                                    Não
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmId(member.userId)}
+                                  className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105"
+                                  style={{ background: "rgba(239,68,68,0.1)", color: "#FCA5A5", border: "1px solid rgba(239,68,68,0.25)" }}
+                                >
+                                  Revogar
+                                </button>
+                              )
+                            ) : (
+                              <span
+                                className="text-slate-700 hidden sm:block cursor-pointer"
+                                onClick={() => router.push(`/membros/${member.id}`)}
+                              >
                                 <ChevronRightIcon />
                               </span>
                             )}
@@ -395,8 +431,12 @@ export default function MembrosPage() {
                         <UsersIcon />
                       </div>
                       <div className="text-center">
-                        <p className="text-white font-medium text-sm">Nenhum membro encontrado</p>
-                        <p className="text-slate-600 text-xs mt-1">Tente outro termo ou filtro</p>
+                        <p className="text-white font-medium text-sm">
+                          {tab === "pendentes" ? "Nenhum convite pendente" : "Nenhum membro encontrado"}
+                        </p>
+                        <p className="text-slate-600 text-xs mt-1">
+                          {tab === "pendentes" ? "Todos os convites foram aceitos ou revogados" : "Tente outro termo ou filtro"}
+                        </p>
                       </div>
                       {(search || roleFilter !== "todos") && (
                         <button

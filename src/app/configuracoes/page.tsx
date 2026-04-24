@@ -31,12 +31,12 @@ const ExternalIcon = () => (
 );
 
 /* ─── Plan config ─── */
-type Plan = "basic" | "intermediate" | "pro";
+type Plan = "basic" | "growth" | "pro";
 
 const PLAN_CONFIG: Record<Plan, { label: string; limit: string; color: string; bg: string; border: string }> = {
-  basic:        { label: "Basic",        limit: "até 100 produtos",    color: "#94A3B8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.2)" },
-  intermediate: { label: "Intermediate", limit: "até 500 produtos",    color: "#93C5FD", bg: "rgba(37,99,235,0.12)",   border: "rgba(59,130,246,0.25)"  },
-  pro:          { label: "Pro",          limit: "produtos ilimitados",  color: "#FCD34D", bg: "rgba(217,119,6,0.12)",   border: "rgba(245,158,11,0.25)"  },
+  basic:  { label: "Basic",  limit: "até 50 produtos",    color: "#94A3B8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.2)" },
+  growth: { label: "Growth", limit: "até 300 produtos",   color: "#93C5FD", bg: "rgba(37,99,235,0.12)",   border: "rgba(59,130,246,0.25)" },
+  pro:    { label: "Pro",    limit: "até 2000 produtos",  color: "#FCD34D", bg: "rgba(217,119,6,0.12)",   border: "rgba(245,158,11,0.25)" },
 };
 
 interface Workspace {
@@ -65,6 +65,16 @@ export default function ConfiguracoesPage() {
   const [saved, setSaved]       = useState(false);
   const [error, setError]       = useState("");
 
+  const [subscription, setSubscription] = useState<{
+    status: string;
+    trial_ends_at: string | null;
+    current_period_end: string | null;
+    stripe_customer_id: string | null;
+    cancel_at_period_end: boolean;
+  } | null>(null);
+  const [upgradingTo, setUpgradingTo]   = useState<Plan | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
   const [cancelStep, setCancelStep]     = useState<CancelStep>("idle");
   const [deleteInput, setDeleteInput]   = useState("");
   const [cancelling, setCancelling]     = useState(false);
@@ -81,9 +91,12 @@ export default function ConfiguracoesPage() {
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
       }
 
-      const [wsResult, countResult] = await Promise.all([
+      const [wsResult, countResult, subResult] = await Promise.all([
         supabase.from("workspaces").select("id, name, description, plan").eq("id", ws.id).single(),
         supabase.from("products").select("*", { count: "exact", head: true }).eq("workspace_id", ws.id),
+        api.get<{ status: string; trial_ends_at: string | null; current_period_end: string | null; stripe_customer_id: string | null; cancel_at_period_end: boolean } | null>(
+          `/billing/subscription?workspace_id=${ws.id}`
+        ).catch(() => null),
       ]);
 
       if (wsResult.data) {
@@ -94,10 +107,43 @@ export default function ConfiguracoesPage() {
         setEditDesc(w.description ?? "");
       }
       setProductCount(countResult.count ?? 0);
+      if (subResult) setSubscription(subResult);
       setLoading(false);
     }
     load();
   }, [router]);
+
+  async function handleUpgrade(plan: Plan) {
+    if (!workspace) return;
+    setUpgradingTo(plan);
+    try {
+      const { url } = await api.post<{ url: string }>("/billing/checkout", {
+        workspace_id: workspace.id,
+        plan,
+      });
+      window.location.href = url;
+    } catch {
+      setUpgradingTo(null);
+    }
+  }
+
+  async function handlePortal() {
+    if (!workspace) return;
+    setPortalLoading(true);
+    try {
+      const { url } = await api.post<{ url: string }>("/billing/portal", {
+        workspace_id: workspace.id,
+      });
+      window.location.href = url;
+    } catch {
+      setPortalLoading(false);
+    }
+  }
+
+  function formatDate(iso: string | null | undefined) {
+    if (!iso) return null;
+    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -147,8 +193,8 @@ export default function ConfiguracoesPage() {
   );
 
   const plan = PLAN_CONFIG[workspace?.plan ?? "basic"];
-  const limit = workspace?.plan === "pro" ? -1 : workspace?.plan === "intermediate" ? 500 : 100;
-  const usagePct = limit === -1 ? 0 : Math.min(100, Math.round((productCount / limit) * 100));
+  const limit = workspace?.plan === "pro" ? 2000 : workspace?.plan === "growth" ? 300 : 50;
+  const usagePct = Math.min(100, Math.round((productCount / limit) * 100));
   const usageColor = usagePct >= 90 ? "#FCA5A5" : usagePct >= 70 ? "#FCD34D" : "#6EE7B7";
 
   if (!can(wsRole, "canAccessConfiguracoes")) return <AccessDenied />;
@@ -194,10 +240,13 @@ export default function ConfiguracoesPage() {
                     <span className="text-xs text-slate-500">{plan.limit}</span>
                   </div>
                   {workspace?.plan !== "pro" && (
-                    <button type="button" onClick={() => router.push("/plan-selection")}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5 flex items-center gap-1.5"
+                    <button
+                      type="button"
+                      onClick={() => handleUpgrade(workspace?.plan === "basic" ? "growth" : "pro")}
+                      disabled={!!upgradingTo}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5 flex items-center gap-1.5 disabled:opacity-60"
                       style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", color: "#fff", boxShadow: "0 2px 8px rgba(37,99,235,0.4)" }}>
-                      Fazer upgrade
+                      {upgradingTo ? "Aguarde…" : workspace?.plan === "basic" ? "Upgrade para Growth" : "Upgrade para Pro"}
                     </button>
                   )}
                 </div>
@@ -208,44 +257,51 @@ export default function ConfiguracoesPage() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-slate-500">Produtos cadastrados</span>
                   <span className="text-xs font-semibold" style={{ color: usageColor }}>
-                    {productCount}{limit !== -1 ? ` / ${limit}` : " (ilimitado)"}
+                    {productCount} / {limit}
                   </span>
                 </div>
-                {limit !== -1 && (
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                    <div className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${usagePct}%`, background: usageColor }} />
-                  </div>
-                )}
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${usagePct}%`, background: usageColor }} />
+                </div>
               </div>
 
               {/* Billing actions */}
               <div className="px-5 py-4 flex flex-col gap-2.5">
                 <p className="text-[10px] text-slate-600 uppercase tracking-widest font-medium mb-1">Faturamento</p>
 
-                {/* Renovação — placeholder até integrar Stripe */}
+                {/* Renovação / trial */}
                 <div className="flex items-center justify-between py-2"
                   style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span className="text-xs text-slate-500">Próxima renovação</span>
-                  <span className="text-xs font-medium text-slate-400">— (Stripe pendente)</span>
+                  <span className="text-xs text-slate-500">
+                    {subscription?.status === "trialing" ? "Trial expira em" : "Próxima renovação"}
+                  </span>
+                  <span className="text-xs font-medium text-slate-300">
+                    {subscription?.status === "trialing"
+                      ? (formatDate(subscription.trial_ends_at) ?? "—")
+                      : subscription?.status === "active"
+                      ? (formatDate(subscription.current_period_end) ?? "—")
+                      : "—"}
+                  </span>
                 </div>
 
-                {/* Portal Stripe — placeholder */}
-                <button type="button"
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium cursor-not-allowed opacity-50"
-                  style={{ background: "rgba(30,41,59,0.6)", border: "1px solid rgba(255,255,255,0.07)", color: "#64748B" }}
-                  disabled title="Disponível após integração com Stripe">
-                  <span>Gerenciar assinatura</span>
-                  <ExternalIcon />
-                </button>
-
-                <button type="button"
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium cursor-not-allowed opacity-50"
-                  style={{ background: "rgba(30,41,59,0.6)", border: "1px solid rgba(255,255,255,0.07)", color: "#64748B" }}
-                  disabled title="Disponível após integração com Stripe">
-                  <span>Histórico de faturas</span>
-                  <ExternalIcon />
-                </button>
+                {/* Portal Stripe — só disponível com stripe_customer_id */}
+                {subscription?.stripe_customer_id ? (
+                  <button type="button" onClick={handlePortal} disabled={portalLoading}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium cursor-pointer transition-colors duration-200 disabled:opacity-60"
+                    style={{ background: "rgba(30,41,59,0.6)", border: "1px solid rgba(255,255,255,0.1)", color: "#94A3B8" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}>
+                    <span>{portalLoading ? "Abrindo…" : "Gerenciar assinatura"}</span>
+                    <ExternalIcon />
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-between px-4 py-3 rounded-xl opacity-40"
+                    style={{ background: "rgba(30,41,59,0.6)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                    <span className="text-xs text-slate-500">Gerenciar assinatura</span>
+                    <span className="text-[10px] text-slate-600">Disponível após 1º pagamento</span>
+                  </div>
+                )}
               </div>
             </div>
 

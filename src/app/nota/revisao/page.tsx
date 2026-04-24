@@ -184,7 +184,7 @@ export default function NotaRevisaoPage() {
         }}
       />
 
-      <DashboardSidebar workspaceName="" userName="" />
+      <DashboardSidebar />
       <NotaTopBar title="Revisão da compra" backHref="/nota" />
 
       {/* Content — extra bottom padding for sticky bar */}

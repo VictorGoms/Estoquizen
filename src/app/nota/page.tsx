@@ -198,8 +198,8 @@ export default function NotaPage() {
       <div aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
         style={{ width: "800px", height: "450px", background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.11) 0%, transparent 70%)" }} />
 
-      <DashboardSidebar workspaceName="" userName="" />
-      <DashboardTopBar  workspaceName="" userName="" />
+      <DashboardSidebar />
+      <DashboardTopBar />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">

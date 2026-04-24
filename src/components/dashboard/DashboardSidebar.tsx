@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Logo from "@/components/Logo";
-import { type WorkspaceRole } from "@/hooks/useWorkspace";
+import { getWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { useRole } from "@/hooks/useRole";
-import { supabase } from "@/lib/supabase";
+import { useUser } from "@/lib/userContext";
 
 interface DashboardSidebarProps {
-  workspaceName: string;
+  workspaceName?: string;
   userInitials?: string;
   userName?: string;
   userEmail?: string;
@@ -95,24 +95,29 @@ const NAV_SECTIONS = [
   },
 ];
 
+function getInitials(name: string): string {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
+}
+
 export default function DashboardSidebar({
-  workspaceName,
-  userInitials = "V",
-  userName = "Victor",
-  userEmail = "victor@email.com",
+  workspaceName: workspaceNameProp = "",
+  userInitials,
+  userName: userNameProp,
+  userEmail: userEmailProp,
 }: DashboardSidebarProps) {
+  const { userName: ctxName, userEmail: ctxEmail, avatarUrl } = useUser();
+  const userName    = userNameProp  ?? ctxName;
+  const userEmail   = userEmailProp ?? ctxEmail;
+  const [wsName, setWsName] = useState(workspaceNameProp || "");
+  const initials = userInitials ?? getInitials(userName || "?");
   const router = useRouter();
   const pathname = usePathname();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const role: WorkspaceRole = useRole() ?? "member";
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
-        .then(({ data }) => { if (data?.avatar_url) setAvatarUrl(data.avatar_url); });
-    });
-  }, []);
+    if (!workspaceNameProp) setWsName(getWorkspace()?.name || "");
+    else setWsName(workspaceNameProp);
+  }, [workspaceNameProp]);
 
   return (
     <aside
@@ -161,10 +166,10 @@ export default function DashboardSidebar({
             className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
             style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)" }}
           >
-            {workspaceName.charAt(0).toUpperCase()}
+            {wsName.charAt(0).toUpperCase()}
           </div>
           <span className="text-xs font-semibold text-slate-300 truncate flex-1 text-left">
-            {workspaceName}
+            {wsName}
           </span>
           <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-slate-600 flex-shrink-0 group-hover:text-slate-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
@@ -257,7 +262,7 @@ export default function DashboardSidebar({
           >
             {avatarUrl
               ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-              : userInitials}
+              : initials}
           </div>
           <div className="flex-1 min-w-0 text-left">
             <p className="text-xs font-semibold text-slate-300 truncate leading-none">{userName}</p>

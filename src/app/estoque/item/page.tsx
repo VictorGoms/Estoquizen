@@ -38,13 +38,6 @@ const CheckIcon = () => (
   </svg>
 );
 
-/* ─── Mock data ─── */
-const MOCK_WORKSPACE = {
-  name: "Loja Central",
-  initials: "V",
-  userName: "Victor",
-  email: "victor@email.com",
-};
 
 const ITEM = {
   id: "p1",
@@ -124,18 +117,8 @@ export default function ItemDetailPage() {
         }}
       />
 
-      <DashboardSidebar
-        workspaceName={MOCK_WORKSPACE.name}
-        userInitials={MOCK_WORKSPACE.initials}
-        userName={MOCK_WORKSPACE.userName}
-        userEmail={MOCK_WORKSPACE.email}
-      />
-
-      <DashboardTopBar
-        workspaceName={MOCK_WORKSPACE.name}
-        userInitials={MOCK_WORKSPACE.initials}
-        userName={MOCK_WORKSPACE.userName}
-      />
+      <DashboardSidebar />
+      <DashboardTopBar />
 
       <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
