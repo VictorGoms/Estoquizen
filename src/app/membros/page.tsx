@@ -8,6 +8,7 @@ import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
 
 /* ─── Icons ─── */
@@ -41,26 +42,56 @@ const LockIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
   </svg>
 );
+const XCircleIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
 
 type Role   = "owner" | "admin" | "member";
 type Status = "ativo" | "pendente" | "inativo";
 
 interface Member {
-  id: string;        // workspace_members.id
-  name: string;
-  email: string;
-  role: Role;
-  status: Status;
-  initials: string;
+  id:          string;  // workspace_members.id
+  userId:      string;  // auth user id (para DELETE /members/:userId/invite)
+  name:        string;
+  email:       string;
+  role:        Role;
+  status:      Status;
+  initials:    string;
   avatarColor: string;
-  avatarUrl: string | null;
+  avatarUrl:   string | null;
 }
 
-interface MemberRow {
-  id: string;
-  role: string;
-  status: string;
-  user_id: string;
+interface ApiMemberRow {
+  id:       string;
+  user_id:  string;
+  role:     string;
+  status:   string;
+  profiles: {
+    name?:         string | null;
+    email?:        string | null;
+    avatar_color?: string | null;
+    avatar_url?:   string | null;
+  } | null;
+}
+
+const MEMBER_LIMITS: Record<string, number> = { basic: 3, growth: 7, pro: 12 };
+
+function rowToMember(row: ApiMemberRow): Member {
+  const prof = row.profiles;
+  const name = prof?.name ?? prof?.email?.split("@")[0] ?? "Convite pendente";
+  return {
+    id:          row.id,
+    userId:      row.user_id,
+    name,
+    email:       prof?.email ?? "",
+    role:        row.role as Role,
+    status:      row.status as Status,
+    initials:    getInitials(name),
+    avatarColor: prof?.avatar_color ?? "rgba(37,99,235,0.5)",
+    avatarUrl:   prof?.avatar_url ?? null,
+  };
 }
 
 const ROLE_CONFIG: Record<Role, { label: string; bg: string; text: string }> = {
@@ -98,14 +129,19 @@ export default function MembrosPage() {
   const [members, setMembers]       = useState<Member[]>([]);
   const [wsName, setWsName]         = useState("");
   const [userName, setUserName]     = useState("");
+  const [wsPlan, setWsPlan]         = useState<string>("");
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
+  const [canceling, setCanceling]   = useState<Set<string>>(new Set());
+
+  const ws = getWorkspace();
+  const canRevoke = ws?.role === "owner" || ws?.role === "admin";
 
   useEffect(() => {
     async function load() {
-      const ws = getWorkspace();
-      if (!ws) { router.push("/select-workspace"); return; }
-      setWsName(ws.name);
+      const workspace = getWorkspace();
+      if (!workspace) { router.push("/select-workspace"); return; }
+      setWsName(workspace.name);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -117,41 +153,37 @@ export default function MembrosPage() {
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
       }
 
-      const { data: memberRows, error: err } = await supabase
-        .from("workspace_members")
-        .select("id, role, status, user_id")
-        .eq("workspace_id", ws.id)
-        .order("created_at");
+      const { data: wsData } = await supabase
+        .from("workspaces")
+        .select("plan")
+        .eq("id", workspace.id)
+        .single();
+      if (wsData) setWsPlan(wsData.plan);
 
-      if (err) { setError(err.message); setLoading(false); return; }
-
-      const userIds = (memberRows ?? []).map((r: { user_id: string }) => r.user_id);
-      const { data: profileRows } = userIds.length > 0
-        ? await supabase.from("profiles").select("id, name, email, avatar_color, avatar_url").in("id", userIds)
-        : { data: [] };
-
-      const profileMap = new Map((profileRows ?? []).map((p: { id: string; name: string | null; email: string | null; avatar_color: string | null; avatar_url: string | null }) => [p.id, p]));
-
-      setMembers(
-        ((memberRows ?? []) as unknown as MemberRow[]).map((row) => {
-          const prof = profileMap.get(row.user_id);
-          const name = prof?.name ?? prof?.email?.split("@")[0] ?? "Sem nome";
-          return {
-            id:          row.id,
-            name,
-            email:       prof?.email ?? "",
-            role:        row.role as Role,
-            status:      row.status as Status,
-            initials:    getInitials(name),
-            avatarColor: prof?.avatar_color ?? "rgba(37,99,235,0.5)",
-            avatarUrl:   prof?.avatar_url ?? null,
-          };
-        })
-      );
+      try {
+        const rows = await api.get<ApiMemberRow[]>(`/members?workspace_id=${workspace.id}`);
+        setMembers(rows.map(rowToMember));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erro ao carregar membros");
+      }
       setLoading(false);
     }
     load();
   }, [router]);
+
+  async function handleCancelInvite(userId: string) {
+    const workspace = getWorkspace();
+    if (!workspace) return;
+    setCanceling((prev) => new Set(prev).add(userId));
+    try {
+      await api.delete(`/members/${userId}/invite?workspace_id=${workspace.id}`);
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao revogar convite");
+    } finally {
+      setCanceling((prev) => { const s = new Set(prev); s.delete(userId); return s; });
+    }
+  }
 
   const filtered = members.filter((m) => {
     const matchSearch =
@@ -164,6 +196,8 @@ export default function MembrosPage() {
   const totalAtivos    = members.filter((m) => m.status === "ativo").length;
   const totalAdmins    = members.filter((m) => m.role === "owner" || m.role === "admin").length;
   const totalPendentes = members.filter((m) => m.status === "pendente").length;
+  const membersUsed    = members.filter((m) => m.status === "ativo" || m.status === "pendente").length;
+  const memberLimit    = wsPlan ? (MEMBER_LIMITS[wsPlan] ?? 12) : null;
 
   return (
     <div className="min-h-screen bg-navy-900 relative overflow-hidden">
@@ -258,18 +292,19 @@ export default function MembrosPage() {
                   {filtered.length > 0 ? (
                     <div className="flex flex-col gap-2">
                       {filtered.map((member) => {
-                        const role = ROLE_CONFIG[member.role];
-                        const st   = STATUS_CONFIG[member.status];
+                        const roleCfg    = ROLE_CONFIG[member.role];
+                        const st         = STATUS_CONFIG[member.status];
+                        const isPending  = member.status === "pendente";
+                        const isCanceling = canceling.has(member.userId);
                         return (
-                          <button
+                          <div
                             key={member.id}
-                            type="button"
-                            onClick={() => router.push(`/membros/${member.id}`)}
-                            className="group w-full text-left flex items-center gap-4 px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                            className={`group w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 ${!isPending ? "cursor-pointer hover:-translate-y-0.5" : ""}`}
                             style={{
                               background: "rgba(22,32,52,0.8)",
                               border: "1px solid rgba(255,255,255,0.08)",
                             }}
+                            onClick={() => !isPending && router.push(`/membros/${member.id}`)}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.borderColor = "rgba(59,130,246,0.3)";
                               e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.3)";
@@ -279,7 +314,7 @@ export default function MembrosPage() {
                               e.currentTarget.style.boxShadow = "none";
                             }}
                           >
-                            {member.avatarUrl ? (
+                            {member.avatarUrl && !isPending ? (
                               <img
                                 src={member.avatarUrl}
                                 alt={member.name}
@@ -287,17 +322,21 @@ export default function MembrosPage() {
                               />
                             ) : (
                               <div
-                                className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-                                style={{ background: member.avatarColor }}
+                                className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
+                                style={{ background: isPending ? "rgba(245,158,11,0.15)" : member.avatarColor, color: "white" }}
                               >
-                                {member.initials}
+                                {isPending ? (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="#F59E0B" strokeWidth={1.8}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                  </svg>
+                                ) : member.initials}
                               </div>
                             )}
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-semibold text-white group-hover:text-brand-300 transition-colors duration-200 truncate">
-                                  {member.name}
+                                <span className={`text-sm font-semibold truncate ${isPending ? "text-slate-400" : "text-white group-hover:text-brand-300 transition-colors duration-200"}`}>
+                                  {isPending ? (member.email || "Convite pendente") : member.name}
                                 </span>
                                 <span
                                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -305,29 +344,45 @@ export default function MembrosPage() {
                                   title={st.label}
                                 />
                               </div>
-                              <p className="text-xs text-slate-600 truncate mt-0.5">{member.email}</p>
+                              <p className="text-xs truncate mt-0.5" style={{ color: isPending ? "#F59E0B" : "#475569" }}>
+                                {isPending ? "Aguardando aceite" : member.email}
+                              </p>
                             </div>
 
-                            <div className="hidden sm:flex flex-col items-end gap-1.5 flex-shrink-0">
+                            <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
                               <span
                                 className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                                style={{ background: role.bg, color: role.text }}
+                                style={{ background: roleCfg.bg, color: roleCfg.text }}
                               >
-                                {role.label}
+                                {roleCfg.label}
                               </span>
+                              {isPending && canRevoke && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleCancelInvite(member.userId); }}
+                                  disabled={isCanceling}
+                                  className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-all duration-200 disabled:opacity-50"
+                                  style={{ background: "rgba(239,68,68,0.1)", color: "#F87171", border: "1px solid rgba(239,68,68,0.2)" }}
+                                >
+                                  <XCircleIcon />
+                                  {isCanceling ? "…" : "Revogar"}
+                                </button>
+                              )}
                             </div>
 
                             <span
                               className="sm:hidden flex-shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                              style={{ background: role.bg, color: role.text }}
+                              style={{ background: roleCfg.bg, color: roleCfg.text }}
                             >
-                              {role.label}
+                              {roleCfg.label}
                             </span>
 
-                            <span className="text-slate-700 group-hover:text-brand-400 transition-colors duration-200 hidden sm:block">
-                              <ChevronRightIcon />
-                            </span>
-                          </button>
+                            {!isPending && (
+                              <span className="text-slate-700 group-hover:text-brand-400 transition-colors duration-200 hidden sm:block">
+                                <ChevronRightIcon />
+                              </span>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
@@ -389,6 +444,43 @@ export default function MembrosPage() {
                       ))}
                     </div>
                   </div>
+
+                  {memberLimit !== null && (
+                    <div
+                      className="rounded-2xl p-5 flex flex-col gap-3"
+                      style={{
+                        background: "rgba(22,32,52,0.8)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <h3 className="text-sm font-semibold text-white">Limite do plano</h3>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-slate-500">Ativos + pendentes</span>
+                          <span
+                            className="text-xs font-bold font-display"
+                            style={{ color: membersUsed >= memberLimit ? "#F87171" : "#F1F5F9" }}
+                          >
+                            {membersUsed}/{memberLimit}
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(100, memberLimit > 0 ? (membersUsed / memberLimit) * 100 : 0)}%`,
+                              background: membersUsed >= memberLimit ? "#F87171" : "#2563EB",
+                            }}
+                          />
+                        </div>
+                        {membersUsed >= memberLimit && (
+                          <p className="text-[11px] text-rose-400 mt-2 leading-relaxed">
+                            Limite atingido — faça upgrade para adicionar mais membros.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div
                     className="rounded-2xl p-5 flex flex-col gap-4"
