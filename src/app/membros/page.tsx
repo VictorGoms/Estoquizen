@@ -7,8 +7,9 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
-import { getWorkspace } from "@/hooks/useWorkspace";
+import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
+import { getWorkspace } from "@/hooks/useWorkspace";
 
 /* ─── Icons ─── */
 const PlusIcon = () => (
@@ -124,6 +125,7 @@ export default function MembrosPage() {
   const [members, setMembers]       = useState<Member[]>([]);
   const [wsName, setWsName]         = useState("");
   const [wsId, setWsId]             = useState("");
+  const [wsPlan, setWsPlan]         = useState<string>("");
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
   const [revoking, setRevoking]     = useState<string | null>(null);
@@ -136,9 +138,16 @@ export default function MembrosPage() {
       setWsName(ws.name);
       setWsId(ws.id);
 
-      let memberRows: MemberRow[];
+      const { data: wsData } = await supabase
+        .from("workspaces")
+        .select("plan")
+        .eq("id", ws.id)
+        .single();
+      if (wsData) setWsPlan(wsData.plan);
+
+      let memberRows: ApiMemberRow[];
       try {
-        memberRows = await api.get<MemberRow[]>(`/members?workspace_id=${ws.id}`);
+        memberRows = await api.get<ApiMemberRow[]>(`/members?workspace_id=${ws.id}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erro ao carregar membros");
         setLoading(false);
@@ -194,6 +203,8 @@ export default function MembrosPage() {
   const totalAtivos    = ativos.length;
   const totalAdmins    = members.filter((m) => m.role === "owner" || m.role === "admin").length;
   const totalPendentes = pendentes.length;
+  const membersUsed    = totalAtivos + totalPendentes;
+  const memberLimit    = wsPlan ? (MEMBER_LIMITS[wsPlan] ?? 12) : null;
 
   return (
     <div className="min-h-screen bg-navy-900 relative overflow-hidden">
@@ -374,7 +385,7 @@ export default function MembrosPage() {
                               className="hidden sm:inline-flex flex-shrink-0 text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
                               style={{ background: role.bg, color: role.text }}
                             >
-                              {roleCfg.label}
+                              {role.label}
                             </span>
 
                             {/* Revogar (só pendentes) ou seta (ativos) */}
