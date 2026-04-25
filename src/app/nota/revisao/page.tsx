@@ -14,6 +14,8 @@ import { getWorkspace } from "@/hooks/useWorkspace";
 interface NfceRawItem {
   nome:           string;
   quantidade:     number;
+  unidade:        string;
+  codigo:         string;
   valor_unitario: number;
 }
 
@@ -30,9 +32,9 @@ function loadProductsFromSession(): ReviewProduct[] {
     /* NFC-e vem com campos do scraper */
     return (items as NfceRawItem[]).map((item, i) => ({
       id:        `nf-${i}`,
-      code:      "",
+      code:      item.codigo ?? "",
       name:      item.nome,
-      unit:      "un",
+      unit:      item.unidade ?? "un",
       qty:       item.quantidade,
       unitPrice: item.valor_unitario,
       status:    "novo" as const,
@@ -128,31 +130,38 @@ export default function NotaRevisaoPage() {
       const existing = await api.get<{ id: string; code: string; name: string; source_name?: string }[]>(
         `/products?workspace_id=${ws.id}`
       );
-      const byCode       = Object.fromEntries(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
-      const bySourceName = Object.fromEntries(existing.map((p) => [normName(p.source_name ?? p.name), p.id]));
+      const byCode       = new Map(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
+      const bySourceName = new Map(existing.map((p) => [normName(p.source_name ?? p.name), p.id]));
+      /* Rastreia produtos criados nesta sessão para evitar duplicatas se a mesma NF-e
+         tiver dois itens com nomes iguais (ou o usuário escanear a mesma NF-e duas vezes) */
+      const createdNow   = new Map<string, string>(); // normName → id
 
-      await Promise.all(
-        products.map((p) => {
-          const existingId = (p.code ? byCode[p.code] : undefined) ?? bySourceName[normName(p.name)];
-          if (!existingId) {
-            /* Cria produto novo com a quantidade da NF-e */
-            return api.post("/products", {
-              workspace_id: ws.id,
-              name:     p.name,
-              code:     p.code,
-              unit:     p.unit,
-              price:    p.unitPrice,
-              qty:      p.qty,
-            });
-          } else {
-            /* Registra entrada no produto existente */
-            return api.post(`/products/${existingId}/adjust`, {
-              delta:  p.qty,
-              reason: `NFC-e ${chave ? chave.slice(0, 8) + "…" : ""}`.trim(),
-            });
-          }
-        })
-      );
+      const reason = chave ? `NFC-e ${chave.slice(0, 8)}…` : "NFC-e";
+
+      /* Processamento sequencial — evita race condition em nomes repetidos */
+      for (const p of products) {
+        const key        = normName(p.name);
+        const existingId = (p.code ? byCode.get(p.code) : undefined)
+          ?? bySourceName.get(key)
+          ?? createdNow.get(key);
+
+        if (!existingId) {
+          /* Cria produto novo com a quantidade da NF-e */
+          const created = await api.post<{ id: string }>("/products", {
+            workspace_id: ws.id,
+            name:  p.name,
+            code:  p.code || undefined,
+            unit:  p.unit,
+            price: p.unitPrice,
+            qty:   p.qty,
+          });
+          createdNow.set(key, created.id);
+        } else {
+          /* Registra entrada e tenta atualizar o preço para o último valor da NF-e */
+          await api.post(`/products/${existingId}/adjust`, { delta: p.qty, reason });
+          api.patch(`/products/${existingId}`, { price: p.unitPrice }).catch(() => {});
+        }
+      }
 
       setConfirmed(true);
       setTimeout(() => router.push("/estoque"), 1800);
