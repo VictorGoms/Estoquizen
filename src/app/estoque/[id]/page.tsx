@@ -1,67 +1,29 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
+import BarcodeScanner from "@/components/ui/BarcodeScanner";
+import FormField, { inputClass } from "@/components/ui/FormField";
+import StatusChip from "@/components/estoque/StatusChip";
+import MovementForm from "@/components/estoque/MovementForm";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
-import BarcodeScanner from "@/components/ui/BarcodeScanner";
+import { mutateProducts } from "@/hooks/useProducts";
+import { mutateStats } from "@/hooks/useStats";
+import { mutateMovements, mutateProductMovements, useProductMovements } from "@/hooks/useMovements";
 import { sanitizeText, sanitizeCode } from "@/lib/sanitize";
 import { api } from "@/lib/api";
-
-/* ─── Icons ─── */
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-  </svg>
-);
-const BoxIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-14 h-14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-  </svg>
-);
-const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-  </svg>
-);
-const MinusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
-  </svg>
-);
-const PencilIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
-const CameraIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-  </svg>
-);
-const SpinnerIcon = () => (
-  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-  </svg>
-);
-const TrashIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
+import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo } from "@/lib/stock";
+import {
+  ArrowLeftIcon, BoxIcon, CameraIcon, PencilIcon, TrashIcon, ScanIcon, InIcon, OutIcon, CheckIcon, Spinner,
+} from "@/components/ui/icons";
 
 interface Product {
   id: string;
@@ -71,6 +33,7 @@ interface Product {
   price: number;
   qty: number;
   min_qty: number;
+  max_qty: number | null;
   location: string | null;
   supplier: string | null;
   image_url:   string | null;
@@ -78,25 +41,24 @@ interface Product {
   created_at:  string;
 }
 
-type MovType = "entrada" | "saida";
-
-const CARD_COLOR = { from: "rgba(37,99,235,0.5)", to: "rgba(29,78,216,0.15)" };
-
 export default function ItemDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id     = typeof params.id === "string" ? params.id : "";
 
-  const wsRole = useRole();
+  const wsRole  = useRole();
   const canEdit = can(wsRole, "canEditEstoque");
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef  = useRef<HTMLInputElement>(null);
+  const cancelDelRef  = useRef<HTMLButtonElement>(null);
 
   const [product, setProduct]   = useState<Product | null>(null);
   const [wsName, setWsName]     = useState("");
   const [userName, setUserName] = useState("");
   const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState("");
+  const [loadError, setLoadError]     = useState("");
+  const [actionError, setActionError] = useState("");
+  const [now, setNow]           = useState(0);
 
   /* ── edit mode ── */
   const [editMode, setEditMode]         = useState(false);
@@ -118,14 +80,12 @@ export default function ItemDetailPage() {
   /* ── nota fiscal scanner ── */
   const [nfScanning, setNfScanning] = useState(false);
 
-  /* ── movement panel ── */
-  const [movType, setMovType]     = useState<MovType>("entrada");
-  const [movQty, setMovQty]       = useState("");
-  const [movReason, setMovReason] = useState("");
-  const [movSaving, setMovSaving] = useState(false);
-  const [movSaved, setMovSaved]   = useState(false);
+  /* ── movimentação ── */
+  const [movMsg, setMovMsg] = useState("");
+  const { movements: history, loading: historyLoading } = useProductMovements(product?.id);
 
   useEffect(() => {
+    setNow(Date.now());
     async function load() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
@@ -139,27 +99,40 @@ export default function ItemDetailPage() {
 
       const { data, error: err } = await supabase
         .from("products")
-        .select("id, name, code, unit, price, qty, min_qty, location, supplier, image_url, nota_fiscal, created_at")
+        .select("id, name, code, unit, price, qty, min_qty, max_qty, location, supplier, image_url, nota_fiscal, created_at")
         .eq("id", id)
         .eq("workspace_id", ws.id)
         .single();
 
       if (err || !data) {
-        setError(err?.message ?? "Produto não encontrado");
+        setLoadError(err?.message ?? "Produto não encontrado");
         setLoading(false);
         return;
       }
 
-      const p = { ...data, price: Number(data.price) } as Product;
+      const p = { ...data, price: Number(data.price), qty: Number(data.qty), min_qty: Number(data.min_qty ?? 0) } as Product;
       setProduct(p);
-      setEditName(p.name);
-      setEditPrice(String(p.price));
-      setEditLocation(p.location ?? "");
-      setEditMinQty(String(p.min_qty));
+      resetEditFields(p);
       setLoading(false);
     }
     load();
   }, [router, id]);
+
+  /* Modal de exclusão: foco no Cancelar e Esc fecha */
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+    cancelDelRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowDeleteConfirm(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showDeleteConfirm]);
+
+  function resetEditFields(p: Product) {
+    setEditName(p.name);
+    setEditPrice(String(p.price));
+    setEditLocation(p.location ?? "");
+    setEditMinQty(String(p.min_qty));
+  }
 
   async function handleDelete() {
     if (!product) return;
@@ -177,6 +150,7 @@ export default function ItemDetailPage() {
   async function handleSaveEdit() {
     if (!product) return;
     setSaving(true);
+    setActionError("");
     const newMinQty = parseInt(editMinQty, 10);
     const { error: err } = await supabase
       .from("products")
@@ -189,7 +163,7 @@ export default function ItemDetailPage() {
       .eq("id", product.id);
 
     setSaving(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setActionError(err.message); return; }
     setProduct((p) => p ? {
       ...p,
       name:     editName,
@@ -197,6 +171,8 @@ export default function ItemDetailPage() {
       location: editLocation || null,
       min_qty:  isNaN(newMinQty) ? p.min_qty : newMinQty,
     } : p);
+    const ws = getWorkspace();
+    if (ws) mutateProducts(ws.id);
     setSaved(true);
     setEditMode(false);
     setTimeout(() => setSaved(false), 2500);
@@ -225,6 +201,7 @@ export default function ItemDetailPage() {
     if (!file || !product) return;
 
     setImgUploading(true);
+    setActionError("");
     try {
       const compressed = await compressImage(file);
       const path = `${product.id}.jpg`;
@@ -234,7 +211,7 @@ export default function ItemDetailPage() {
         .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
 
       if (upErr) {
-        setError(
+        setActionError(
           upErr.message.toLowerCase().includes("not found") || upErr.message.toLowerCase().includes("bucket")
             ? "Bucket 'product-images' não encontrado. Crie-o em Supabase → Storage → New Bucket."
             : upErr.message
@@ -256,42 +233,18 @@ export default function ItemDetailPage() {
         .eq("id", product.id);
 
       if (updateErr && !updateErr.message.includes("image_url")) {
-        setError(updateErr.message);
+        setActionError(updateErr.message);
         return;
       }
 
       setProduct((p) => p ? { ...p, image_url: publicUrl } : p);
+      const ws = getWorkspace();
+      if (ws) mutateProducts(ws.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar imagem");
+      setActionError(err instanceof Error ? err.message : "Erro ao enviar imagem");
     } finally {
       setImgUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }
-
-  async function handleMovement() {
-    if (!product || !movQty) return;
-    const qty = parseInt(movQty, 10);
-    if (!qty || qty <= 0) return;
-
-    setMovSaving(true);
-    const delta = movType === "entrada" ? qty : -qty;
-
-    try {
-      const result = await api.post(`/products/${product.id}/adjust`, {
-        delta,
-        reason: sanitizeText(movReason, 300) || undefined,
-      }) as { qty: number };
-
-      setProduct((p) => p ? { ...p, qty: result.qty ?? product.qty + delta } : p);
-      setMovQty("");
-      setMovReason("");
-      setMovSaved(true);
-      setTimeout(() => setMovSaved(false), 2500);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao registrar movimentação");
-    } finally {
-      setMovSaving(false);
     }
   }
 
@@ -306,483 +259,337 @@ export default function ItemDetailPage() {
     if (!err) setProduct((p) => p ? { ...p, code: clean } : p);
   }
 
+  function handleMoved(newQty: number, delta: number) {
+    if (!product) return;
+    setProduct((p) => (p ? { ...p, qty: newQty } : p));
+    const ws = getWorkspace();
+    if (ws) {
+      mutateProducts(ws.id);
+      mutateStats(ws.id);
+      mutateMovements(ws.id);
+    }
+    mutateProductMovements(product.id);
+    setNow(Date.now());
+    setMovMsg(`${delta > 0 ? "Entrada" : "Saída"} registrada: ${delta > 0 ? "+" : "−"}${formatQty(Math.abs(delta))} ${product.unit}`);
+    setTimeout(() => setMovMsg(""), 2500);
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <PageLoader />
       </div>
     );
   }
 
-  if (error || !product) {
+  if (loadError || !product) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
-        <PageError message={error || "Produto não encontrado"} onRetry={() => router.push("/estoque")} />
+      <div className="min-h-screen bg-ink flex items-center justify-center">
+        <PageError message={loadError || "Produto não encontrado"} onRetry={() => router.push("/estoque")} />
       </div>
     );
   }
 
-  const status = product.qty === 0 ? "zerado" : product.qty <= product.min_qty ? "baixo" : "normal";
-  const STATUS_CFG = {
-    normal: { label: "Normal", bg: "rgba(5,150,105,0.15)",  text: "#6EE7B7", dot: "#10B981" },
-    baixo:  { label: "Baixo",  bg: "rgba(217,119,6,0.15)",  text: "#FCD34D", dot: "#D97706" },
-    zerado: { label: "Zerado", bg: "rgba(220,38,38,0.15)",  text: "#FCA5A5", dot: "#EF4444" },
-  };
-  const st = STATUS_CFG[status];
+  const status = deriveStatus(product.qty, product.min_qty);
+  const level  = stockLevel(product.qty, product.min_qty, product.max_qty);
 
-  const priceNum   = parseFloat(editPrice) || product.price;
-  const totalValue = (product.qty * priceNum).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  const unitFmt    = priceNum.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-  const METRICS = [
-    { label: "Quantidade atual",       value: `${product.qty} ${product.unit}`, sub: status === "baixo" ? `Mínimo: ${product.min_qty}` : undefined },
-    { label: "Preço unitário",         value: unitFmt },
-    { label: "Estoque mínimo",         value: `${product.min_qty} ${product.unit}` },
-    { label: "Cadastrado em",          value: new Date(product.created_at).toLocaleDateString("pt-BR") },
-    { label: "Valor total em estoque", value: totalValue, highlight: true, wide: true },
+  const info: Array<[string, string]> = [
+    ["Preço unitário", formatBRL(product.price)],
+    ["Localização",    product.location ?? "—"],
+    ["Fornecedor",     product.supplier ?? "—"],
+    ["Cadastrado em",  new Date(product.created_at).toLocaleDateString("pt-BR")],
   ];
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          width: "800px", height: "400px",
-          background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.10) 0%, transparent 70%)",
-        }}
-      />
-
+    <div className="min-h-screen bg-ink">
       <DashboardSidebar workspaceName={wsName} userName={userName} />
       <DashboardTopBar  workspaceName={wsName} userName={userName} />
 
       {/* Hidden file input for image upload */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageUpload}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
 
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5 lg:gap-6">
 
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => router.push("/estoque")}
-                className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-medium cursor-pointer transition-colors duration-200"
-              >
-                <ArrowLeftIcon />
-                Estoque
-              </button>
-              <span className="text-slate-700 text-xs">/</span>
-              <span className="text-slate-400 text-xs truncate">{product.name}</span>
-            </div>
+          <nav aria-label="Trilha" className="flex items-center gap-2.5 min-w-0 text-sm font-bold text-fg-muted">
+            <Link href="/estoque" className="flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-fg font-extrabold flex-shrink-0 hover:bg-surface-2 transition-colors">
+              <ArrowLeftIcon className="w-4 h-4" strokeWidth={2.4} /> Estoque
+            </Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page" className="truncate">{product.name}</span>
+          </nav>
 
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+          {/* Celular: uma coluna na ordem 1–6. Computador: conteúdo à esquerda, movimentação fixa à direita. */}
+          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-6">
+            <div className="contents lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
 
-              {/* ── LEFT: Image + actions ── */}
-              <div className="flex flex-col gap-5">
-
-                {/* Product image */}
-                <div
-                  className="w-full rounded-2xl overflow-hidden relative flex items-center justify-center group"
-                  style={{
-                    height: "300px",
-                    background: product.image_url
-                      ? "rgba(15,23,42,0.6)"
-                      : `radial-gradient(ellipse at 50% 60%, ${CARD_COLOR.from} 0%, ${CARD_COLOR.to} 60%, rgba(15,23,42,0.3) 100%)`,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
+              {/* 1 — Foto + identificação */}
+              <section className="order-1 lg:order-none bg-surface rounded-5xl p-4 lg:p-5 flex flex-col gap-5">
+                <div className="relative h-[220px] lg:h-[280px] rounded-4xl overflow-hidden bg-surface-2 flex items-center justify-center">
                   {product.image_url ? (
-                    /* Real image */
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
                   ) : (
-                    /* Placeholder */
-                    <>
-                      <div
-                        className="absolute inset-0 opacity-10"
-                        style={{
-                          backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-                          backgroundSize: "24px 24px",
-                        }}
-                      />
-                      <div
-                        className="relative z-10 w-24 h-24 rounded-3xl flex items-center justify-center text-white"
-                        style={{ background: "rgba(0,0,0,0.25)", backdropFilter: "blur(8px)" }}
-                      >
-                        <BoxIcon />
-                      </div>
-                    </>
+                    <span className="w-20 h-20 rounded-full bg-ink text-fg-muted flex items-center justify-center">
+                      <BoxIcon className="w-9 h-9" strokeWidth={1.6} />
+                    </span>
                   )}
-
-                  {/* Status badge */}
-                  <span
-                    className="absolute top-4 right-4 text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1.5"
-                    style={{ background: st.bg, color: st.text, backdropFilter: "blur(8px)" }}
-                  >
-                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: st.dot }} />
-                    {st.label}
-                  </span>
-
-                  {/* Upload overlay button */}
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={imgUploading}
-                    className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white cursor-pointer transition-all duration-200 opacity-0 group-hover:opacity-100 disabled:cursor-not-allowed"
-                    style={{
-                      background: "rgba(0,0,0,0.6)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                    }}
-                  >
-                    {imgUploading ? <SpinnerIcon /> : <CameraIcon />}
-                    {imgUploading ? "Enviando…" : product.image_url ? "Trocar imagem" : "Adicionar imagem"}
-                  </button>
-                </div>
-
-                {/* Upload button visible on mobile (no hover) */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={imgUploading}
-                  className="sm:hidden flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200 disabled:opacity-50"
-                  style={{
-                    background: "rgba(30,41,59,0.8)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "#64748B",
-                  }}
-                >
-                  {imgUploading ? <SpinnerIcon /> : <CameraIcon />}
-                  {imgUploading ? "Enviando…" : product.image_url ? "Trocar imagem" : "Adicionar imagem"}
-                </button>
-
-                {/* Action buttons */}
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMovType("entrada")}
-                    className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                    style={{
-                      background: movType === "entrada" ? "rgba(5,150,105,0.2)" : "rgba(5,150,105,0.12)",
-                      border: movType === "entrada" ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(16,185,129,0.2)",
-                    }}
-                  >
-                    <span style={{ color: "#6EE7B7" }}><PlusIcon /></span>
-                    <span className="text-[11px] font-medium" style={{ color: "#6EE7B7" }}>Entrada</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setMovType("saida")}
-                    className="flex flex-col items-center justify-center gap-1.5 py-4 rounded-2xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                    style={{
-                      background: movType === "saida" ? "rgba(220,38,38,0.18)" : "rgba(220,38,38,0.10)",
-                      border: movType === "saida" ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(239,68,68,0.2)",
-                    }}
-                  >
-                    <span style={{ color: "#FCA5A5" }}><MinusIcon /></span>
-                    <span className="text-[11px] font-medium" style={{ color: "#FCA5A5" }}>Saída</span>
-                  </button>
-                </div>
-
-                {/* Movement form */}
-                <div
-                  className="rounded-2xl p-4 flex flex-col gap-3"
-                  style={{
-                    background: "rgba(22,32,52,0.8)",
-                    border: movType === "entrada"
-                      ? "1px solid rgba(16,185,129,0.2)"
-                      : "1px solid rgba(239,68,68,0.2)",
-                  }}
-                >
-                  <p className="text-xs font-semibold" style={{ color: movType === "entrada" ? "#6EE7B7" : "#FCA5A5" }}>
-                    Registrar {movType === "entrada" ? "entrada" : "saída"}
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Quantidade</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={movQty}
-                        onChange={(e) => setMovQty(e.target.value)}
-                        placeholder="0"
-                        className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder-slate-700 outline-none"
-                        style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                        onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] text-slate-500 uppercase tracking-wide font-medium">Motivo (opcional)</label>
-                      <input
-                        type="text"
-                        value={movReason}
-                        onChange={(e) => setMovReason(e.target.value)}
-                        placeholder="Ex: NF-e 001"
-                        className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder-slate-700 outline-none"
-                        style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                        onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={!movQty || movSaving || (movType === "saida" && product.qty === 0)}
-                    onClick={handleMovement}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: movSaved
-                        ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
-                        : movType === "entrada"
-                        ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
-                        : "linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)",
-                    }}
-                  >
-                    {movSaving ? <SpinnerIcon /> : movSaved ? <CheckIcon /> : null}
-                    {movSaving ? "Salvando…" : movSaved ? "Registrado!" : "Confirmar"}
-                  </button>
-                </div>
-
-                {/* Edit button — só visível para owner/admin */}
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => editMode ? handleSaveEdit() : setEditMode(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-all duration-200"
-                    style={{
-                      background: editMode ? "rgba(37,99,235,0.18)" : "rgba(30,41,59,0.8)",
-                      border: editMode ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                      color: editMode ? "#93C5FD" : "#64748B",
-                    }}
-                  >
-                    {saving ? <SpinnerIcon /> : (saved || editMode) ? <CheckIcon /> : <PencilIcon />}
-                    {saving ? "Salvando…" : saved ? "Salvo!" : editMode ? "Salvar edições" : "Editar produto"}
-                  </button>
-                )}
-
-                {/* Delete button */}
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold cursor-pointer transition-all duration-200 hover:bg-rose-500/10"
-                    style={{ border: "1px solid rgba(239,68,68,0.2)", color: "#F87171" }}
-                  >
-                    <TrashIcon /> Remover produto
-                  </button>
-                )}
-
-                {/* Confirm delete modal */}
-                {showDeleteConfirm && (
-                  <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-                    style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-                    onClick={() => setShowDeleteConfirm(false)}
-                  >
-                    <div
-                      className="w-full max-w-sm rounded-2xl p-6 flex flex-col gap-4"
-                      style={{ background: "rgba(15,23,42,0.98)", border: "1px solid rgba(239,68,68,0.2)" }}
-                      onClick={(e) => e.stopPropagation()}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={imgUploading}
+                      className="absolute bottom-3.5 right-3.5 flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-ink/85 text-fg text-sm font-extrabold cursor-pointer hover:bg-ink transition-colors disabled:cursor-not-allowed"
                     >
-                      <div>
-                        <h3 className="font-display font-bold text-white text-base">Remover produto?</h3>
-                        <p className="text-slate-400 text-sm mt-1">
-                          <span className="text-white font-medium">{product?.name}</span> será removido permanentemente. Esta ação não pode ser desfeita.
-                        </p>
-                        {deleteError && (
-                          <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 mt-3">
-                            {deleteError}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setShowDeleteConfirm(false)}
-                          className="flex-1 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200"
-                          style={{ background: "rgba(30,41,59,0.8)", border: "1px solid rgba(255,255,255,0.08)", color: "#64748B" }}
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleDelete}
-                          disabled={deleting}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white cursor-pointer transition-all duration-200 disabled:opacity-50"
-                          style={{ background: "linear-gradient(135deg,#dc2626,#b91c1c)" }}
-                        >
-                          {deleting ? <SpinnerIcon /> : <TrashIcon />}
-                          {deleting ? "Removendo…" : "Sim, remover"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                      {imgUploading ? <Spinner className="w-[18px] h-[18px]" /> : <CameraIcon className="w-[18px] h-[18px]" />}
+                      {imgUploading ? "Enviando…" : product.image_url ? "Trocar foto" : "Adicionar foto"}
+                    </button>
+                  )}
+                </div>
+
+                {actionError && (
+                  <p role="alert" className="text-sm font-bold text-zero bg-zero/10 rounded-2xl px-4 py-3">{actionError}</p>
                 )}
-              </div>
 
-              {/* ── RIGHT: Info + metrics ── */}
-              <div className="flex flex-col gap-5">
-
-                {/* Product identity */}
-                <div
-                  className="rounded-2xl p-5 flex flex-col gap-4"
-                  style={{
-                    background: "rgba(22,32,52,0.8)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  {editMode ? (
-                    <div className="flex flex-col gap-3">
-                      <div>
-                        <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide block mb-1">Nome do produto</label>
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none transition-all duration-200"
-                          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(59,130,246,0.4)" }}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide block mb-1">Preço unitário (R$)</label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={editPrice}
-                            onChange={(e) => setEditPrice(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl text-sm text-white outline-none transition-all duration-200"
-                            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(59,130,246,0.4)" }}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide block mb-1">Estoque mínimo</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editMinQty}
-                            onChange={(e) => setEditMinQty(e.target.value)}
-                            placeholder="0"
-                            className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200"
-                            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(59,130,246,0.4)" }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide block mb-1">Localização</label>
-                        <input
-                          type="text"
-                          value={editLocation}
-                          onChange={(e) => setEditLocation(e.target.value)}
-                          placeholder="Ex: Prateleira A3"
-                          className="w-full px-3 py-2 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200"
-                          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(59,130,246,0.4)" }}
-                        />
-                      </div>
+                {editMode ? (
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); handleSaveEdit(); }}
+                    className="flex flex-col gap-4 px-1 lg:px-2 pb-1"
+                  >
+                    <h1 className="text-xl font-black">Editar produto</h1>
+                    <FormField label="Nome do produto" htmlFor="edit-nome" required>
+                      <input id="edit-nome" type="text" required autoComplete="off" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputClass} />
+                    </FormField>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField label="Preço unitário (R$)" htmlFor="edit-preco">
+                        <input id="edit-preco" type="number" step="0.01" min="0" inputMode="decimal" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className={inputClass} />
+                      </FormField>
+                      <FormField label="Estoque mínimo" htmlFor="edit-minimo">
+                        <input id="edit-minimo" type="number" min="0" inputMode="numeric" placeholder="0" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} className={inputClass} />
+                      </FormField>
+                    </div>
+                    <FormField label="Localização" htmlFor="edit-local">
+                      <input id="edit-local" type="text" autoComplete="off" placeholder="Ex.: Prateleira A3" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className={inputClass} />
+                    </FormField>
+                    <div className="flex gap-3">
                       <button
                         type="button"
-                        onClick={() => setEditMode(false)}
-                        className="text-xs text-slate-600 hover:text-slate-400 cursor-pointer transition-colors duration-200 text-center"
+                        onClick={() => { resetEditFields(product); setEditMode(false); }}
+                        className="flex-1 min-h-[48px] rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors"
                       >
                         Cancelar
                       </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div>
-                        <h2 className="font-display font-bold text-xl text-white leading-tight">{product.name}</h2>
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <span className="font-mono text-xs text-slate-600">{product.code}</span>
-                        </div>
-                      </div>
-                      <div
-                        className="flex items-center justify-between pt-4"
-                        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-                      >
-                        <div>
-                          <p className="text-[11px] text-slate-600 uppercase tracking-wide font-medium">Fornecedor</p>
-                          <p className="text-sm text-slate-300 mt-0.5">{product.supplier ?? "—"}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[11px] text-slate-600 uppercase tracking-wide font-medium">Localização</p>
-                          <p className="text-sm text-slate-300 mt-0.5">{product.location ?? "—"}</p>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Metrics grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {METRICS.map((m) => (
-                    <div
-                      key={m.label}
-                      className={`rounded-2xl p-4 flex flex-col gap-1 ${m.wide ? "col-span-2" : ""}`}
-                      style={{
-                        background: m.highlight ? "rgba(37,99,235,0.12)" : "rgba(22,32,52,0.8)",
-                        border: m.highlight ? "1px solid rgba(59,130,246,0.25)" : "1px solid rgba(255,255,255,0.07)",
-                      }}
-                    >
-                      <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">{m.label}</p>
-                      <p
-                        className="font-display font-bold text-lg leading-tight"
-                        style={{ color: m.highlight ? "#93C5FD" : "#F1F5F9" }}
-                      >
-                        {m.value}
-                      </p>
-                      {m.sub && <p className="text-[10px]" style={{ color: "#FCD34D" }}>{m.sub}</p>}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Nota fiscal */}
-                <div
-                  className="rounded-2xl p-4 flex flex-col gap-2"
-                  style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Nota Fiscal</p>
-                    {canEdit && (
                       <button
-                        type="button"
-                        onClick={() => setNfScanning(true)}
-                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium cursor-pointer transition-all duration-200"
-                        style={{ background: "rgba(37,99,235,0.15)", color: "#93C5FD", border: "1px solid rgba(59,130,246,0.2)" }}
+                        type="submit"
+                        disabled={saving}
+                        className="flex-1 min-h-[48px] rounded-full bg-accent text-ink text-[15px] font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H3m2 8H3m18-8h-2M7 20H4m17-8h2M7 4H4m17 0h-2M7 20v-4m10-8v3m0 0h.01m-9.01 0h-.01M12 8V4m0 16v-4" />
-                        </svg>
-                        Escanear NF
+                        {saving ? <><Spinner className="w-[18px] h-[18px]" /> Salvando…</> : "Salvar alterações"}
                       </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex flex-col gap-4 px-1 lg:px-2">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 min-w-0 flex flex-col gap-1">
+                        <h1 className="text-[26px] lg:text-[32px] font-black tracking-tight leading-tight">{product.name}</h1>
+                        <span className="text-sm font-bold text-fg-muted tracking-wide break-all">{product.code || "Sem código de barras"}</span>
+                      </div>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => setEditMode(true)}
+                          aria-label="Editar produto"
+                          className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10 transition-colors"
+                        >
+                          <PencilIcon className="w-[18px] h-[18px]" />
+                        </button>
+                      )}
+                    </div>
+                    {saved && (
+                      <p role="status" className="flex items-center gap-2 text-sm font-extrabold text-ok">
+                        <CheckIcon className="w-4 h-4" strokeWidth={2.8} /> Alterações salvas
+                      </p>
                     )}
+                    <dl className="flex flex-col">
+                      {info.map(([label, value]) => (
+                        <div key={label} className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08] text-sm">
+                          <dt className="font-bold text-fg-muted">{label}</dt>
+                          <dd className="font-extrabold text-right">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   </div>
-                  {product.nota_fiscal ? (
-                    <p className="font-mono text-sm text-slate-300 break-all">{product.nota_fiscal}</p>
-                  ) : (
-                    <p className="text-sm text-slate-600 italic">Nenhuma nota fiscal vinculada</p>
+                )}
+              </section>
+
+              {/* 2 — Quantidade (card de destaque) */}
+              <section aria-label="Quantidade em estoque" className="order-2 lg:order-none bg-accent text-ink rounded-5xl p-[22px] lg:p-7 flex flex-col gap-4">
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-sm lg:text-base font-extrabold text-ink/80">Em estoque</p>
+                    <p className="text-[44px] lg:text-[56px] font-black tracking-[-0.035em] leading-none">
+                      {formatQty(product.qty)} <span className="text-xl lg:text-2xl tracking-tight">{product.unit}</span>
+                    </p>
+                  </div>
+                  <StatusChip status={status} onLight />
+                </div>
+                <div aria-hidden="true" className="relative h-2.5 rounded-full bg-ink/15">
+                  {level.fill > 0 && <div className="h-full rounded-full bg-ink" style={{ width: `${Math.max(level.fill * 100, 4)}%` }} />}
+                  {level.minMark > 0 && (
+                    <span className="absolute -top-1 w-[3px] h-[18px] rounded bg-ink/60" style={{ left: `calc(${level.minMark * 100}% - 1.5px)` }} />
                   )}
                 </div>
+                <div className="border-t-2 border-dashed border-ink/20" />
+                <dl className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="order-2 text-[13px] lg:text-sm font-extrabold text-ink/75">Mínimo</dt>
+                    <dd className="order-1 text-xl lg:text-2xl font-black">{formatQty(product.min_qty)} <span className="text-sm">{product.unit}</span></dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="order-2 text-[13px] lg:text-sm font-extrabold text-ink/75">Máximo</dt>
+                    <dd className="order-1 text-xl lg:text-2xl font-black">{product.max_qty ? <>{formatQty(product.max_qty)} <span className="text-sm">{product.unit}</span></> : "—"}</dd>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="order-2 text-[13px] lg:text-sm font-extrabold text-ink/75">Valor em estoque</dt>
+                    <dd className="order-1 text-xl lg:text-2xl font-black">{formatBRL(product.qty * product.price)}</dd>
+                  </div>
+                </dl>
+              </section>
 
-              </div>
+              {/* 4 — Histórico */}
+              <section className="order-4 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-1.5">
+                <div className="flex flex-col gap-0.5 pb-2">
+                  <h2 className="text-lg lg:text-xl font-black">Histórico</h2>
+                  <p className="text-sm font-bold text-fg-muted">Últimas movimentações deste produto</p>
+                </div>
+                {historyLoading ? (
+                  <div className="flex flex-col gap-2">
+                    {[0, 1, 2].map((i) => <div key={i} className="h-14 rounded-2xl bg-surface-2 animate-pulse" />)}
+                  </div>
+                ) : history.length === 0 ? (
+                  <p className="py-3 text-sm font-bold text-fg-muted">Nenhuma movimentação registrada ainda.</p>
+                ) : (
+                  <ul className="flex flex-col">
+                    {history.map((m) => {
+                      const isIn = m.delta > 0;
+                      return (
+                        <li key={m.id} className="flex items-center gap-3.5 py-3 px-1 border-t-2 border-dashed border-white/[0.08]">
+                          <span className={`w-[42px] h-[42px] rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? "bg-accent/20 text-accent" : "bg-inverse/10 text-inverse"}`}>
+                            {isIn ? <InIcon className="w-5 h-5" strokeWidth={2.2} /> : <OutIcon className="w-5 h-5" strokeWidth={2.2} />}
+                          </span>
+                          <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                            <span className="text-[15px] font-extrabold truncate">{m.reason || (isIn ? "Entrada" : "Saída")}</span>
+                            <span className="text-[13px] font-bold text-fg-muted">
+                              {new Date(m.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                              {now ? ` · ${timeAgo(m.created_at, now)}` : ""}
+                            </span>
+                          </span>
+                          <span className={`text-[15px] lg:text-base font-black flex-shrink-0 ${isIn ? "text-accent" : ""}`}>
+                            {isIn ? "+" : "−"}{formatQty(Math.abs(m.delta))} {product.unit}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              {/* 5 — Nota fiscal */}
+              <section className="order-5 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-lg lg:text-xl font-black">Nota fiscal</h2>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => setNfScanning(true)}
+                      className="flex items-center gap-2 min-h-[40px] px-4 rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10 transition-colors"
+                    >
+                      <ScanIcon className="w-[18px] h-[18px]" /> Escanear NF
+                    </button>
+                  )}
+                </div>
+                {product.nota_fiscal ? (
+                  <p className="text-sm font-bold text-fg tracking-wide break-all">{product.nota_fiscal}</p>
+                ) : (
+                  <p className="text-sm font-bold text-fg-muted">Nenhuma nota fiscal vinculada.</p>
+                )}
+              </section>
             </div>
 
+            <div className="contents lg:flex lg:flex-col lg:gap-6 lg:sticky lg:top-20">
+              {/* 3 — Registrar movimentação */}
+              <section aria-labelledby="mov-title" className="order-3 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 id="mov-title" className="text-lg lg:text-xl font-black">Registrar movimentação</h2>
+                </div>
+                {canEdit ? (
+                  <MovementForm key={product.id} product={product} onDone={handleMoved} />
+                ) : (
+                  <p className="text-sm font-bold text-fg-muted bg-surface-2 rounded-2xl p-4">
+                    Seu papel neste workspace é de leitura: entradas e saídas ficam com donos e administradores.
+                  </p>
+                )}
+                <p aria-live="polite" className="text-sm font-extrabold text-ok empty:hidden">{movMsg}</p>
+              </section>
+
+              {/* 6 — Remover */}
+              {canEdit && (
+                <section className="order-6 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <h2 className="text-base font-black">Remover produto</h2>
+                    <p className="text-sm font-bold text-fg-muted">Apaga o produto e o histórico de movimentações.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setDeleteError(""); setShowDeleteConfirm(true); }}
+                    className="flex items-center justify-center gap-2 min-h-[48px] rounded-full bg-zero/10 text-zero text-[15px] font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
+                  >
+                    <TrashIcon className="w-[18px] h-[18px]" /> Remover produto
+                  </button>
+                </section>
+              )}
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Confirmação de exclusão */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+          <button type="button" aria-label="Fechar" tabIndex={-1} onClick={() => setShowDeleteConfirm(false)} className="absolute inset-0 bg-black/60 cursor-default" />
+          <div className="relative w-full max-w-sm bg-surface rounded-5xl p-6 flex flex-col gap-5 animate-fade-up">
+            <div className="flex flex-col gap-2">
+              <h3 id="delete-title" className="text-lg font-black">Remover produto?</h3>
+              <p className="text-sm font-bold text-fg-muted">
+                <span className="text-fg">{product.name}</span> será removido permanentemente. Esta ação não pode ser desfeita.
+              </p>
+              {deleteError && (
+                <p role="alert" className="text-sm font-bold text-zero bg-zero/10 rounded-2xl px-3.5 py-2.5 mt-1">{deleteError}</p>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                ref={cancelDelRef}
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 min-h-[48px] rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 min-h-[48px] rounded-full bg-zero text-ink text-[15px] font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
+              >
+                {deleting ? <Spinner className="w-[18px] h-[18px]" /> : <TrashIcon className="w-[18px] h-[18px]" />}
+                {deleting ? "Removendo…" : "Sim, remover"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Scanner overlay para nota fiscal */}
       {nfScanning && (

@@ -93,6 +93,15 @@ export const CheckIcon = (p: IconProps) => (
 export const XIcon = (p: IconProps) => (
   <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>
 );
+export const CameraIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M4 8a2 2 0 0 1 2-2h1.5l1.3-2h6.4l1.3 2H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z" /><circle cx="12" cy="12.5" r="3.5" /></Icon>
+);
+export const ImageIcon = (p: IconProps) => (
+  <Icon {...p}><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="9.5" r="1.8" /><path d="m21 15-4.5-4.5L8 19" /></Icon>
+);
+export const TrashIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" /><path d="M9 7V4h6v3" /></Icon>
+);
 /** Entrada no estoque */
 export const InIcon = (p: IconProps) => (
   <Icon {...p}><path d="M12 4v11" /><path d="m7 10 5 5 5-5" /><path d="M5 20h14" /></Icon>

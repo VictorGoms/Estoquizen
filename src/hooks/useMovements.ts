@@ -63,3 +63,33 @@ export function useMovements(workspaceId: string | undefined, days: number) {
 export function mutateMovements(workspaceId: string) {
   return mutate((key) => Array.isArray(key) && key[0] === "movements" && key[1] === workspaceId);
 }
+
+export type ProductMovement = Omit<Movement, "product">;
+
+/** Últimas movimentações de um produto (página de detalhe). */
+export function useProductMovements(productId: string | undefined, limit = 10) {
+  const { data, error, isLoading } = useSWR(
+    productId ? ["product-movements", productId, limit] : null,
+    async ([, id, n]: [string, string, number]): Promise<ProductMovement[]> => {
+      const { data: rows, error: err } = await supabase
+        .from("movements")
+        .select("id, delta, reason, created_at, created_by")
+        .eq("product_id", id)
+        .order("created_at", { ascending: false })
+        .limit(n);
+      if (err) throw new Error(err.message);
+      return (rows ?? []).map((m) => ({ ...m, delta: Number(m.delta) }));
+    },
+    { revalidateOnFocus: false }
+  );
+
+  return {
+    movements: data ?? [],
+    loading:   isLoading,
+    error:     error as Error | undefined,
+  };
+}
+
+export function mutateProductMovements(productId: string) {
+  return mutate((key) => Array.isArray(key) && key[0] === "product-movements" && key[1] === productId);
+}

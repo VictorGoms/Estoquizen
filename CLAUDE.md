@@ -47,7 +47,9 @@ permitindo que o celular (HTTPS) alcance o Fastify (HTTP) sem mixed-content erro
 - Toque: alvos ≥ 44px; foco global via `:focus-visible` (globals.css); `prefers-reduced-motion` respeitado
 - Ícones: `src/components/ui/icons.tsx` · Regras/formatação de estoque: `src/lib/stock.ts` (deriveStatus, formatQty, formatBRL, stockLevel, timeAgo)
 - Componentes de estoque: `src/components/estoque/` (StatusChip, ProductAvatar, LevelBar, MovementForm, MovementSheet, ProductPanel)
-- Páginas ainda no estilo antigo (só herdaram fonte, fundo e menus): auth, onboarding, landing, métricas, membros, configurações, perfil, notificações, nota, estoque/[id], estoque/novo
+- Formulários: `src/components/ui/FormField.tsx` (rótulo ligado ao campo via `htmlFor` + `inputClass` padrão)
+- Páginas já no tema: dashboard, estoque, estoque/[id] (com histórico), estoque/novo, scanner
+- Páginas ainda no estilo antigo (só herdaram fonte, fundo e menus): auth, onboarding, landing, métricas, membros, configurações, perfil, notificações, nota
 - Utilitários antigos ainda usados por essas páginas: `bg-hero-gradient`, `bg-card-gradient`, `bg-btn-gradient`, `shadow-card`, `shadow-btn`, `.btn-primary` (landing)
 
 ## Regras críticas de React
