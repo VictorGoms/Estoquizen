@@ -197,7 +197,7 @@ export default function NotaRevisaoPage() {
       <NotaTopBar title="Revisão da compra" backHref="/nota" />
 
       {/* Content — extra bottom padding for sticky bar */}
-      <main className="lg:pl-60 pt-14 pb-36 md:pb-32">
+      <main className="lg:pl-64 pt-14 pb-36 lg:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6 lg:py-8 flex flex-col gap-6 lg:gap-7">
 
@@ -379,7 +379,7 @@ export default function NotaRevisaoPage() {
       {/* ── SECTION 4: Sticky bottom action bar ── */}
       {!confirmed && (
         <div
-          className="fixed bottom-0 left-0 lg:left-60 right-0 z-40"
+          className="fixed bottom-0 left-0 lg:left-64 right-0 z-40"
           style={{
             background: "rgba(13,19,35,0.97)",
             backdropFilter: "blur(16px)",

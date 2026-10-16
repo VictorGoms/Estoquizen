@@ -221,7 +221,7 @@ export default function MembrosPage() {
       <DashboardSidebar workspaceName={wsName} />
       <DashboardTopBar  workspaceName={wsName} />
 
-      <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
+      <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6 lg:py-8">
 

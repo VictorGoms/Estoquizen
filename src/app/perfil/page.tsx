@@ -7,8 +7,11 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
+import { useRole, can } from "@/hooks/useRole";
 import { clearSession } from "@/lib/session";
+import { SlidersIcon, ArrowRightIcon } from "@/components/ui/icons";
 
 const ArrowLeftIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -61,6 +64,7 @@ function compressImage(file: File, maxPx = 800, quality = 0.8): Promise<Blob> {
 
 export default function PerfilPage() {
   const router = useRouter();
+  const role = useRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [wsName, setWsName]         = useState("");
   const [loading, setLoading]       = useState(true);
@@ -170,7 +174,7 @@ export default function PerfilPage() {
       <DashboardSidebar workspaceName={wsName} userName={profile?.name ?? ""} />
       <DashboardTopBar  workspaceName={wsName} userName={profile?.name ?? ""} />
 
-      <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
+      <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="py-6 lg:py-8 flex flex-col gap-6">
 
@@ -286,6 +290,23 @@ export default function PerfilPage() {
                 {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
               </button>
             </form>
+
+            {/* Configurações do workspace — no celular o atalho fica aqui (saiu do menu inferior) */}
+            {can(role, "canAccessConfiguracoes") && (
+              <Link
+                href="/configuracoes"
+                className="lg:hidden flex items-center gap-3 min-h-[56px] px-4 rounded-3xl bg-surface text-fg hover:bg-surface-2 transition-colors"
+              >
+                <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0">
+                  <SlidersIcon />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[15px] font-extrabold">Configurações do workspace</span>
+                  <span className="block text-[13px] font-bold text-fg-muted truncate">Plano, assinatura e dados de {wsName || "sua empresa"}</span>
+                </span>
+                <ArrowRightIcon className="w-[18px] h-[18px] text-fg-subtle" />
+              </Link>
+            )}
 
             {/* Logout */}
             <button type="button" onClick={handleLogout}

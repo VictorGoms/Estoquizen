@@ -1,97 +1,122 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { mutate } from "swr";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
-import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
+import BarcodeScanner from "@/components/ui/BarcodeScanner";
+import ProductAvatar from "@/components/estoque/ProductAvatar";
+import StatusChip from "@/components/estoque/StatusChip";
+import LevelBar from "@/components/estoque/LevelBar";
+import ProductPanel from "@/components/estoque/ProductPanel";
+import MovementSheet from "@/components/estoque/MovementSheet";
 import { supabase } from "@/lib/supabase";
+import { sanitizeCode } from "@/lib/sanitize";
 import { getWorkspace } from "@/hooks/useWorkspace";
-import { useProducts, mutateProducts } from "@/hooks/useProducts";
+import { useRole, can } from "@/hooks/useRole";
+import { useProducts, mutateProducts, type Product } from "@/hooks/useProducts";
+import { mutateStats } from "@/hooks/useStats";
+import { mutateMovements } from "@/hooks/useMovements";
+import { deriveStatus, formatBRL, formatQty, stockLevel, type StockStatus } from "@/lib/stock";
+import { PlusIcon, SearchIcon, ScanIcon, DocumentIcon, PlusMinusIcon, BoxIcon } from "@/components/ui/icons";
 
-/* ─── Icons ─── */
-const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-  </svg>
-);
-const SearchIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-const BoxIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-  </svg>
-);
-const ChevronRightIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-  </svg>
-);
+type Filter = "todos" | StockStatus;
+type Sort   = "nome" | "menor" | "valor";
 
-type StockStatus = "normal" | "baixo" | "zerado";
+interface Row extends Product { status: StockStatus }
 
-interface Product {
-  id: string;
-  name: string;
-  code: string;
-  qty: number;
-  min_qty: number;
-  unit: string;
-  price: number;
-  status: StockStatus;
-  image_url: string | null;
-}
-
-const STATUS_CONFIG: Record<StockStatus, { label: string; bg: string; text: string; dot: string }> = {
-  normal:  { label: "Normal",     bg: "rgba(5,150,105,0.15)",  text: "#6EE7B7", dot: "#10B981" },
-  baixo:   { label: "Baixo",      bg: "rgba(217,119,6,0.15)",  text: "#FCD34D", dot: "#D97706" },
-  zerado:  { label: "Zerado",     bg: "rgba(220,38,38,0.15)",  text: "#FCA5A5", dot: "#EF4444" },
-};
-
-const CARD_COLORS = [
-  { from: "rgba(37,99,235,0.4)",  to: "rgba(29,78,216,0.15)"  },
-  { from: "rgba(5,150,105,0.4)",  to: "rgba(4,120,87,0.15)"   },
-  { from: "rgba(124,58,237,0.4)", to: "rgba(109,40,217,0.15)" },
-  { from: "rgba(14,165,233,0.4)", to: "rgba(2,132,199,0.15)"  },
-  { from: "rgba(236,72,153,0.4)", to: "rgba(190,24,93,0.15)"  },
-  { from: "rgba(20,184,166,0.4)", to: "rgba(15,118,110,0.15)" },
-];
-
-const FILTERS = [
+const FILTERS: { id: Filter; label: string; dot?: string }[] = [
   { id: "todos",  label: "Todos" },
-  { id: "normal", label: "Normal" },
-  { id: "baixo",  label: "Baixo" },
-  { id: "zerado", label: "Zerado" },
+  { id: "normal", label: "Normal", dot: "bg-ok" },
+  { id: "baixo",  label: "Baixo",  dot: "bg-low" },
+  { id: "zerado", label: "Zerado", dot: "bg-zero" },
 ];
 
-function deriveStatus(qty: number, minQty: number): StockStatus {
-  if (qty === 0)        return "zerado";
-  if (qty <= minQty)    return "baixo";
-  return "normal";
+/* Mesmo breakpoint do menu lateral (lg): a partir daqui a lista ganha o painel de detalhe */
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
+function ProductCard({ p, selected, onOpen, onMove }: {
+  p: Row;
+  selected: boolean;
+  onOpen: () => void;
+  onMove?: () => void;
+}) {
+  const level = stockLevel(p.qty, p.min_qty ?? 0, p.max_qty);
+  const muted = selected ? "text-inverse-muted" : "text-fg-muted";
+
+  return (
+    <div
+      className={`relative h-full rounded-[26px] lg:rounded-4xl p-3.5 lg:p-4 flex flex-col gap-2.5 lg:gap-3 transition-colors duration-200 ${
+        selected ? "bg-inverse text-ink shadow-lift" : "bg-surface text-fg hover:bg-[#19243a]"
+      }`}
+    >
+      <div className="flex justify-between items-start gap-2">
+        <ProductAvatar name={p.name} imageUrl={p.image_url} tone={selected ? "ink" : "surface"} />
+        <StatusChip status={p.status} onLight={selected} size="sm" />
+      </div>
+
+      {/* O botão cobre o card inteiro (after:inset-0); o ± fica por cima com z-10 */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-current={selected ? "true" : undefined}
+        className="text-left flex flex-col gap-0.5 cursor-pointer after:content-[''] after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent"
+      >
+        <span className="text-[15px] lg:text-base font-extrabold leading-tight line-clamp-2">{p.name}</span>
+        <span className={`text-xs lg:text-[13px] font-bold truncate ${muted}`}>{p.location || p.code}</span>
+      </button>
+
+      <span className={`mt-auto border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/[0.12]"}`} />
+
+      <div className="flex justify-between items-center gap-2">
+        <span className="min-w-0 truncate">
+          <span className="text-[22px] lg:text-[26px] font-black">{formatQty(p.qty)}</span>{" "}
+          <span className={`text-[13px] lg:text-sm font-extrabold ${muted}`}>{p.unit}</span>
+        </span>
+        {onMove && (
+          <button
+            type="button"
+            onClick={onMove}
+            aria-label={`Registrar entrada ou saída: ${p.name}`}
+            className="lg:hidden relative z-10 w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10"
+          >
+            <PlusMinusIcon className="w-5 h-5" strokeWidth={2.2} />
+          </button>
+        )}
+        <span className={`hidden lg:inline text-[13px] font-extrabold ${muted}`}>{formatBRL(p.price)}</span>
+      </div>
+
+      <div className="hidden lg:block">
+        <LevelBar fill={level.fill} status={p.status} onLight={selected} />
+      </div>
+    </div>
+  );
 }
 
 export default function EstoquePage() {
-  const router = useRouter();
-  const [search, setSearch]             = useState("");
-  const [activeFilter, setActiveFilter] = useState("todos");
-  const [wsId, setWsId]                 = useState<string | undefined>(undefined);
-  const [wsName, setWsName]             = useState("");
-  const [userName, setUserName]         = useState("");
-  const [fabOpen, setFabOpen]           = useState(false);
+  const router  = useRouter();
+  const role    = useRole();
+  const canEdit = can(role, "canEditEstoque");
+  const canNota = can(role, "canAccessNota");
+
+  const [search, setSearch]         = useState("");
+  const [filter, setFilter]         = useState<Filter>("todos");
+  const [sort, setSort]             = useState<Sort>("nome");
+  const [wsId, setWsId]             = useState<string | undefined>(undefined);
+  const [wsName, setWsName]         = useState("");
+  const [userName, setUserName]     = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sheetId, setSheetId]       = useState<string | null>(null);
+  const [addOpen, setAddOpen]       = useState(false);
+  const [scanning, setScanning]     = useState(false);
+  const [toast, setToast]           = useState("");
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar para a tela ── */
-  const { products: raw, loading, error } = useProducts(wsId);
-
-  const products: Product[] = raw.map((p) => ({
-    ...p,
-    price:  Number(p.price),
-    status: deriveStatus(p.qty, p.min_qty ?? 0),
-  }));
+  const { products, loading, error } = useProducts(wsId);
 
   useEffect(() => {
     async function load() {
@@ -100,320 +125,313 @@ export default function EstoquePage() {
       setWsName(ws.name);
       setWsId(ws.id);
 
+      /* Busca vinda da barra superior (/estoque?busca=...) */
+      const q = new URLSearchParams(window.location.search).get("busca");
+      if (q) setSearch(q);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .single();
+        const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
       }
     }
     load();
   }, [router]);
 
-  const filtered = products.filter((p) => {
-    const matchSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = activeFilter === "todos" || p.status === activeFilter;
-    return matchSearch && matchFilter;
-  });
+  const rows: Row[] = useMemo(
+    () => products.map((p) => ({ ...p, status: deriveStatus(p.qty, p.min_qty ?? 0) })),
+    [products]
+  );
+
+  const counts = useMemo(() => {
+    const c = { todos: rows.length, normal: 0, baixo: 0, zerado: 0 };
+    for (const r of rows) c[r.status] += 1;
+    return c;
+  }, [rows]);
+
+  const totalValue = useMemo(() => rows.reduce((s, r) => s + r.qty * r.price, 0), [rows]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = rows.filter((r) =>
+      (filter === "todos" || r.status === filter) &&
+      (!q || r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q))
+    );
+    if (sort === "menor") list.sort((a, b) => a.qty / Math.max(a.min_qty ?? 0, 1) - b.qty / Math.max(b.min_qty ?? 0, 1));
+    if (sort === "valor") list.sort((a, b) => b.qty * b.price - a.qty * a.price);
+    return list;
+  }, [rows, search, filter, sort]);
+
+  /* No computador, abre o painel já com o primeiro produto da lista */
+  useEffect(() => {
+    if (selectedId || filtered.length === 0) return;
+    if (window.matchMedia(DESKTOP_QUERY).matches) setSelectedId(filtered[0].id);
+  }, [filtered, selectedId]);
+
+  const selected     = rows.find((r) => r.id === selectedId) ?? null;
+  const sheetProduct = rows.find((r) => r.id === sheetId) ?? null;
+
+  function openProduct(id: string) {
+    if (window.matchMedia(DESKTOP_QUERY).matches) setSelectedId(id);
+    else router.push(`/estoque/${id}`);
+  }
+
+  function showToast(message: string) {
+    setToast(message);
+    setTimeout(() => setToast(""), 2500);
+  }
+
+  /* Atualiza a quantidade na hora (otimista) e revalida produtos, stats e movimentações */
+  function applyMovement(product: Row, newQty: number, delta: number) {
+    if (!wsId) return;
+    mutate(
+      ["products", wsId],
+      (list?: Product[]) => list?.map((p) => (p.id === product.id ? { ...p, qty: newQty } : p)),
+      { revalidate: true }
+    );
+    mutateStats(wsId);
+    mutateMovements(wsId);
+    showToast(`${delta > 0 ? "Entrada" : "Saída"} registrada: ${delta > 0 ? "+" : "−"}${formatQty(Math.abs(delta))} ${product.unit}`);
+  }
+
+  const handleScanDetect = useCallback((code: string) => {
+    setSearch(sanitizeCode(code));
+    setFilter("todos");
+    setScanning(false);
+  }, []);
+  const handleScanClose = useCallback(() => setScanning(false), []);
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          width: "800px",
-          height: "400px",
-          background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.10) 0%, transparent 70%)",
-        }}
-      />
-
+    <div className="min-h-screen bg-ink">
       <DashboardSidebar workspaceName={wsName} userName={userName} />
       <DashboardTopBar  workspaceName={wsName} userName={userName} />
 
-      <main className="lg:pl-60 pt-14 pb-28 md:pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+      <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-4 lg:gap-6">
 
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="font-display font-bold text-xl text-white">Estoque</h1>
-                <p className="text-slate-500 text-sm mt-0.5">
-                  {loading ? "Carregando…" : `${products.length} produto${products.length !== 1 ? "s" : ""} cadastrado${products.length !== 1 ? "s" : ""}`}
-                </p>
-              </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => router.push("/estoque/novo")}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                  style={{
-                    background: "rgba(30,41,59,0.8)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: "#94A3B8",
-                  }}
-                >
-                  <PlusIcon />
-                  Manual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push("/nota")}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                  style={{
-                    background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-                    boxShadow: "0 4px 14px rgba(37,99,235,0.35)",
-                  }}
-                >
-                  <PlusIcon />
-                  Via NF-e
-                </button>
-              </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Estoque</h1>
+              <p className="text-sm lg:text-[15px] font-bold text-fg-muted">
+                {loading
+                  ? "Carregando…"
+                  : <>{rows.length} produto{rows.length !== 1 ? "s" : ""}<span className="hidden lg:inline"> · {formatBRL(totalValue)} em estoque</span></>}
+              </p>
             </div>
 
-            {loading ? (
-              <PageLoader />
-            ) : error ? (
-              <PageError message={error.message} onRetry={() => mutateProducts(wsId!)} />
-            ) : (
-              <>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
-                      <SearchIcon />
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Buscar produto ou código..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-600 outline-none transition-all duration-200"
-                      style={{
-                        background: "rgba(30,41,59,0.7)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                      }}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                      onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                    />
-                  </div>
+            <div className="hidden lg:flex items-center gap-3">
+              {canNota && (
+                <Link href="/nota" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
+                  <DocumentIcon /> Importar NFC-e
+                </Link>
+              )}
+              {canEdit && (
+                <Link href="/estoque/novo" className="flex items-center gap-2.5 min-h-[48px] px-[22px] rounded-full bg-accent text-ink text-[15px] font-black hover:brightness-110 transition-[filter]">
+                  <PlusIcon strokeWidth={2.6} /> Adicionar produto
+                </Link>
+              )}
+            </div>
 
-                  <div className="flex gap-2 overflow-x-auto scrollbar-none">
-                    {FILTERS.map((f) => {
-                      const active = activeFilter === f.id;
-                      return (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => setActiveFilter(f.id)}
-                          className="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-200"
-                          style={{
-                            background: active ? "rgba(37,99,235,0.2)" : "rgba(30,41,59,0.7)",
-                            border: active ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                            color: active ? "#93C5FD" : "#64748B",
-                          }}
-                        >
-                          {f.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+            {canEdit && (
+              <div className="lg:hidden relative">
+                <button
+                  type="button"
+                  aria-label="Adicionar produto"
+                  aria-expanded={addOpen}
+                  aria-controls="estoque-add-menu"
+                  onClick={() => setAddOpen((o) => !o)}
+                  onKeyDown={(e) => { if (e.key === "Escape") setAddOpen(false); }}
+                  className={`relative z-30 w-[52px] h-[52px] rounded-full bg-accent text-ink flex items-center justify-center cursor-pointer transition-transform duration-200 ${addOpen ? "rotate-45" : ""}`}
+                >
+                  <PlusIcon className="w-6 h-6" strokeWidth={2.6} />
+                </button>
+                {addOpen && (
+                  <>
+                    <button type="button" aria-label="Fechar menu" tabIndex={-1} onClick={() => setAddOpen(false)} className="fixed inset-0 z-20 cursor-default" />
+                    <div
+                      id="estoque-add-menu"
+                      onKeyDown={(e) => { if (e.key === "Escape") setAddOpen(false); }}
+                      className="absolute right-0 top-[60px] z-30 w-60 p-2 rounded-3xl bg-surface-2 shadow-lift flex flex-col"
+                    >
+                      <Link href="/estoque/novo" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                        <PlusIcon /> Adicionar manualmente
+                      </Link>
+                      {canNota && (
+                        <Link href="/nota" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                          <DocumentIcon /> Importar compra (NFC-e)
+                        </Link>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+              {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="h-[190px] rounded-4xl bg-surface animate-pulse" />)}
+            </div>
+          ) : error ? (
+            <PageError message={error.message} onRetry={() => mutateProducts(wsId!)} />
+          ) : (
+            <>
+              <div className="flex flex-col lg:flex-row lg:items-center gap-3.5 lg:gap-3">
+                <div className="flex-1 flex items-center gap-2.5 h-14 lg:h-[52px] pl-[18px] pr-1.5 rounded-full bg-surface focus-within:ring-2 focus-within:ring-accent">
+                  <SearchIcon className="w-5 h-5 text-fg-subtle flex-shrink-0" />
+                  <input
+                    type="search"
+                    name="busca"
+                    autoComplete="off"
+                    spellCheck={false}
+                    aria-label="Buscar produto ou código"
+                    placeholder="Buscar produto ou código"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="flex-1 min-w-0 h-full bg-transparent text-fg text-[15px] font-semibold outline-none placeholder:text-fg-subtle"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Buscar pelo código de barras"
+                    onClick={() => setScanning(true)}
+                    className="lg:hidden w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10"
+                  >
+                    <ScanIcon />
+                  </button>
                 </div>
 
-                {filtered.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filtered.map((product, i) => {
-                      const st = STATUS_CONFIG[product.status];
-                      const color = CARD_COLORS[i % CARD_COLORS.length];
-                      const total = (product.qty * product.price).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      });
-                      return (
-                        <button
-                          key={product.id}
-                          type="button"
-                          onClick={() => router.push(`/estoque/${product.id}`)}
-                          className="group text-left rounded-2xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 flex items-center gap-3 p-3"
-                          style={{
-                            background: "rgba(22,32,52,0.8)",
-                            border: "1px solid rgba(255,255,255,0.08)",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(59,130,246,0.3)";
-                            e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(59,130,246,0.15)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.25)";
-                          }}
-                        >
-                          <div
-                            className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden relative flex items-center justify-center"
-                            style={{
-                              background: product.image_url
-                                ? "rgba(15,23,42,0.6)"
-                                : `radial-gradient(ellipse at 50% 60%, ${color.from} 0%, ${color.to} 70%, rgba(15,23,42,0.4) 100%)`,
-                            }}
-                          >
-                            {product.image_url ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={product.image_url}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="relative z-10 flex items-center justify-center text-white" style={{ width: 28, height: 28 }}>
-                                <BoxIcon />
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-sm font-semibold text-white group-hover:text-brand-300 transition-colors duration-200 leading-snug truncate">
-                                {product.name}
-                              </p>
-                              <span
-                                className="flex-shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"
-                                style={{ background: st.bg, color: st.text }}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full" style={{ background: st.dot }} />
-                                {st.label}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-mono text-[10px] text-slate-600">{product.code}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-0.5">
-                              <div className="flex items-baseline gap-1">
-                                <span className="font-display font-bold text-base text-white">{product.qty}</span>
-                                <span className="text-[11px] text-slate-600">{product.unit}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-slate-600">{total}</span>
-                                <span className="text-slate-700 group-hover:text-brand-400 transition-colors duration-200">
-                                  <ChevronRightIcon />
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <div
-                      className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                      style={{ background: "rgba(30,41,59,0.7)", border: "1px solid rgba(255,255,255,0.07)" }}
-                    >
-                      <BoxIcon />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-white font-medium text-sm">Nenhum produto encontrado</p>
-                      <p className="text-slate-600 text-xs mt-1">
-                        {products.length === 0 ? "Importe uma compra para adicionar produtos" : "Tente outro termo ou filtro"}
-                      </p>
-                    </div>
-                    {(search || activeFilter !== "todos") && (
+                {/* Celular: abas com sublinhado */}
+                <div role="group" aria-label="Filtrar por situação" className="lg:hidden flex gap-5 px-1 overflow-x-auto scrollbar-none">
+                  {FILTERS.map((f) => {
+                    const active = filter === f.id;
+                    const n = f.id === "baixo" || f.id === "zerado" ? counts[f.id] : 0;
+                    return (
                       <button
+                        key={f.id}
                         type="button"
-                        onClick={() => { setSearch(""); setActiveFilter("todos"); }}
-                        className="text-xs text-brand-400 hover:text-brand-300 cursor-pointer transition-colors duration-200"
+                        aria-pressed={active}
+                        onClick={() => setFilter(f.id)}
+                        className={`min-h-[44px] flex flex-col items-center justify-center gap-1.5 text-base whitespace-nowrap cursor-pointer ${
+                          active ? "text-fg font-black" : "text-fg-muted font-extrabold"
+                        }`}
                       >
-                        Limpar filtros
+                        {f.label}{n > 0 ? ` · ${n}` : ""}
+                        <span className={`w-[18px] h-1 rounded-full ${active ? "bg-accent" : "bg-transparent"}`} />
                       </button>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+                    );
+                  })}
+                </div>
 
-          </div>
+                {/* Computador: pílulas com contagem */}
+                <div role="group" aria-label="Filtrar por situação" className="hidden lg:flex gap-1 p-[5px] rounded-full bg-surface">
+                  {FILTERS.map((f) => {
+                    const active = filter === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setFilter(f.id)}
+                        className={`flex items-center gap-2 min-h-[42px] pl-3.5 pr-2 rounded-full text-sm cursor-pointer transition-colors duration-200 ${
+                          active ? "bg-inverse text-ink font-black" : "text-fg-soft font-extrabold hover:text-fg"
+                        }`}
+                      >
+                        {f.dot && <span className={`w-2 h-2 rounded-full ${f.dot}`} />}
+                        {f.label}
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-full ${active ? "bg-ink text-fg" : "bg-surface-2 text-fg"}`}>
+                          {counts[f.id]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <select
+                  aria-label="Ordenar por"
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as Sort)}
+                  className="hidden lg:block h-[52px] px-[18px] rounded-full bg-surface text-fg text-sm font-extrabold cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <option value="nome">Nome (A–Z)</option>
+                  <option value="menor">Menor estoque</option>
+                  <option value="valor">Maior valor</option>
+                </select>
+              </div>
+
+              {filtered.length > 0 ? (
+                <div className="flex gap-5 items-start">
+                  <ul className="flex-1 min-w-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(auto-fill,minmax(196px,1fr))] gap-3 lg:gap-4">
+                    {filtered.map((p) => (
+                      <li key={p.id} className="min-w-0">
+                        <ProductCard
+                          p={p}
+                          selected={p.id === selectedId}
+                          onOpen={() => openProduct(p.id)}
+                          onMove={canEdit ? () => setSheetId(p.id) : undefined}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  {selected && (
+                    <div className="hidden lg:block w-[360px] xl:w-[380px] flex-shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-none rounded-5xl">
+                      <ProductPanel
+                        product={selected}
+                        canEdit={canEdit}
+                        onMoved={(newQty, delta) => applyMovement(selected, newQty, delta)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+                  <span className="w-16 h-16 rounded-full bg-surface text-fg-muted flex items-center justify-center">
+                    <BoxIcon className="w-7 h-7" />
+                  </span>
+                  <div>
+                    <p className="font-black">Nenhum produto encontrado</p>
+                    <p className="text-sm font-bold text-fg-muted mt-1">
+                      {rows.length === 0 ? "Cadastre um produto ou importe uma compra para começar." : "Tente outro termo ou filtro."}
+                    </p>
+                  </div>
+                  {(search || filter !== "todos") && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearch(""); setFilter("todos"); }}
+                      className="min-h-[44px] px-5 rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10"
+                    >
+                      Limpar filtros
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </main>
 
-      {/* ── Mobile FAB speed dial ── */}
-      <div className="sm:hidden fixed bottom-20 right-4 z-30 flex flex-col items-end gap-3">
-        {/* Speed dial options */}
-        {fabOpen && (
-          <>
-            <button
-              type="button"
-              onClick={() => { setFabOpen(false); router.push("/estoque/novo"); }}
-              className="flex items-center gap-2 cursor-pointer transition-all duration-200 active:scale-95"
-              aria-label="Adicionar manualmente"
-            >
-              <span
-                className="text-xs font-semibold text-white px-3 py-1.5 rounded-xl"
-                style={{ background: "rgba(15,23,42,0.9)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
-                Adicionar manualmente
-              </span>
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg,#059669,#047857)", boxShadow: "0 4px 16px rgba(5,150,105,0.45)" }}
-              >
-                <PlusIcon />
-              </div>
-            </button>
+      <MovementSheet
+        product={sheetProduct}
+        onClose={() => setSheetId(null)}
+        onDone={(newQty, delta) => {
+          if (sheetProduct) applyMovement(sheetProduct, newQty, delta);
+          setSheetId(null);
+        }}
+      />
 
-            <button
-              type="button"
-              onClick={() => { setFabOpen(false); router.push("/nota"); }}
-              className="flex items-center gap-2 cursor-pointer transition-all duration-200 active:scale-95"
-              aria-label="Importar compra"
-            >
-              <span
-                className="text-xs font-semibold text-white px-3 py-1.5 rounded-xl"
-                style={{ background: "rgba(15,23,42,0.9)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
-                Importar compra
-              </span>
-              <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", boxShadow: "0 4px 16px rgba(37,99,235,0.45)" }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-            </button>
-          </>
-        )}
-
-        {/* Main FAB */}
-        <button
-          type="button"
-          onClick={() => setFabOpen((o) => !o)}
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-white cursor-pointer transition-all duration-200 active:scale-95"
-          style={{
-            background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-            boxShadow: "0 4px 20px rgba(37,99,235,0.5)",
-            transform: fabOpen ? "rotate(45deg)" : "rotate(0deg)",
-          }}
-          aria-label={fabOpen ? "Fechar menu" : "Adicionar produto"}
-        >
-          <PlusIcon />
-        </button>
-      </div>
-
-      {/* Backdrop to close fab */}
-      {fabOpen && (
-        <div
-          className="sm:hidden fixed inset-0 z-20"
-          onClick={() => setFabOpen(false)}
+      {scanning && (
+        <BarcodeScanner
+          title="Buscar pelo código"
+          subtitle="Aponte a câmera para o código de barras do produto"
+          onDetect={handleScanDetect}
+          onClose={handleScanClose}
         />
       )}
+
+      <div aria-live="polite" className="fixed left-1/2 -translate-x-1/2 bottom-[104px] lg:bottom-8 z-[70] pointer-events-none">
+        {toast && (
+          <p className="px-5 py-3 rounded-full bg-inverse text-ink text-sm font-black shadow-lift whitespace-nowrap">{toast}</p>
+        )}
+      </div>
 
       <BottomNav />
     </div>

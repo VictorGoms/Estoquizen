@@ -12,7 +12,7 @@ export default function NotaTopBar({ title = "Importar compra", backHref = "/das
 
   return (
     <header
-      className="fixed top-0 left-0 lg:left-60 right-0 z-40 glass"
+      className="fixed top-0 left-0 lg:left-64 right-0 z-40 glass"
       style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
     >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

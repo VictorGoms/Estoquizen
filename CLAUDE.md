@@ -30,20 +30,25 @@ Requisições `/api/v1/*` são proxiadas pelo Next.js para `http://localhost:300
 permitindo que o celular (HTTPS) alcance o Fastify (HTTP) sem mixed-content errors.
 
 ## Regras de layout
-- Sidebar fixa: `w-60` (`lg:flex`), offset via `lg:pl-60` no main e `lg:left-60` no topbar
+- Sidebar fixa: `w-64` (`lg:flex`), painel flutuante arredondado; offset via `lg:pl-64` no main e `lg:left-64` no topbar
 - Conteúdo: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
 - Mobile-first: grid e layout mudam em `sm:`, `md:`, `lg:`
-- BottomNav: só mobile (`md:hidden`)
+- BottomNav: flutuante, abaixo de `lg` (`lg:hidden`); páginas com ela usam `pb-28 lg:pb-16`. Itens: Início · Estoque · Escanear (central) · Métricas · Equipe. Configurações fica no Perfil (celular) e no menu lateral.
+- Estoque no computador: lista + painel de detalhe (`ProductPanel`) lado a lado; no celular, toque abre `/estoque/[id]` e o botão ± abre `MovementSheet`.
 
-## Identidade visual (tailwind.config.ts)
-- Fundo: `bg-navy-900` (`#0f172a`)
-- Cards: `rgba(22,32,52,0.8)` + `border: 1px solid rgba(255,255,255,0.08)`
-- Accent: brand blue (`#2563EB` = `brand-600`, `#60A5FA` = `brand-400`, `#93C5FD` = `brand-300`)
-- Fonte: Manrope → `font-display` | Inter → `font-sans`
-- Bordas: `rounded-2xl` padrão
-- Utilitários: `bg-hero-gradient`, `bg-card-gradient`, `bg-btn-gradient`
-- Sombras: `shadow-card`, `shadow-btn`, `shadow-btn-hover`, `shadow-glass`
-- Animações: `animate-fade-up`, `animate-fade-in`, `animate-pulse-slow`
+## Identidade visual — tema "Noite Azul" (tailwind.config.ts)
+- Prévia e guia visual aprovados em 2026-10-16 (canvas de design fora do repositório)
+- Tokens: `bg-ink` (#0b1220, fundo) · `bg-panel` (menu lateral) · `bg-surface` / `bg-surface-2` (cards / elementos internos) · `text-fg`, `text-fg-soft`, `text-fg-muted`, `text-fg-subtle`
+- Destaque: `bg-accent` (#60a5fa = `brand-400`) com texto `text-ink` — card de resumo, botão principal, item ativo de segmentado
+- Card claro invertido: `bg-inverse` + `text-ink` (`text-inverse-muted` para secundário) — item ativo do menu, produto selecionado, ação principal (Escanear)
+- Status: `ok` (normal), `low` (baixo), `zero` (zerado) — sempre com rótulo (`StatusChip`), nunca só cor
+- Fonte: Nunito via `next/font` (variável `--font-nunito`) em `font-sans` e `font-display`; pesos 800/900 para títulos e números
+- Formas: cards `rounded-4xl`/`rounded-5xl`/`rounded-6xl`, botões e filtros em pílula (`rounded-full`), divisórias `border-t-2 border-dashed`
+- Toque: alvos ≥ 44px; foco global via `:focus-visible` (globals.css); `prefers-reduced-motion` respeitado
+- Ícones: `src/components/ui/icons.tsx` · Regras/formatação de estoque: `src/lib/stock.ts` (deriveStatus, formatQty, formatBRL, stockLevel, timeAgo)
+- Componentes de estoque: `src/components/estoque/` (StatusChip, ProductAvatar, LevelBar, MovementForm, MovementSheet, ProductPanel)
+- Páginas ainda no estilo antigo (só herdaram fonte, fundo e menus): auth, onboarding, landing, métricas, membros, configurações, perfil, notificações, nota, estoque/[id], estoque/novo
+- Utilitários antigos ainda usados por essas páginas: `bg-hero-gradient`, `bg-card-gradient`, `bg-btn-gradient`, `shadow-card`, `shadow-btn`, `.btn-primary` (landing)
 
 ## Regras críticas de React
 - NÃO usar `Date.now()`, `Math.random()` ou `window` diretamente no render
