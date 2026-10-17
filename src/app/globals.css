@@ -62,3 +62,14 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 }
+
+/* Contêiner da landing: acompanha a tela em vez de travar em 1152px e deixar as bordas vazias */
+.lp-container {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+@media (min-width: 640px)  { .lp-container { padding-inline: 32px; } }
+@media (min-width: 1024px) { .lp-container { padding-inline: 48px; } }
+@media (min-width: 1920px) { .lp-container { max-width: 1840px; padding-inline: 64px; } }

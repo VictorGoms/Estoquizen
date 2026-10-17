@@ -21,13 +21,14 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 px-3 sm:px-6 pt-3">
+    <header className="fixed top-0 inset-x-0 z-50 pt-3">
+      <div className="lp-container">
       <div
-        className={`max-w-6xl mx-auto rounded-[28px] transition-colors duration-300 ${
+        className={`rounded-[28px] transition-colors duration-300 ${
           scrolled || menuOpen ? "bg-panel/95 shadow-lift backdrop-blur" : "bg-transparent"
         }`}
       >
-        <div className="flex items-center justify-between h-16 pl-3 pr-2 sm:pl-4">
+        <div className="flex items-center justify-between h-16 3xl:h-[76px] pl-3 pr-2 sm:pl-4">
           <Link href="#home" className="flex items-center gap-2.5 group" aria-label="Estoquizen — início da página">
             <Logo size={34} />
             <span className="text-lg font-black tracking-tight text-fg group-hover:text-accent transition-colors duration-200">
@@ -40,7 +41,7 @@ export default function Header() {
               <a
                 key={link.href}
                 href={link.href}
-                className="min-h-[44px] flex items-center px-4 rounded-full text-[15px] font-extrabold text-fg-muted hover:text-fg hover:bg-white/5 transition-colors"
+                className="min-h-[44px] flex items-center px-4 rounded-full text-[15px] 3xl:text-base font-extrabold text-fg-muted hover:text-fg hover:bg-white/5 transition-colors"
               >
                 {link.label}
               </a>
@@ -48,10 +49,10 @@ export default function Header() {
           </nav>
 
           <div className="hidden md:flex items-center gap-2">
-            <Link href="/login" className="min-h-[44px] flex items-center px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
+            <Link href="/login" className="min-h-[44px] 3xl:min-h-[52px] flex items-center px-5 3xl:px-6 rounded-full bg-surface text-[15px] 3xl:text-base font-extrabold hover:bg-surface-2 transition-colors">
               Entrar
             </Link>
-            <Link href="/register" className="min-h-[44px] flex items-center px-5 rounded-full bg-accent text-ink text-[15px] font-black hover:brightness-110 transition-[filter]">
+            <Link href="/register" className="min-h-[44px] 3xl:min-h-[52px] flex items-center px-5 3xl:px-6 rounded-full bg-accent text-ink text-[15px] 3xl:text-base font-black hover:brightness-110 transition-[filter]">
               Começar grátis
             </Link>
           </div>
@@ -90,6 +91,7 @@ export default function Header() {
             </Link>
           </div>
         )}
+      </div>
       </div>
     </header>
   );

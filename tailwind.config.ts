@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      screens: {
+        "3xl": "1920px",                             // monitores grandes (landing cresce junto)
+      },
       /* Nunito carregada via next/font em layout.tsx (variável --font-nunito) */
       fontFamily: {
         sans: ["var(--font-nunito)", "ui-rounded", "Segoe UI", "system-ui", "sans-serif"],
