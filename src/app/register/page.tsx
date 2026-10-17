@@ -9,6 +9,7 @@ import PrimaryButton from "@/components/auth/PrimaryButton";
 import SocialButton from "@/components/auth/SocialButton";
 import Divider from "@/components/auth/Divider";
 import { supabase } from "@/lib/supabase";
+import { MailIcon, CheckIcon } from "@/components/ui/icons";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -61,29 +62,19 @@ export default function RegisterPage() {
 
   if (emailSent) {
     return (
-      <AuthLayout title="Verifique seu email" subtitle="Quase lá!">
-        <div className="flex flex-col items-center gap-5 py-4 text-center">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(29,78,216,0.15)", border: "1px solid rgba(59,130,246,0.2)" }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+      <AuthLayout title="Verifique seu email" subtitle="Quase lá!" icon={<MailIcon className="w-7 h-7" />}>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-full bg-surface-2 rounded-3xl px-4 py-4">
+            <p className="text-sm font-bold text-fg-muted">Enviamos um link de confirmação para</p>
+            <p className="text-[15px] font-black text-fg mt-1 break-all">{values.email}</p>
           </div>
-          <div>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Enviamos um link de confirmação para
-            </p>
-            <p className="text-sm font-semibold text-white mt-0.5">{values.email}</p>
-            <p className="text-xs text-slate-500 mt-3 leading-relaxed max-w-xs">
-              Clique no link do email para ativar sua conta. Após confirmar, volte aqui para entrar.
-            </p>
-          </div>
+          <p className="text-sm font-semibold text-fg-muted leading-relaxed max-w-xs">
+            Clique no link do email para ativar sua conta. Depois de confirmar, volte aqui para entrar.
+          </p>
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer mt-1"
+            className="min-h-[44px] text-sm text-accent hover:brightness-110 font-extrabold cursor-pointer mt-1"
           >
             Já confirmei — ir para o login
           </button>
@@ -135,44 +126,33 @@ export default function RegisterPage() {
 
         {/* Terms checkbox */}
         <div className="flex flex-col gap-1">
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <div className="relative flex-shrink-0 mt-0.5">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <span className="relative flex-shrink-0">
               <input
                 type="checkbox"
-                className="sr-only"
+                className="peer sr-only"
                 checked={agreedToTerms}
+                aria-invalid={termsError ? true : undefined}
                 onChange={(e) => {
                   setAgreedToTerms(e.target.checked);
                   if (e.target.checked) setTermsError(false);
                 }}
               />
-              <div
-                className="w-4.5 h-4.5 w-[18px] h-[18px] rounded-[5px] flex items-center justify-center transition-all duration-200"
-                style={{
-                  background: agreedToTerms
-                    ? "linear-gradient(135deg, #1d4ed8, #2563eb)"
-                    : "rgba(255,255,255,0.05)",
-                  border: agreedToTerms
-                    ? "1px solid transparent"
-                    : termsError
-                    ? "1px solid rgba(244,63,94,0.6)"
-                    : "1px solid rgba(255,255,255,0.15)",
-                  boxShadow: agreedToTerms ? "0 2px 8px rgba(37,99,235,0.4)" : undefined,
-                }}
+              <span
+                aria-hidden="true"
+                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface ${
+                  agreedToTerms ? "bg-accent text-ink" : termsError ? "bg-ink ring-2 ring-zero/70" : "bg-ink ring-1 ring-white/15"
+                }`}
               >
-                {agreedToTerms && (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
-            </div>
-            <span className="text-sm text-slate-400 leading-snug">
+                {agreedToTerms && <CheckIcon className="w-4 h-4" strokeWidth={3} />}
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-fg-muted leading-snug pt-0.5">
               Concordo com os{" "}
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); router.push("/termos"); }}
-                className="text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 underline-offset-2 hover:underline"
+                className="text-accent font-extrabold underline-offset-2 hover:underline"
               >
                 Termos de uso
               </button>{" "}
@@ -180,14 +160,14 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); router.push("/privacidade"); }}
-                className="text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 underline-offset-2 hover:underline"
+                className="text-accent font-extrabold underline-offset-2 hover:underline"
               >
                 Política de privacidade
               </button>
             </span>
           </label>
           {termsError && (
-            <p className="text-xs text-rose-400 pl-7">
+            <p role="alert" className="text-[13px] font-bold text-zero pl-9">
               Você precisa aceitar os termos para continuar.
             </p>
           )}
@@ -195,7 +175,7 @@ export default function RegisterPage() {
 
         {/* Error */}
         {error && (
-          <p className="text-xs text-red-400 text-center -mb-1">{error}</p>
+          <p role="alert" className="text-sm font-bold text-zero text-center">{error}</p>
         )}
 
         {/* Submit */}
@@ -216,12 +196,12 @@ export default function RegisterPage() {
         </SocialButton>
 
         {/* Footer link */}
-        <p className="text-center text-sm text-slate-500 mt-1">
+        <p className="text-center text-sm font-bold text-fg-muted mt-1">
           Já possui uma conta?{" "}
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer"
+            className="text-accent hover:brightness-110 font-extrabold cursor-pointer"
           >
             Entrar
           </button>

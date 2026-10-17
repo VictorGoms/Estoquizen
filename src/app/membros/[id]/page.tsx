@@ -1,33 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
+import AccessDenied from "@/components/ui/AccessDenied";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
-import AccessDenied from "@/components/ui/AccessDenied";
-
-/* ─── Icons ─── */
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
-const TrashIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
+import { ArrowLeftIcon, CheckIcon, TrashIcon, Spinner } from "@/components/ui/icons";
 
 type Role   = "owner" | "admin" | "member";
 type Status = "ativo" | "pendente" | "inativo";
@@ -45,16 +30,16 @@ interface MemberData {
   status:      Status;
 }
 
-const ROLE_CONFIG: Record<Role, { label: string; bg: string; text: string; border: string; desc: string }> = {
-  owner:  { label: "Owner",         bg: "rgba(217,119,6,0.12)",  text: "#FCD34D", border: "rgba(245,158,11,0.35)", desc: "Acesso total — gerencia membros, planos e configurações" },
-  admin:  { label: "Administrador", bg: "rgba(37,99,235,0.12)",  text: "#93C5FD", border: "rgba(59,130,246,0.3)",  desc: "Gerencia estoque, notas fiscais, relatórios e membros" },
-  member: { label: "Membro",        bg: "rgba(5,150,105,0.12)",  text: "#6EE7B7", border: "rgba(16,185,129,0.3)",  desc: "Acesso operacional — visualiza e movimenta itens do estoque" },
+const ROLE_CONFIG: Record<Role, { label: string; desc: string }> = {
+  owner:  { label: "Proprietário",  desc: "Acesso total: membros, plano e configurações." },
+  admin:  { label: "Administrador", desc: "Estoque, notas fiscais, métricas e equipe." },
+  member: { label: "Membro",        desc: "Consulta o estoque e as métricas, sem editar." },
 };
 
 const STATUS_OPTIONS: Array<{ id: Status; label: string; dot: string }> = [
-  { id: "ativo",    label: "Ativo",    dot: "#10B981" },
-  { id: "pendente", label: "Pendente", dot: "#F59E0B" },
-  { id: "inativo",  label: "Inativo",  dot: "#475569" },
+  { id: "ativo",    label: "Ativo",    dot: "bg-ok" },
+  { id: "pendente", label: "Pendente", dot: "bg-low" },
+  { id: "inativo",  label: "Inativo",  dot: "bg-fg-subtle" },
 ];
 
 function getInitials(name: string): string {
@@ -72,6 +57,7 @@ export default function MemberDetailPage() {
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState("");
+  const [saveError, setSaveError] = useState("");
 
   const [role,   setRole]   = useState<Role>("member");
   const [status, setStatus] = useState<Status>("ativo");
@@ -122,7 +108,7 @@ export default function MemberDetailPage() {
         userId:      prof?.id ?? wm.user_id,
         name,
         email:       prof?.email ?? "",
-        avatarColor: prof?.avatar_color ?? "rgba(37,99,235,0.5)",
+        avatarColor: prof?.avatar_color ?? "#1d2840",
         avatarUrl:   prof?.avatar_url ?? null,
         initials:    getInitials(name),
         joinedAt:    new Date(wm.created_at).toLocaleDateString("pt-BR"),
@@ -143,6 +129,7 @@ export default function MemberDetailPage() {
     e.preventDefault();
     if (!member) return;
     setSaving(true);
+    setSaveError("");
 
     const { error: err } = await supabase
       .from("workspace_members")
@@ -151,7 +138,7 @@ export default function MemberDetailPage() {
 
     setSaving(false);
     if (err) {
-      setError(err.message);
+      setSaveError(err.message);
       return;
     }
     setOriginalRole(role);
@@ -167,13 +154,12 @@ export default function MemberDetailPage() {
     router.push("/membros");
   }
 
-  const isDirty = role !== originalRole || status !== originalStatus;
-  const roleCfg = ROLE_CONFIG[role];
+  const isDirty   = role !== originalRole || status !== originalStatus;
   const statusCfg = STATUS_OPTIONS.find((s) => s.id === status)!;
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <PageLoader />
       </div>
     );
@@ -181,7 +167,7 @@ export default function MemberDetailPage() {
 
   if (error || !member) {
     return (
-      <div className="min-h-screen bg-navy-900 flex items-center justify-center">
+      <div className="min-h-screen bg-ink flex items-center justify-center">
         <PageError message={error || "Membro não encontrado"} onRetry={() => router.push("/membros")} />
       </div>
     );
@@ -190,267 +176,154 @@ export default function MemberDetailPage() {
   if (!can(wsRole, "canEditMembro")) return <AccessDenied />;
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          width: "700px", height: "350px",
-          background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.09) 0%, transparent 70%)",
-        }}
-      />
-
+    <div className="min-h-screen bg-ink">
       <DashboardSidebar workspaceName={wsName} userName={userName} />
       <DashboardTopBar  workspaceName={wsName} userName={userName} />
 
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5 lg:gap-6">
 
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => router.push("/membros")}
-                className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-medium cursor-pointer transition-colors duration-200"
-              >
-                <ArrowLeftIcon />
-                Membros
-              </button>
-              <span className="text-slate-700 text-xs">/</span>
-              <span className="text-slate-400 text-xs truncate">{member.name}</span>
-            </div>
+          <nav aria-label="Trilha" className="flex items-center gap-2.5 min-w-0 text-sm font-bold text-fg-muted">
+            <Link href="/membros" className="flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-fg font-extrabold flex-shrink-0 hover:bg-surface-2 transition-colors">
+              <ArrowLeftIcon className="w-4 h-4" strokeWidth={2.4} /> Membros
+            </Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page" className="truncate">{member.name}</span>
+          </nav>
 
-            <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid lg:grid-cols-[340px_minmax(0,1fr)] gap-5 lg:gap-6 items-start">
 
-              {/* ── LEFT: avatar + meta ── */}
-              <div className="flex flex-col gap-4">
-
-                {/* Avatar card */}
-                <div
-                  className="rounded-2xl p-6 flex flex-col items-center gap-4"
-                  style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}
-                >
-                  {member.avatarUrl ? (
-                    <img
-                      src={member.avatarUrl}
-                      alt={member.name}
-                      className="w-20 h-20 rounded-2xl object-cover"
-                    />
-                  ) : (
-                    <div
-                      className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white"
-                      style={{ background: member.avatarColor }}
-                    >
-                      {member.initials}
-                    </div>
-                  )}
-                  <div className="text-center">
-                    <p className="font-display font-bold text-base text-white">{member.name}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{member.email}</p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap justify-center">
-                    <span
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-full"
-                      style={{ background: roleCfg.bg, color: roleCfg.text }}
-                    >
-                      {roleCfg.label}
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: statusCfg.dot }} />
-                      {statusCfg.label}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Meta info */}
-                <div
-                  className="rounded-2xl p-5 flex flex-col gap-3"
-                  style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}
-                >
-                  {[
-                    { label: "Membro desde", value: member.joinedAt },
-                    { label: "ID do membro", value: member.memberId.slice(0, 8) + "…" },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex items-center justify-between py-2"
-                      style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
-                    >
-                      <span className="text-xs text-slate-500">{row.label}</span>
-                      <span className="text-xs font-medium text-slate-300 font-mono">{row.value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Remove button */}
-                {!confirm ? (
-                  <button
-                    type="button"
-                    onClick={() => setConfirm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium cursor-pointer transition-all duration-200"
-                    style={{
-                      background: "rgba(220,38,38,0.08)",
-                      border: "1px solid rgba(239,68,68,0.18)",
-                      color: "#FCA5A5",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(220,38,38,0.16)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.35)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(220,38,38,0.08)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.18)"; }}
-                  >
-                    <TrashIcon />
-                    Remover do workspace
-                  </button>
+            {/* ── Cartão do membro ── */}
+            <div className="flex flex-col gap-4">
+              <section className="bg-surface rounded-5xl p-6 flex flex-col items-center gap-4 text-center">
+                {member.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={member.avatarUrl} alt="" className="w-20 h-20 rounded-full object-cover" />
                 ) : (
-                  <div
-                    className="rounded-2xl p-4 flex flex-col gap-3"
-                    style={{ background: "rgba(220,38,38,0.10)", border: "1px solid rgba(239,68,68,0.25)" }}
-                  >
-                    <p className="text-sm text-white font-medium">Remover {member.name}?</p>
-                    <p className="text-xs text-slate-500">Esta ação remove o acesso imediatamente.</p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setConfirm(false)}
-                        className="flex-1 py-2 rounded-xl text-xs font-medium cursor-pointer"
-                        style={{ background: "rgba(255,255,255,0.06)", color: "#64748B" }}
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemove}
-                        disabled={removing}
-                        className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-60"
-                        style={{ background: "rgba(220,38,38,0.5)", color: "#FCA5A5" }}
-                      >
-                        {removing ? "Removendo…" : "Confirmar"}
-                      </button>
-                    </div>
-                  </div>
+                  <span className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black text-fg" style={{ background: member.avatarColor }}>
+                    {member.initials}
+                  </span>
                 )}
-              </div>
-
-              {/* ── RIGHT: edit form ── */}
-              <div className="lg:col-span-2">
-                <form onSubmit={handleSave} className="flex flex-col gap-5">
-
-                  {/* Role */}
-                  <div
-                    className="rounded-2xl p-5 flex flex-col gap-4"
-                    style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  >
-                    <h3 className="text-sm font-semibold text-white">Função no workspace</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => {
-                        const cfg    = ROLE_CONFIG[r];
-                        const active = role === r;
-                        return (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => setRole(r)}
-                            className="text-left p-3.5 rounded-xl cursor-pointer transition-all duration-200"
-                            style={{
-                              background: active ? cfg.bg : "rgba(15,23,42,0.5)",
-                              border: active ? `1px solid ${cfg.border}` : "1px solid rgba(255,255,255,0.06)",
-                            }}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-sm font-semibold" style={{ color: active ? cfg.text : "#64748B" }}>
-                                {cfg.label}
-                              </span>
-                              {active && (
-                                <span
-                                  className="w-4 h-4 rounded-full flex items-center justify-center"
-                                  style={{ background: cfg.border }}
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={3}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[11px] leading-relaxed" style={{ color: active ? "#475569" : "#1E293B" }}>
-                              {cfg.desc}
-                            </p>
-                          </button>
-                        );
-                      })}
-                    </div>
+                <div className="min-w-0">
+                  <h1 className="text-xl font-black break-words">{member.name}</h1>
+                  <p className="text-sm font-bold text-fg-muted break-all">{member.email}</p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <span className="text-xs font-black px-2.5 py-1 rounded-full bg-surface-2 text-fg-soft">{ROLE_CONFIG[role].label}</span>
+                  <span className="flex items-center gap-1.5 text-xs font-extrabold text-fg-muted">
+                    <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
+                    {statusCfg.label}
+                  </span>
+                </div>
+                <dl className="w-full flex flex-col text-sm">
+                  <div className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08]">
+                    <dt className="font-bold text-fg-muted">Membro desde</dt>
+                    <dd className="font-extrabold">{member.joinedAt}</dd>
                   </div>
+                </dl>
+              </section>
 
-                  {/* Status */}
-                  <div
-                    className="rounded-2xl p-5 flex flex-col gap-4"
-                    style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  >
-                    <h3 className="text-sm font-semibold text-white">Status da conta</h3>
-                    <div className="flex gap-2.5 flex-wrap">
-                      {STATUS_OPTIONS.map((s) => {
-                        const active = status === s.id;
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => setStatus(s.id)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200"
-                            style={{
-                              background: active ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.5)",
-                              border: active ? "1px solid rgba(255,255,255,0.18)" : "1px solid rgba(255,255,255,0.06)",
-                              color: active ? "#F1F5F9" : "#475569",
-                            }}
-                          >
-                            <span className="w-2 h-2 rounded-full" style={{ background: s.dot }} />
-                            {s.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => router.push("/membros")}
-                      className="flex-1 sm:flex-none sm:w-32 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200"
-                      style={{
-                        background: "rgba(30,41,59,0.7)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        color: "#64748B",
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "#F1F5F9"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "#64748B"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
-                    >
+              {!confirm ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirm(true)}
+                  className="min-h-[48px] flex items-center justify-center gap-2 rounded-full bg-zero/10 text-zero text-[15px] font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
+                >
+                  <TrashIcon className="w-[18px] h-[18px]" /> Remover do workspace
+                </button>
+              ) : (
+                <div role="alertdialog" aria-labelledby="remover-titulo" className="bg-surface rounded-4xl p-4 flex flex-col gap-3 ring-1 ring-zero/30">
+                  <p id="remover-titulo" className="text-[15px] font-black">Remover {member.name}?</p>
+                  <p className="text-sm font-bold text-fg-muted">O acesso ao workspace acaba na hora.</p>
+                  <div className="flex gap-2.5">
+                    <button type="button" onClick={() => setConfirm(false)} className="flex-1 min-h-[44px] rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10">
                       Cancelar
                     </button>
                     <button
-                      type="submit"
-                      disabled={saving || !isDirty}
-                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
-                      style={{
-                        background: saved
-                          ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
-                          : "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
-                        boxShadow: isDirty ? "0 4px 14px rgba(37,99,235,0.35)" : "none",
-                        transition: "background 0.3s, box-shadow 0.2s, transform 0.2s",
-                      }}
+                      type="button"
+                      onClick={handleRemove}
+                      disabled={removing}
+                      className="flex-1 min-h-[44px] rounded-full bg-zero text-ink text-sm font-black cursor-pointer disabled:opacity-60"
                     >
-                      {saving ? (
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      ) : saved ? (
-                        <CheckIcon />
-                      ) : null}
-                      {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
+                      {removing ? "Removendo…" : "Remover"}
                     </button>
                   </div>
-
-                </form>
-              </div>
+                </div>
+              )}
             </div>
+
+            {/* ── Edição ── */}
+            <form onSubmit={handleSave} className="flex flex-col gap-4">
+              <fieldset className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
+                <legend className="sr-only">Função no workspace</legend>
+                <p className="text-lg font-black" aria-hidden="true">Função no workspace</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => {
+                    const cfg    = ROLE_CONFIG[r];
+                    const active = role === r;
+                    return (
+                      <button
+                        key={r}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setRole(r)}
+                        className={`text-left p-4 rounded-4xl flex flex-col gap-1 cursor-pointer transition-colors ${
+                          active ? "bg-inverse text-ink" : "bg-surface-2 text-fg hover:bg-white/10"
+                        }`}
+                      >
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="text-[15px] font-black">{cfg.label}</span>
+                          <span aria-hidden="true" className={`w-6 h-6 rounded-full flex items-center justify-center ${active ? "bg-ink text-accent" : "ring-2 ring-white/15"}`}>
+                            {active && <CheckIcon className="w-3.5 h-3.5" strokeWidth={3} />}
+                          </span>
+                        </span>
+                        <span className={`text-[13px] font-bold leading-relaxed ${active ? "text-inverse-muted" : "text-fg-muted"}`}>{cfg.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
+                <legend className="sr-only">Status da conta</legend>
+                <p className="text-lg font-black" aria-hidden="true">Status da conta</p>
+                <div className="flex gap-2 flex-wrap">
+                  {STATUS_OPTIONS.map((s) => {
+                    const active = status === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setStatus(s.id)}
+                        className={`flex items-center gap-2 min-h-[44px] px-4 rounded-full text-sm cursor-pointer transition-colors ${
+                          active ? "bg-inverse text-ink font-black" : "bg-surface-2 text-fg-soft font-extrabold hover:text-fg"
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                        {s.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              {saveError && <p role="alert" className="text-sm font-bold text-zero">{saveError}</p>}
+
+              <div className="flex flex-col-reverse sm:flex-row gap-3">
+                <Link href="/membros" className="sm:w-40 min-h-[54px] flex items-center justify-center rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
+                  Cancelar
+                </Link>
+                <button
+                  type="submit"
+                  disabled={saving || !isDirty}
+                  className="flex-1 min-h-[54px] flex items-center justify-center gap-2 rounded-full bg-accent text-ink text-base font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {saving ? <Spinner /> : saved ? <CheckIcon /> : null}
+                  {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </main>

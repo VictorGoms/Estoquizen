@@ -48,9 +48,9 @@ permitindo que o celular (HTTPS) alcance o Fastify (HTTP) sem mixed-content erro
 - Ícones: `src/components/ui/icons.tsx` · Regras/formatação de estoque: `src/lib/stock.ts` (deriveStatus, formatQty, formatBRL, stockLevel, timeAgo)
 - Componentes de estoque: `src/components/estoque/` (StatusChip, ProductAvatar, LevelBar, MovementForm, MovementSheet, ProductPanel)
 - Formulários: `src/components/ui/FormField.tsx` (rótulo ligado ao campo via `htmlFor` + `inputClass` padrão)
-- Páginas já no tema: dashboard, estoque, estoque/[id] (com histórico), estoque/novo, scanner
-- Páginas ainda no estilo antigo (só herdaram fonte, fundo e menus): auth, onboarding, landing, métricas, membros, configurações, perfil, notificações, nota
-- Utilitários antigos ainda usados por essas páginas: `bg-hero-gradient`, `bg-card-gradient`, `bg-btn-gradient`, `shadow-card`, `shadow-btn`, `.btn-primary` (landing)
+- Todas as páginas estão no tema (landing, auth, onboarding, telas internas e nota) desde 2026-10-16
+- Gráfico de Métricas usa Recharts com as cores do tema em hex (`#60a5fa` entradas, `#eef3fb` saídas), sem degradê
+- Os utilitários do tema antigo (`bg-*-gradient`, `shadow-card/btn`, `.btn-primary`, `.glass-card`) foram removidos: não recriar
 
 ## Regras críticas de React
 - NÃO usar `Date.now()`, `Math.random()` ou `window` diretamente no render
@@ -81,7 +81,9 @@ Apenas 3: `owner`, `admin`, `member`
 - `/dashboard`           — Home do workspace
 - `/dashboard-metricas`  — Métricas
 - `/estoque`             — Lista de produtos
-- `/estoque/item`        — Detalhe do produto
+- `/estoque/[id]`        — Detalhe do produto (com histórico)
+- `/estoque/novo`        — Cadastro de produto
+- `/estoque/item`        — Rota antiga do protótipo; só redireciona para `/estoque`
 - `/nota`                — Input de NF-e
 - `/nota/revisao`        — Revisão da NF-e
 - `/membros`             — Lista de membros
@@ -106,12 +108,13 @@ components/
     AuthLayout.tsx / Divider.tsx / InputField.tsx / PasswordField.tsx / PrimaryButton.tsx / SocialButton.tsx
 
   dashboard/
-    DashboardSidebar.tsx / DashboardTopBar.tsx / BottomNav.tsx
-    ActionCard.tsx / StatCard.tsx / InfoBanner.tsx
+    DashboardSidebar.tsx / DashboardTopBar.tsx / BottomNav.tsx / TrialBanner.tsx
+
+  estoque/
+    StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
 
   nota/
-    AccessKeyInput.tsx / HelpSection.tsx / NotaTopBar.tsx
-    ProductReviewCard.tsx / QRScannerCard.tsx / ReviewSummary.tsx / VerticalDivider.tsx
+    ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
 
   onboarding/
     OnboardingShell.tsx / PlanCard.tsx / StepIndicator.tsx
@@ -120,7 +123,7 @@ components/
     LayoutContainer.tsx / SecondaryButton.tsx / TopBar.tsx / WorkspaceCard.tsx
 
   ui/
-    AccessDenied.tsx / BarcodeScanner.tsx / PageError.tsx / PageLoader.tsx
+    AccessDenied.tsx / BarcodeScanner.tsx / PageError.tsx / PageLoader.tsx / FormField.tsx / icons.tsx
 ```
 
 ## Utilitários (`src/lib/`)

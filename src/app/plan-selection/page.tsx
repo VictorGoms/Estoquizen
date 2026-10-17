@@ -7,6 +7,7 @@ import PlanCard from "@/components/onboarding/PlanCard";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
 import { api } from "@/lib/api";
+import { ArrowRightIcon } from "@/components/ui/icons";
 
 const PLANS = [
   {
@@ -38,7 +39,7 @@ const PLANS = [
     description: "Para negócios em crescimento",
     highlighted: true,
     badge: "Mais popular",
-    trialNote: "30 dias grátis",
+    trialNote: "14 dias grátis",
     features: [
       { text: "Até 300 produtos", included: true },
       { text: "Até 7 membros", included: true },
@@ -123,21 +124,13 @@ export default function PlanSelectionPage() {
       <div className="flex flex-col flex-1 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto w-full flex flex-col flex-1">
 
-          {/* Header */}
-          <div className="text-center mb-10">
-            <p className="text-brand-400 text-xs font-semibold uppercase tracking-widest mb-2">
-              Passo 2 de 2
-            </p>
-            <h2 className="font-display font-bold text-2xl sm:text-3xl text-white">
-              Escolha seu plano
-            </h2>
-            <p className="text-slate-400 text-sm mt-2">
-              Você pode mudar de plano a qualquer momento.
-            </p>
+          <div className="text-center mb-10 flex flex-col gap-2">
+            <p className="text-sm font-extrabold text-accent">Passo 2 de 2</p>
+            <h1 className="text-[28px] sm:text-[36px] font-black tracking-tight leading-tight">Escolha seu plano</h1>
+            <p className="text-[15px] font-bold text-fg-muted">Você pode mudar de plano a qualquer momento.</p>
           </div>
 
-          {/* Plans grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch mb-8 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch mb-8">
             {PLANS.map((plan) => (
               <PlanCard
                 key={plan.id}
@@ -155,57 +148,34 @@ export default function PlanSelectionPage() {
             ))}
           </div>
 
-          {/* Selected hint */}
-          <div className="h-5 text-center mb-6">
+          <p aria-live="polite" className="min-h-5 text-center text-sm font-bold text-fg-muted mb-6">
             {selected && (
-              <p className="text-xs text-slate-600">
-                Plano{" "}
-                <span className="text-brand-400 font-semibold">{selected.name}</span>{" "}
-                selecionado
-                {selected.price !== "Grátis" && (
-                  <span className="text-slate-600">
-                    {" "}— {selected.price}{selected.priceNote}
-                  </span>
-                )}
-              </p>
+              <>
+                Plano <span className="text-fg font-black">{selected.name}</span> selecionado
+                {selected.price !== "Grátis" && <> · {selected.price}{selected.priceNote}</>}
+              </>
             )}
-          </div>
+          </p>
 
-          {/* Error */}
-          {error && (
-            <p className="text-xs text-red-400 text-center mb-2">{error}</p>
-          )}
+          {error && <p role="alert" className="text-sm font-bold text-zero text-center mb-3">{error}</p>}
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-lg mx-auto">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 w-full max-w-lg mx-auto">
             <SecondaryButton
               icon={<BackIcon />}
               onClick={() => router.push("/register-company")}
-              className="sm:w-auto sm:flex-shrink-0"
+              className="sm:w-auto sm:px-7 sm:flex-shrink-0 !bg-surface-2 hover:!bg-white/10"
             >
               Voltar
             </SecondaryButton>
-            <PrimaryButton
-              onClick={handleContinue}
-              loading={loading}
-              disabled={!selectedPlan}
-              className="flex-1"
-            >
-              {!loading && (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              )}
-              Continuar
+            <PrimaryButton onClick={handleContinue} loading={loading} disabled={!selectedPlan} className="flex-1">
+              Continuar <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
             </PrimaryButton>
           </div>
 
-          {/* Reassurance line */}
-          <p className="text-center text-xs text-slate-700 mt-5">
+          <p className="text-center text-[13px] font-bold text-fg-subtle mt-5">
             {selectedPlan === "growth"
-              ? <>Trial grátis de 30 dias no Growth&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade</>
-              : <>Pagamento necessário para ativar&nbsp;&nbsp;•&nbsp;&nbsp;Cancele quando quiser&nbsp;&nbsp;•&nbsp;&nbsp;Sem fidelidade</>
-            }
+              ? "14 dias grátis no Growth · Cancele quando quiser · Sem fidelidade"
+              : "Pagamento necessário para ativar · Cancele quando quiser · Sem fidelidade"}
           </p>
 
         </div>

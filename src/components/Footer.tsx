@@ -1,53 +1,29 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Logo from "./Logo";
 
-const FOOTER_LINKS = [
-  { label: "Termos de uso", href: "/termos" },
-  { label: "Privacidade", href: "/privacidade" },
-  { label: "Contato", href: "/contato" },
+const LINKS = [
+  { label: "Recursos",      href: "#recursos" },
+  { label: "Como funciona", href: "#como-funciona" },
+  { label: "Entrar",        href: "/login" },
 ];
 
 export default function Footer() {
-  const router = useRouter();
-
   return (
-    <footer
-      className="border-t py-10"
-      style={{ borderColor: "rgba(255,255,255,0.06)" }}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          {/* Logo + name */}
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-2.5 cursor-pointer group"
-            aria-label="Estoquizen"
-          >
-            <Logo size={28} />
-            <span className="font-display font-bold text-base text-slate-300 group-hover:text-white transition-colors duration-200">
-              Estoquizen
-            </span>
-          </button>
-
-          {/* Links */}
-          <nav className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            {FOOTER_LINKS.map((link) => (
-              <button
-                key={link.label}
-                onClick={() => router.push(link.href)}
-                className="text-sm text-slate-500 hover:text-slate-300 transition-colors duration-200 cursor-pointer"
-              >
+    <footer className="pb-10 pt-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-panel rounded-5xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-5">
+          <Link href="#home" className="flex items-center gap-2.5 group" aria-label="Estoquizen — início da página">
+            <Logo size={30} />
+            <span className="text-base font-black text-fg group-hover:text-accent transition-colors">Estoquizen</span>
+          </Link>
+          <nav aria-label="Rodapé" className="flex flex-wrap items-center justify-center gap-1">
+            {LINKS.map((link) => (
+              <Link key={link.href} href={link.href} className="min-h-[44px] flex items-center px-3.5 rounded-full text-sm font-extrabold text-fg-muted hover:text-fg hover:bg-white/5 transition-colors">
                 {link.label}
-              </button>
+              </Link>
             ))}
           </nav>
-
-          {/* Copyright */}
-          <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} Estoquizen
-          </p>
+          <p className="text-[13px] font-bold text-fg-subtle">© 2026 Estoquizen</p>
         </div>
       </div>
     </footer>

@@ -12,18 +12,10 @@ import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
 import { clearSession } from "@/lib/session";
 import { useRole, can } from "@/hooks/useRole";
 import AccessDenied from "@/components/ui/AccessDenied";
+import FormField, { inputClass } from "@/components/ui/FormField";
+import { CheckIcon, Spinner } from "@/components/ui/icons";
 
 /* ─── Icons ─── */
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
 const ExternalIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -189,247 +181,200 @@ export default function ConfiguracoesPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-navy-900 flex items-center justify-center"><PageLoader /></div>
+    <div className="min-h-screen bg-ink flex items-center justify-center"><PageLoader /></div>
   );
 
   const plan = PLAN_CONFIG[workspace?.plan ?? "basic"];
   const limit = workspace?.plan === "pro" ? 2000 : workspace?.plan === "growth" ? 300 : 50;
   const usagePct = Math.min(100, Math.round((productCount / limit) * 100));
-  const usageColor = usagePct >= 90 ? "#FCA5A5" : usagePct >= 70 ? "#FCD34D" : "#6EE7B7";
+  const usageBar = usagePct >= 90 ? "bg-zero" : usagePct >= 70 ? "bg-low" : "bg-ok";
+  const confirmLabel = `Digite "${workspace?.name ?? ""}" para confirmar`;
 
   if (!can(wsRole, "canAccessConfiguracoes")) return <AccessDenied />;
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{ width: "700px", height: "350px", background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.09) 0%, transparent 70%)" }}
-      />
+    <div className="min-h-screen bg-ink">
       <DashboardSidebar workspaceName={wsName} userName={userName} />
       <DashboardTopBar  workspaceName={wsName} userName={userName} />
 
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5">
 
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => router.back()}
-                className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-medium cursor-pointer transition-colors duration-200">
-                <ArrowLeftIcon /> Voltar
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Configurações</h1>
+            <p className="text-sm lg:text-[15px] font-bold text-fg-muted">Workspace, plano e assinatura</p>
+          </div>
+
+          {/* ── Plano & cobrança ── */}
+          <section aria-labelledby="cfg-plano" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 id="cfg-plano" className="text-sm font-extrabold text-fg-muted">Plano atual</h2>
+                <p className="flex items-baseline gap-2.5">
+                  <span className="text-[32px] font-black tracking-tight leading-none">{plan.label}</span>
+                  <span className="text-sm font-bold text-fg-muted">{plan.limit}</span>
+                </p>
+              </div>
+              {workspace?.plan !== "pro" && (
+                <button
+                  type="button"
+                  onClick={() => handleUpgrade(workspace?.plan === "basic" ? "growth" : "pro")}
+                  disabled={!!upgradingTo}
+                  className="min-h-[44px] px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-60"
+                >
+                  {upgradingTo ? "Aguarde…" : workspace?.plan === "basic" ? "Mudar para Growth" : "Mudar para Pro"}
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-sm font-bold">
+                <span className="text-fg-muted">Produtos cadastrados</span>
+                <span className="font-black">{productCount} / {limit}</span>
+              </div>
+              <div aria-hidden="true" className="h-2.5 rounded-full bg-ink overflow-hidden">
+                <div className={`h-full rounded-full ${usageBar}`} style={{ width: `${Math.max(usagePct, productCount > 0 ? 3 : 0)}%` }} />
+              </div>
+            </div>
+
+            <dl className="flex flex-col">
+              <div className="flex items-center justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08] text-sm">
+                <dt className="font-bold text-fg-muted">{subscription?.status === "trialing" ? "Trial expira em" : "Próxima renovação"}</dt>
+                <dd className="font-extrabold">
+                  {subscription?.status === "trialing"
+                    ? (formatDate(subscription.trial_ends_at) ?? "—")
+                    : subscription?.status === "active"
+                    ? (formatDate(subscription.current_period_end) ?? "—")
+                    : "—"}
+                </dd>
+              </div>
+            </dl>
+
+            {subscription?.stripe_customer_id ? (
+              <button
+                type="button"
+                onClick={handlePortal}
+                disabled={portalLoading}
+                className="w-full min-h-[52px] flex items-center justify-between px-5 rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-60"
+              >
+                <span>{portalLoading ? "Abrindo…" : "Gerenciar assinatura e pagamento"}</span>
+                <ExternalIcon />
               </button>
-            </div>
+            ) : (
+              <p className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-3.5 rounded-4xl bg-surface-2/60 text-sm font-bold text-fg-subtle">
+                <span>Gerenciar assinatura</span>
+                <span className="text-[13px]">Disponível após o 1º pagamento</span>
+              </p>
+            )}
+          </section>
 
-            <div>
-              <h1 className="font-display font-bold text-xl text-white">Configurações</h1>
-              <p className="text-slate-500 text-sm mt-1">Gerencie seu workspace e assinatura</p>
-            </div>
+          {/* ── Informações da empresa ── */}
+          <form onSubmit={handleSave} className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
+            <h2 className="text-lg font-black">Informações da empresa</h2>
+            <FormField label="Nome da empresa" htmlFor="cfg-nome" required>
+              <input id="cfg-nome" type="text" required autoComplete="organization" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputClass} />
+            </FormField>
+            <FormField label="Descrição (opcional)" htmlFor="cfg-desc">
+              <textarea
+                id="cfg-desc"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                rows={3}
+                placeholder="Descreva sua empresa…"
+                className={`${inputClass} h-auto py-3 resize-none`}
+              />
+            </FormField>
+            {error && <p role="alert" className="text-sm font-bold text-zero">{error}</p>}
+            <button
+              type="submit"
+              disabled={saving || !editName.trim()}
+              className="min-h-[52px] flex items-center justify-center gap-2 rounded-full bg-accent text-ink text-[15px] font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
+            >
+              {saving ? <Spinner className="w-[18px] h-[18px]" /> : saved ? <CheckIcon /> : null}
+              {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
+            </button>
+          </form>
 
-            {/* ── Plano & Cobrança ── */}
-            <div className="rounded-2xl overflow-hidden"
-              style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}>
-
-              <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <p className="text-[10px] text-slate-600 uppercase tracking-widest font-medium mb-3">Plano & Cobrança</p>
-
-                {/* Plan badge + upgrade */}
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold px-3 py-1 rounded-full"
-                      style={{ background: plan.bg, color: plan.color, border: `1px solid ${plan.border}` }}>
-                      {plan.label}
-                    </span>
-                    <span className="text-xs text-slate-500">{plan.limit}</span>
-                  </div>
-                  {workspace?.plan !== "pro" && (
-                    <button
-                      type="button"
-                      onClick={() => handleUpgrade(workspace?.plan === "basic" ? "growth" : "pro")}
-                      disabled={!!upgradingTo}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5 flex items-center gap-1.5 disabled:opacity-60"
-                      style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", color: "#fff", boxShadow: "0 2px 8px rgba(37,99,235,0.4)" }}>
-                      {upgradingTo ? "Aguarde…" : workspace?.plan === "basic" ? "Upgrade para Growth" : "Upgrade para Pro"}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Usage bar */}
-              <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-500">Produtos cadastrados</span>
-                  <span className="text-xs font-semibold" style={{ color: usageColor }}>
-                    {productCount} / {limit}
-                  </span>
-                </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-                  <div className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${usagePct}%`, background: usageColor }} />
-                </div>
-              </div>
-
-              {/* Billing actions */}
-              <div className="px-5 py-4 flex flex-col gap-2.5">
-                <p className="text-[10px] text-slate-600 uppercase tracking-widest font-medium mb-1">Faturamento</p>
-
-                {/* Renovação / trial */}
-                <div className="flex items-center justify-between py-2"
-                  style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span className="text-xs text-slate-500">
-                    {subscription?.status === "trialing" ? "Trial expira em" : "Próxima renovação"}
-                  </span>
-                  <span className="text-xs font-medium text-slate-300">
-                    {subscription?.status === "trialing"
-                      ? (formatDate(subscription.trial_ends_at) ?? "—")
-                      : subscription?.status === "active"
-                      ? (formatDate(subscription.current_period_end) ?? "—")
-                      : "—"}
-                  </span>
-                </div>
-
-                {/* Portal Stripe — só disponível com stripe_customer_id */}
-                {subscription?.stripe_customer_id ? (
-                  <button type="button" onClick={handlePortal} disabled={portalLoading}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium cursor-pointer transition-colors duration-200 disabled:opacity-60"
-                    style={{ background: "rgba(30,41,59,0.6)", border: "1px solid rgba(255,255,255,0.1)", color: "#94A3B8" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}>
-                    <span>{portalLoading ? "Abrindo…" : "Gerenciar assinatura"}</span>
-                    <ExternalIcon />
-                  </button>
-                ) : (
-                  <div className="flex items-center justify-between px-4 py-3 rounded-xl opacity-40"
-                    style={{ background: "rgba(30,41,59,0.6)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                    <span className="text-xs text-slate-500">Gerenciar assinatura</span>
-                    <span className="text-[10px] text-slate-600">Disponível após 1º pagamento</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ── Informações da empresa ── */}
-            <form onSubmit={handleSave}
-              className="rounded-2xl p-5 flex flex-col gap-4"
-              style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <h3 className="text-sm font-semibold text-white">Informações da empresa</h3>
-
+          {/* ── Encerrar assinatura — só owner ── */}
+          {can(wsRole, "canEncerrarAssinatura") && (
+            <section aria-labelledby="cfg-encerrar" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4 ring-1 ring-zero/25">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Nome da empresa</label>
-                <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} required
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all duration-200"
-                  style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                  onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Descrição (opcional)</label>
-                <textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} rows={3}
-                  placeholder="Descreva sua empresa…"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200 resize-none"
-                  style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                  onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                />
-              </div>
-
-              {error && <p className="text-xs text-red-400">{error}</p>}
-
-              <button type="submit" disabled={saving || !editName.trim()}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50"
-                style={{ background: saved ? "linear-gradient(135deg,#059669,#047857)" : "linear-gradient(135deg,#2563EB,#1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.3)" }}>
-                {saving
-                  ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  : saved ? <CheckIcon /> : null}
-                {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
-              </button>
-            </form>
-
-            {/* ── Encerrar assinatura — só owner ── */}
-            {can(wsRole, "canEncerrarAssinatura") && <div className="rounded-2xl overflow-hidden"
-              style={{ background: "rgba(220,38,38,0.05)", border: "1px solid rgba(239,68,68,0.18)" }}>
-
-              <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(239,68,68,0.1)" }}>
-                <h3 className="text-sm font-semibold text-red-400">Encerrar assinatura</h3>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Ao encerrar, <strong className="text-slate-400">todos os dados serão excluídos permanentemente</strong> — produtos, movimentações, membros e o workspace. Essa ação não pode ser desfeita.
+                <h2 id="cfg-encerrar" className="text-lg font-black text-zero">Encerrar assinatura</h2>
+                <p className="text-sm font-semibold text-fg-muted leading-relaxed">
+                  Ao encerrar, <strong className="text-fg font-extrabold">todos os dados são excluídos para sempre</strong>: produtos, movimentações, membros e o workspace.
                 </p>
               </div>
 
-              <div className="px-5 py-4">
-                {cancelStep === "idle" && (
-                  <button type="button" onClick={() => setCancelStep("warn")}
-                    className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium cursor-pointer transition-all duration-200"
-                    style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#FCA5A5" }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(220,38,38,0.18)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(220,38,38,0.1)"; }}>
-                    Encerrar assinatura
-                  </button>
-                )}
+              {cancelStep === "idle" && (
+                <button
+                  type="button"
+                  onClick={() => setCancelStep("warn")}
+                  className="min-h-[48px] rounded-full bg-zero/10 text-zero text-[15px] font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
+                >
+                  Encerrar assinatura
+                </button>
+              )}
 
-                {cancelStep === "warn" && (
-                  <div className="flex flex-col gap-4">
-                    <div className="rounded-xl p-4 flex flex-col gap-2"
-                      style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-                      <p className="text-sm font-semibold text-white">Tem certeza absoluta?</p>
-                      <ul className="text-xs text-slate-500 flex flex-col gap-1 list-disc list-inside leading-relaxed">
-                        <li>Todos os <strong className="text-slate-400">{productCount} produto(s)</strong> serão excluídos</li>
-                        <li>Todo o histórico de movimentações será apagado</li>
-                        <li>Todos os membros perderão o acesso</li>
-                        <li>Não é possível recuperar os dados depois</li>
-                      </ul>
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setCancelStep("idle")}
-                        className="flex-1 py-2.5 rounded-xl text-xs font-medium cursor-pointer"
-                        style={{ background: "rgba(255,255,255,0.06)", color: "#64748B" }}>
-                        Voltar
-                      </button>
-                      <button type="button" onClick={() => setCancelStep("confirm")}
-                        className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer"
-                        style={{ background: "rgba(220,38,38,0.4)", color: "#FCA5A5" }}>
-                        Continuar
-                      </button>
-                    </div>
+              {cancelStep === "warn" && (
+                <div className="flex flex-col gap-4">
+                  <div className="rounded-3xl bg-zero/10 p-4 flex flex-col gap-2">
+                    <p className="text-[15px] font-black">Tem certeza absoluta?</p>
+                    <ul className="text-sm font-semibold text-fg-muted flex flex-col gap-1 list-disc list-inside leading-relaxed">
+                      <li>Os <strong className="text-fg">{productCount} produto(s)</strong> serão excluídos</li>
+                      <li>Todo o histórico de movimentações será apagado</li>
+                      <li>Todos os membros perderão o acesso</li>
+                      <li>Não dá para recuperar os dados depois</li>
+                    </ul>
                   </div>
-                )}
-
-                {cancelStep === "confirm" && (
-                  <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <p className="text-xs text-slate-400">
-                        Digite <span className="font-bold text-red-400">{workspace?.name}</span> para confirmar:
-                      </p>
-                      <input type="text" value={deleteInput} onChange={(e) => setDeleteInput(e.target.value)}
-                        placeholder={workspace?.name}
-                        autoFocus
-                        className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200"
-                        style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(239,68,68,0.4)" }}
-                      />
-                    </div>
-
-                    {cancelError && <p className="text-xs text-red-400">{cancelError}</p>}
-
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => { setCancelStep("idle"); setDeleteInput(""); setCancelError(""); }}
-                        className="flex-1 py-2.5 rounded-xl text-xs font-medium cursor-pointer"
-                        style={{ background: "rgba(255,255,255,0.06)", color: "#64748B" }}>
-                        Cancelar
-                      </button>
-                      <button type="button"
-                        onClick={handleCancelSubscription}
-                        disabled={deleteInput !== workspace?.name || cancelling}
-                        className="flex-1 py-2.5 rounded-xl text-xs font-semibold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        style={{ background: "rgba(220,38,38,0.6)", color: "#FCA5A5" }}>
-                        {cancelling && <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
-                        {cancelling ? "Encerrando…" : "Encerrar definitivamente"}
-                      </button>
-                    </div>
+                  <div className="flex gap-2.5">
+                    <button type="button" onClick={() => setCancelStep("idle")} className="flex-1 min-h-[48px] rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10">
+                      Voltar
+                    </button>
+                    <button type="button" onClick={() => setCancelStep("confirm")} className="flex-1 min-h-[48px] rounded-full bg-zero/20 text-zero text-sm font-black cursor-pointer hover:bg-zero/30">
+                      Continuar
+                    </button>
                   </div>
-                )}
-              </div>
-            </div>}
+                </div>
+              )}
 
-          </div>
+              {cancelStep === "confirm" && (
+                <div className="flex flex-col gap-4">
+                  <FormField label={confirmLabel} htmlFor="cfg-confirmar">
+                    <input
+                      id="cfg-confirmar"
+                      type="text"
+                      autoComplete="off"
+                      value={deleteInput}
+                      onChange={(e) => setDeleteInput(e.target.value)}
+                      placeholder={workspace?.name}
+                      autoFocus
+                      className={`${inputClass} ring-1 ring-zero/40`}
+                    />
+                  </FormField>
+                  {cancelError && <p role="alert" className="text-sm font-bold text-zero">{cancelError}</p>}
+                  <div className="flex gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => { setCancelStep("idle"); setDeleteInput(""); setCancelError(""); }}
+                      className="flex-1 min-h-[48px] rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelSubscription}
+                      disabled={deleteInput !== workspace?.name || cancelling}
+                      className="flex-1 min-h-[48px] rounded-full bg-zero text-ink text-sm font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {cancelling && <Spinner className="w-4 h-4" />}
+                      {cancelling ? "Encerrando…" : "Encerrar definitivamente"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
         </div>
       </main>
       <BottomNav />

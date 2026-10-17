@@ -10,6 +10,7 @@ import PrimaryButton from "@/components/auth/PrimaryButton";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
 import { setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
+import { ArrowRightIcon } from "@/components/ui/icons";
 
 const PlusIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -17,7 +18,7 @@ const PlusIcon = () => (
   </svg>
 );
 const BuildingIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
   </svg>
 );
@@ -121,44 +122,32 @@ export default function SelectWorkspacePage() {
 
   const selectedName = workspaces.find((w) => w.workspaces?.id === selectedId)?.workspaces?.name;
 
-  return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          width: "700px", height: "400px",
-          background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.15) 0%, transparent 70%)",
-        }}
-      />
+  const ROLE_PT: Record<string, string> = { owner: "Proprietário", admin: "Administrador", member: "Membro" };
 
+  return (
+    <div className="min-h-screen bg-ink">
       <TopBar />
 
-      <main className="pt-14 pb-28 md:pb-12 min-h-screen flex flex-col justify-center">
-        <LayoutContainer className="py-10">
+      <main className="pt-16 pb-48 md:pb-12 min-h-screen flex flex-col justify-center">
+        <LayoutContainer className="py-10 flex flex-col gap-7">
 
           {checkoutStatus === "success" && (
-            <div className="mb-6 px-4 py-3 rounded-xl text-sm font-medium text-center"
-              style={{ background: "rgba(5,150,105,0.15)", border: "1px solid rgba(16,185,129,0.3)", color: "#6EE7B7" }}>
+            <p role="status" className="px-4 py-3 rounded-3xl text-sm font-extrabold text-center bg-ok/15 text-ok">
               Pagamento confirmado! Selecione seu workspace para continuar.
-            </div>
+            </p>
           )}
           {checkoutStatus === "canceled" && (
-            <div className="mb-6 px-4 py-3 rounded-xl text-sm font-medium text-center"
-              style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#FCA5A5" }}>
+            <p role="status" className="px-4 py-3 rounded-3xl text-sm font-extrabold text-center bg-zero/15 text-zero">
               Pagamento cancelado. Você pode tentar novamente nas configurações.
-            </div>
+            </p>
           )}
 
-          <div className="mb-8 text-center">
-            <div
-              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4"
-              style={{ background: "rgba(29,78,216,0.15)", border: "1px solid rgba(59,130,246,0.2)" }}
-            >
+          <div className="text-center flex flex-col items-center gap-2">
+            <span className="w-16 h-16 rounded-full bg-surface text-accent flex items-center justify-center mb-2">
               <BuildingIcon />
-            </div>
-            <h1 className="font-display font-bold text-2xl text-white">Selecionar workspace</h1>
-            <p className="text-slate-400 text-sm mt-1.5">Escolha em qual empresa você deseja trabalhar agora</p>
+            </span>
+            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight">Selecionar workspace</h1>
+            <p className="text-[15px] font-bold text-fg-muted">Escolha em qual empresa você quer trabalhar agora</p>
           </div>
 
           {loading ? <PageLoader /> : (
@@ -166,34 +155,24 @@ export default function SelectWorkspacePage() {
 
               {/* ── Convites pendentes ── */}
               {pending.length > 0 && (
-                <div>
-                  <p className="text-[10px] text-amber-400 uppercase tracking-widest font-semibold mb-3">
-                    Convites pendentes
-                  </p>
-                  <div className="flex flex-col gap-2">
+                <section className="flex flex-col gap-3">
+                  <h2 className="text-sm font-extrabold text-low">Convites pendentes</h2>
+                  <div className="flex flex-col gap-2.5">
                     {pending.map((row) => {
                       if (!row.workspaces) return null;
                       const busy = accepting === row.id;
                       return (
-                        <div
-                          key={row.id}
-                          className="rounded-xl px-4 py-3.5 flex items-center justify-between gap-3"
-                          style={{
-                            background: "rgba(217,119,6,0.07)",
-                            border: "1px solid rgba(245,158,11,0.2)",
-                          }}
-                        >
+                        <div key={row.id} className="rounded-4xl bg-surface ring-1 ring-low/25 px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{row.workspaces.name}</p>
-                            <p className="text-[11px] text-slate-500 mt-0.5 capitalize">{row.role}</p>
+                            <p className="text-[15px] font-black truncate">{row.workspaces.name}</p>
+                            <p className="text-[13px] font-bold text-fg-muted">Convite como {ROLE_PT[row.role] ?? row.role}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() => handleDecline(row)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all duration-200 disabled:opacity-40"
-                              style={{ background: "rgba(255,255,255,0.05)", color: "#64748B", border: "1px solid rgba(255,255,255,0.08)" }}
+                              className="flex items-center gap-1.5 min-h-[44px] px-4 rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-40"
                             >
                               <XIcon /> Recusar
                             </button>
@@ -201,8 +180,7 @@ export default function SelectWorkspacePage() {
                               type="button"
                               disabled={busy}
                               onClick={() => handleAccept(row)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all duration-200 disabled:opacity-40"
-                              style={{ background: "rgba(5,150,105,0.15)", color: "#6EE7B7", border: "1px solid rgba(16,185,129,0.25)" }}
+                              className="flex items-center gap-1.5 min-h-[44px] px-4 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-40"
                             >
                               <CheckIcon /> {busy ? "…" : "Aceitar"}
                             </button>
@@ -211,19 +189,15 @@ export default function SelectWorkspacePage() {
                       );
                     })}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* ── Workspaces ativos ── */}
               {workspaces.length === 0 ? (
-                <p className="text-center text-slate-500 text-sm py-6">Nenhum workspace encontrado.</p>
+                <p className="text-center text-[15px] font-bold text-fg-muted py-6">Nenhum workspace encontrado. Crie sua empresa para começar.</p>
               ) : (
-                <div>
-                  {pending.length > 0 && (
-                    <p className="text-[10px] text-slate-600 uppercase tracking-widest font-semibold mb-3">
-                      Seus workspaces
-                    </p>
-                  )}
+                <section className="flex flex-col gap-3">
+                  {pending.length > 0 && <h2 className="text-sm font-extrabold text-fg-muted">Seus workspaces</h2>}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {workspaces.map((w) => {
                       if (!w.workspaces) return null;
@@ -240,57 +214,34 @@ export default function SelectWorkspacePage() {
                       );
                     })}
                   </div>
-                </div>
+                </section>
               )}
-
             </div>
           )}
 
-          <div className="h-5 mt-3">
-            {selectedName && (
-              <p className="text-xs text-center text-slate-600">
-                <span className="text-emerald-500 font-medium">{selectedName}</span> selecionado
-              </p>
-            )}
-          </div>
+          <p aria-live="polite" className="h-5 text-sm font-bold text-center text-fg-muted">
+            {selectedName && <><span className="text-fg font-black">{selectedName}</span> selecionado</>}
+          </p>
 
-          <div className="hidden md:flex flex-row gap-3 mt-6 justify-center">
-            <div className="w-44">
+          <div className="hidden md:flex flex-row gap-3 justify-center">
+            <div className="w-48">
               <PrimaryButton onClick={handleContinue} loading={saving} disabled={!selectedId}>
-                {!saving && (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                )}
-                Continuar
+                Continuar <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
               </PrimaryButton>
             </div>
-            <div className="w-52">
+            <div className="w-56">
               <SecondaryButton onClick={() => router.push("/register-company")} icon={<PlusIcon />}>
                 Criar nova empresa
               </SecondaryButton>
             </div>
           </div>
-
         </LayoutContainer>
       </main>
 
-      <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-4"
-        style={{
-          background: "linear-gradient(180deg, transparent 0%, rgba(15,23,42,0.98) 40%)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-        }}
-      >
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pt-4 pb-[calc(20px+env(safe-area-inset-bottom))] bg-ink/95 backdrop-blur border-t border-white/[0.06]">
         <div className="flex flex-col gap-2.5 max-w-lg mx-auto">
           <PrimaryButton onClick={handleContinue} loading={saving} disabled={!selectedId}>
-            {!saving && (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            )}
-            Continuar
+            Continuar <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
           </PrimaryButton>
           <SecondaryButton onClick={() => router.push("/register-company")} icon={<PlusIcon />}>
             Criar nova empresa

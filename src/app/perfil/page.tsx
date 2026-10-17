@@ -11,18 +11,9 @@ import Link from "next/link";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
 import { clearSession } from "@/lib/session";
-import { SlidersIcon, ArrowRightIcon } from "@/components/ui/icons";
+import { SlidersIcon, ArrowRightIcon, CheckIcon, Spinner } from "@/components/ui/icons";
+import FormField, { inputClass } from "@/components/ui/FormField";
 
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-  </svg>
-);
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
 const LogOutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -161,164 +152,100 @@ export default function PerfilPage() {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-navy-900 flex items-center justify-center"><PageLoader /></div>
+    <div className="min-h-screen bg-ink flex items-center justify-center"><PageLoader /></div>
   );
 
   const initials = getInitials(profile?.name ?? "");
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{ width: "700px", height: "350px", background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.09) 0%, transparent 70%)" }}
-      />
+    <div className="min-h-screen bg-ink">
       <DashboardSidebar workspaceName={wsName} userName={profile?.name ?? ""} />
       <DashboardTopBar  workspaceName={wsName} userName={profile?.name ?? ""} />
 
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5">
 
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => router.back()}
-                className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-medium cursor-pointer transition-colors duration-200">
-                <ArrowLeftIcon /> Voltar
-              </button>
-            </div>
+          <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Perfil</h1>
 
-            {/* Avatar */}
-            <div className="flex flex-col items-center gap-3 py-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarUpload}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={imgUploading}
-                className="relative group cursor-pointer disabled:cursor-not-allowed"
-                title="Alterar foto de perfil"
-              >
-                {profile?.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt="Foto de perfil"
-                    className="w-20 h-20 rounded-2xl object-cover"
-                    style={{ boxShadow: "0 4px 20px rgba(37,99,235,0.4)" }}
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white"
-                    style={{ background: "linear-gradient(135deg,#1d4ed8,#3b82f6)", boxShadow: "0 4px 20px rgba(37,99,235,0.4)" }}>
-                    {imgUploading ? (
-                      <svg className="animate-spin w-6 h-6" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                      </svg>
-                    ) : initials}
-                  </div>
-                )}
-                {/* Pencil overlay */}
-                {!imgUploading && (
-                  <span className="absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-white opacity-90 group-hover:opacity-100 transition-opacity"
-                    style={{ background: "#2563EB", boxShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
-                    <PencilIcon />
-                  </span>
-                )}
-                {/* Uploading spinner overlay on photo */}
-                {imgUploading && profile?.avatar_url && (
-                  <span className="absolute inset-0 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(13,19,35,0.6)" }}>
-                    <svg className="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                  </span>
-                )}
-              </button>
-              {imgError && <p className="text-xs text-red-400 text-center">{imgError}</p>}
-              <div className="text-center">
-                <p className="font-display font-bold text-lg text-white">{profile?.name}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{profile?.email}</p>
-              </div>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSave}
-              className="rounded-2xl p-5 flex flex-col gap-4"
-              style={{ background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" }}
+          {/* Cartão do usuário */}
+          <section className="bg-accent text-ink rounded-5xl p-5 lg:p-6 flex items-center gap-4">
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={imgUploading}
+              aria-label="Alterar foto de perfil"
+              className="relative w-20 h-20 rounded-full flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
             >
-              <h3 className="text-sm font-semibold text-white">Informações pessoais</h3>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Nome</label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white outline-none transition-all duration-200"
-                  style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                  onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">E-mail</label>
-                <input type="email" value={profile?.email ?? ""} disabled
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-slate-500 outline-none"
-                  style={{ background: "rgba(15,23,42,0.4)", border: "1px solid rgba(255,255,255,0.04)" }}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Telefone</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(opcional)"
-                  className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200"
-                  style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                  onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                />
-              </div>
-
-              {error && <p className="text-xs text-red-400">{error}</p>}
-
-              <button type="submit" disabled={saving}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50"
-                style={{ background: saved ? "linear-gradient(135deg,#059669,#047857)" : "linear-gradient(135deg,#2563EB,#1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
-              >
-                {saving ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                  : saved ? <CheckIcon /> : null}
-                {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
-              </button>
-            </form>
-
-            {/* Configurações do workspace — no celular o atalho fica aqui (saiu do menu inferior) */}
-            {can(role, "canAccessConfiguracoes") && (
-              <Link
-                href="/configuracoes"
-                className="lg:hidden flex items-center gap-3 min-h-[56px] px-4 rounded-3xl bg-surface text-fg hover:bg-surface-2 transition-colors"
-              >
-                <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0">
-                  <SlidersIcon />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[15px] font-extrabold">Configurações do workspace</span>
-                  <span className="block text-[13px] font-bold text-fg-muted truncate">Plano, assinatura e dados de {wsName || "sua empresa"}</span>
-                </span>
-                <ArrowRightIcon className="w-[18px] h-[18px] text-fg-subtle" />
-              </Link>
-            )}
-
-            {/* Logout */}
-            <button type="button" onClick={handleLogout}
-              className="flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium cursor-pointer transition-all duration-200"
-              style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(239,68,68,0.18)", color: "#FCA5A5" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(220,38,38,0.16)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.35)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(220,38,38,0.08)"; e.currentTarget.style.borderColor = "rgba(239,68,68,0.18)"; }}
-            >
-              <LogOutIcon /> Sair da conta
+              <span className="w-full h-full rounded-full overflow-hidden bg-ink text-fg flex items-center justify-center text-2xl font-black">
+                {profile?.avatar_url
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  : initials}
+              </span>
+              <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-ink text-fg border-[3px] border-accent flex items-center justify-center">
+                {imgUploading ? <Spinner className="w-3.5 h-3.5" /> : <PencilIcon />}
+              </span>
             </button>
+            <div className="min-w-0 flex flex-col gap-0.5">
+              <p className="text-xl font-black truncate">{profile?.name}</p>
+              <p className="text-sm font-bold text-ink/75 truncate">{profile?.email}</p>
+              {wsName && <p className="text-[13px] font-extrabold text-ink/70 truncate">{wsName}</p>}
+            </div>
+          </section>
+          {imgError && <p role="alert" className="text-sm font-bold text-zero">{imgError}</p>}
 
-          </div>
+          {/* Formulário */}
+          <form onSubmit={handleSave} className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
+            <h2 className="text-lg font-black">Informações pessoais</h2>
+
+            <FormField label="Nome" htmlFor="perfil-nome">
+              <input id="perfil-nome" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
+            </FormField>
+            <FormField label="E-mail" htmlFor="perfil-email" hint={<p className="text-[13px] font-bold text-fg-subtle">O e-mail é o login e não pode ser alterado aqui.</p>}>
+              <input id="perfil-email" type="email" value={profile?.email ?? ""} disabled className={inputClass} />
+            </FormField>
+            <FormField label="Telefone" htmlFor="perfil-telefone">
+              <input id="perfil-telefone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(opcional)" className={inputClass} />
+            </FormField>
+
+            {error && <p role="alert" className="text-sm font-bold text-zero">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="min-h-[52px] flex items-center justify-center gap-2 rounded-full bg-accent text-ink text-[15px] font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
+            >
+              {saving ? <Spinner className="w-[18px] h-[18px]" /> : saved ? <CheckIcon /> : null}
+              {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
+            </button>
+          </form>
+
+          {/* Configurações do workspace — no celular o atalho fica aqui (saiu do menu inferior) */}
+          {can(role, "canAccessConfiguracoes") && (
+            <Link
+              href="/configuracoes"
+              className="lg:hidden flex items-center gap-3 min-h-[64px] px-4 rounded-4xl bg-surface text-fg hover:bg-surface-2 transition-colors"
+            >
+              <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0">
+                <SlidersIcon />
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[15px] font-extrabold">Configurações do workspace</span>
+                <span className="block text-[13px] font-bold text-fg-muted truncate">Plano, assinatura e dados de {wsName || "sua empresa"}</span>
+              </span>
+              <ArrowRightIcon className="w-[18px] h-[18px] text-fg-subtle" />
+            </Link>
+          )}
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="min-h-[52px] flex items-center justify-center gap-2 rounded-full bg-zero/10 text-zero text-[15px] font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
+          >
+            <LogOutIcon /> Sair da conta
+          </button>
+
         </div>
       </main>
       <BottomNav />

@@ -85,7 +85,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => router.push("/forgot-password")}
-              className="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer"
+              className="min-h-[32px] text-[13px] text-accent hover:brightness-110 font-extrabold cursor-pointer"
             >
               Esqueceu?
             </button>
@@ -94,7 +94,7 @@ export default function LoginPage() {
 
         {/* Error */}
         {error && (
-          <p className="text-xs text-red-400 text-center -mb-1">{error}</p>
+          <p role="alert" className="text-sm font-bold text-zero text-center">{error}</p>
         )}
 
         {/* Submit */}
@@ -115,12 +115,12 @@ export default function LoginPage() {
         </SocialButton>
 
         {/* Footer link */}
-        <p className="text-center text-sm text-slate-500 mt-1">
+        <p className="text-center text-sm font-bold text-fg-muted mt-1">
           Não possui uma conta?{" "}
           <button
             type="button"
             onClick={() => router.push("/register")}
-            className="text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer"
+            className="text-accent hover:brightness-110 font-extrabold cursor-pointer"
           >
             Solicitar acesso
           </button>

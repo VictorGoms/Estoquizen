@@ -1,35 +1,48 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
+import ProductAvatar from "@/components/estoque/ProductAvatar";
+import StatusChip from "@/components/estoque/StatusChip";
+import LevelBar from "@/components/estoque/LevelBar";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
+import { formatQty, type StockStatus } from "@/lib/stock";
+import { BellIcon, CheckIcon } from "@/components/ui/icons";
 
-const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
-  </svg>
-);
-const BellIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-  </svg>
-);
-const AlertIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-  </svg>
-);
-const BoxIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-  </svg>
-);
+interface AlertProduct {
+  id: string;
+  name: string;
+  qty: number;
+  min_qty: number;
+  unit: string;
+  location: string | null;
+  image_url: string | null;
+}
 
-interface AlertProduct { id: string; name: string; qty: number; min_qty: number }
+function AlertRow({ p, status }: { p: AlertProduct; status: StockStatus }) {
+  return (
+    <li>
+      <Link href={`/estoque/${p.id}`} className="flex items-center gap-3.5 p-3 pr-4 rounded-[22px] bg-surface hover:bg-[#19243a] transition-colors">
+        <ProductAvatar name={p.name} imageUrl={p.image_url} />
+        <span className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <span className="flex justify-between items-center gap-2">
+            <span className="text-[15px] font-extrabold truncate">{p.name}</span>
+            <StatusChip status={status} size="sm" />
+          </span>
+          <LevelBar fill={p.min_qty ? Math.min(p.qty / p.min_qty, 1) : 0} status={status} />
+          <span className="text-[13px] font-bold text-fg-muted truncate">
+            {formatQty(p.qty)} de {formatQty(p.min_qty)} {p.unit} mínimo{p.location ? ` · ${p.location}` : ""}
+          </span>
+        </span>
+      </Link>
+    </li>
+  );
+}
 
 export default function NotificacoesPage() {
   const router = useRouter();
@@ -52,11 +65,11 @@ export default function NotificacoesPage() {
 
       const { data } = await supabase
         .from("products")
-        .select("id, name, qty, min_qty")
+        .select("id, name, qty, min_qty, unit, location, image_url")
         .eq("workspace_id", ws.id);
 
-      const alerts = (data ?? []).filter((p) => p.qty === 0 || p.qty <= p.min_qty);
-      setAlerts(alerts as AlertProduct[]);
+      const rows = (data ?? []).map((p) => ({ ...p, qty: Number(p.qty), min_qty: Number(p.min_qty ?? 0) }));
+      setAlerts(rows.filter((p) => p.qty === 0 || p.qty <= p.min_qty) as AlertProduct[]);
       setLoading(false);
     }
     load();
@@ -66,95 +79,63 @@ export default function NotificacoesPage() {
   const baixos  = alerts.filter((p) => p.qty > 0 && p.qty <= p.min_qty);
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{ width: "700px", height: "350px", background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.09) 0%, transparent 70%)" }}
-      />
+    <div className="min-h-screen bg-ink">
       <DashboardSidebar workspaceName={wsName} userName={userName} />
       <DashboardTopBar  workspaceName={wsName} userName={userName} />
 
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-6">
 
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => router.back()}
-                className="flex items-center gap-1.5 text-slate-500 hover:text-white text-xs font-medium cursor-pointer transition-colors duration-200">
-                <ArrowLeftIcon /> Voltar
-              </button>
-            </div>
-
-            <div>
-              <h1 className="font-display font-bold text-xl text-white">Notificações</h1>
-              <p className="text-slate-500 text-sm mt-1">Alertas do seu estoque</p>
-            </div>
-
-            {loading ? (
-              <div className="py-12 flex items-center justify-center">
-                <svg className="animate-spin w-6 h-6 text-brand-400" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-              </div>
-            ) : alerts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-slate-600"
-                  style={{ background: "rgba(30,41,59,0.7)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                  <BellIcon />
-                </div>
-                <div className="text-center">
-                  <p className="text-white font-medium text-sm">Tudo certo!</p>
-                  <p className="text-slate-600 text-xs mt-1">Nenhum alerta de estoque no momento</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-
-                {zerados.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[10px] text-slate-600 uppercase tracking-widest font-medium">Zerados ({zerados.length})</p>
-                    {zerados.map((p) => (
-                      <button key={p.id} type="button" onClick={() => router.push(`/estoque/${p.id}`)}
-                        className="group w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                        style={{ background: "rgba(220,38,38,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(239,68,68,0.4)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)"; }}
-                      >
-                        <span className="text-red-400"><AlertIcon /></span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{p.name}</p>
-                          <p className="text-xs text-red-400 mt-0.5">Estoque zerado</p>
-                        </div>
-                        <span className="font-display font-bold text-base text-red-400">{p.qty}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {baixos.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <p className="text-[10px] text-slate-600 uppercase tracking-widest font-medium">Estoque baixo ({baixos.length})</p>
-                    {baixos.map((p) => (
-                      <button key={p.id} type="button" onClick={() => router.push(`/estoque/${p.id}`)}
-                        className="group w-full text-left flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                        style={{ background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.2)" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(217,119,6,0.4)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(217,119,6,0.2)"; }}
-                      >
-                        <span className="text-amber-400"><BoxIcon /></span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white truncate">{p.name}</p>
-                          <p className="text-xs text-amber-400 mt-0.5">Mínimo: {p.min_qty} · Atual: {p.qty}</p>
-                        </div>
-                        <span className="font-display font-bold text-base text-amber-400">{p.qty}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-              </div>
-            )}
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Notificações</h1>
+            <p className="text-sm lg:text-[15px] font-bold text-fg-muted">
+              {loading ? "Carregando…" : alerts.length === 0 ? "Nenhum alerta agora" : `${alerts.length} produto${alerts.length !== 1 ? "s" : ""} precisa${alerts.length !== 1 ? "m" : ""} de atenção`}
+            </p>
           </div>
+
+          {loading ? (
+            <div className="flex flex-col gap-2.5">
+              {[0, 1, 2].map((i) => <div key={i} className="h-[76px] rounded-[22px] bg-surface animate-pulse" />)}
+            </div>
+          ) : alerts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-4 text-center bg-surface rounded-5xl">
+              <span className="w-16 h-16 rounded-full bg-ok/15 text-ok flex items-center justify-center">
+                <CheckIcon className="w-8 h-8" strokeWidth={2.6} />
+              </span>
+              <div>
+                <p className="text-lg font-black">Tudo certo!</p>
+                <p className="text-sm font-bold text-fg-muted mt-1">Nenhum produto está no mínimo ou zerado.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {zerados.length > 0 && (
+                <section className="flex flex-col gap-3">
+                  <h2 className="flex items-center gap-2 text-base font-black">
+                    <span className="w-2.5 h-2.5 rounded-full bg-zero" aria-hidden="true" />
+                    Zerados · {zerados.length}
+                  </h2>
+                  <ul className="flex flex-col gap-2.5">
+                    {zerados.map((p) => <AlertRow key={p.id} p={p} status="zerado" />)}
+                  </ul>
+                </section>
+              )}
+              {baixos.length > 0 && (
+                <section className="flex flex-col gap-3">
+                  <h2 className="flex items-center gap-2 text-base font-black">
+                    <span className="w-2.5 h-2.5 rounded-full bg-low" aria-hidden="true" />
+                    Estoque baixo · {baixos.length}
+                  </h2>
+                  <ul className="flex flex-col gap-2.5">
+                    {baixos.map((p) => <AlertRow key={p.id} p={p} status="baixo" />)}
+                  </ul>
+                </section>
+              )}
+              <p className="flex items-center gap-2 text-[13px] font-bold text-fg-subtle">
+                <BellIcon className="w-4 h-4" /> Um produto entra aqui quando a quantidade chega ao mínimo cadastrado.
+              </p>
+            </div>
+          )}
         </div>
       </main>
       <BottomNav />

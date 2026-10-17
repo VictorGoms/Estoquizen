@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardTopBar  from "@/components/dashboard/DashboardTopBar";
@@ -8,50 +8,38 @@ import BottomNav        from "@/components/dashboard/BottomNav";
 import AccessDenied     from "@/components/ui/AccessDenied";
 import PageLoader       from "@/components/ui/PageLoader";
 import BarcodeScanner   from "@/components/ui/BarcodeScanner";
+import FormField, { inputClass } from "@/components/ui/FormField";
+import { ArrowRightIcon, CheckIcon, DocumentIcon, ScanIcon, SearchIcon, Spinner } from "@/components/ui/icons";
 import { useRole, can } from "@/hooks/useRole";
+import { getWorkspace } from "@/hooks/useWorkspace";
 import { api }          from "@/lib/api";
 
-/* ─── Icons ─── */
-const FileXmlIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+/* ─── Ícones desta tela ─── */
+const FileCodeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="m10 13-2 2 2 2" /><path d="m14 13 2 2-2 2" />
   </svg>
 );
-const ReceiptIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+const ReceiptIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6M9 16h3" />
   </svg>
 );
-const DocumentIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-  </svg>
-);
-const QrCodeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75zM6.75 16.5h.75v.75h-.75v-.75zM16.5 6.75h.75v.75h-.75v-.75zM13.5 13.5h.75v.75h-.75v-.75zM13.5 19.5h.75v.75h-.75v-.75zM19.5 13.5h.75v.75h-.75v-.75zM19.5 19.5h.75v.75h-.75v-.75zM16.5 16.5h.75v.75h-.75v-.75z" />
-  </svg>
-);
-const HashIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 8.25h15m-16.5 7.5h15m-1.8-13.5l-3.9 19.5m-2.1-19.5l-3.9 19.5" />
-  </svg>
-);
-const SearchIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>
-);
-const SpinnerIcon = () => (
-  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+const QrIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <rect x="3.5" y="3.5" width="6" height="6" rx="1.5" /><rect x="14.5" y="3.5" width="6" height="6" rx="1.5" /><rect x="3.5" y="14.5" width="6" height="6" rx="1.5" />
+    <path d="M14.5 14.5h2.5v2.5M20.5 14.5v.01M14.5 20.5h.01M17.5 20.5h3v-3" />
   </svg>
 );
 
 type TipoNota = "xml" | "nfce" | "nfe";
 type ModoNfce = "qrcode" | "chave";
+
+const TIPOS: Array<{ id: TipoNota; label: string; desc: string; Icon: typeof ReceiptIcon; soon: boolean }> = [
+  { id: "xml",  label: "XML da NF-e", desc: "Arquivo que o fornecedor envia por e-mail", Icon: FileCodeIcon, soon: false },
+  { id: "nfce", label: "NFC-e",       desc: "Cupom fiscal: QR Code ou chave de acesso",  Icon: ReceiptIcon,  soon: false },
+  { id: "nfe",  label: "NF-e",        desc: "Consulta pela chave da nota eletrônica",    Icon: DocumentIcon, soon: true  },
+];
 
 /* ── Formata chave com espaços a cada 4 dígitos ── */
 function formatarChave(raw: string): string {
@@ -59,21 +47,33 @@ function formatarChave(raw: string): string {
   return digits.replace(/(.{4})/g, "$1 ").trim();
 }
 
-const cardBase = "rounded-2xl p-5 flex flex-col gap-4";
-const cardStyle = { background: "rgba(22,32,52,0.8)", border: "1px solid rgba(255,255,255,0.08)" };
+function ErrorBox({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="alert" className="px-4 py-3 rounded-3xl bg-zero/10 text-zero text-sm font-bold leading-relaxed">
+      {children}
+    </p>
+  );
+}
 
 export default function NotaPage() {
   const router  = useRouter();
   const role    = useRole();
 
+  const [wsName,       setWsName]       = useState("");
   const [tipo,         setTipo]         = useState<TipoNota | null>(null);
   const [modo,         setModo]         = useState<ModoNfce>("chave");
   const [chave,        setChave]        = useState("");
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState("");
-  const [xmlInfo,      setXmlInfo]      = useState<{ nome: string; itens: number } | null>(null);
+  const [xmlInfo,      setXmlInfo]      = useState<{ nome: string; itens: number; arquivo: string } | null>(null);
+  const [dragOver,     setDragOver]     = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const ws = getWorkspace();
+    if (ws) setWsName(ws.name);
+  }, []);
 
   function handleQrDetect(raw: string) {
     setShowQrScanner(false);
@@ -91,7 +91,7 @@ export default function NotaPage() {
     }
 
     if (chaveExtraida.length !== 44) {
-      setError("QR Code não reconhecido como NFC-e. Verifique se é um cupom fiscal válido.");
+      setError("Esse QR Code não parece ser de uma NFC-e. Confira se é o QR Code do cupom fiscal.");
       return;
     }
 
@@ -135,9 +135,7 @@ export default function NotaPage() {
     return el.getElementsByTagName(tag)[0]?.textContent?.trim() ?? "";
   }
 
-  function handleXmlFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  function readXmlFile(file: File) {
     setError("");
     setXmlInfo(null);
 
@@ -148,13 +146,13 @@ export default function NotaPage() {
         const doc  = new DOMParser().parseFromString(xml, "text/xml");
 
         if (doc.querySelector("parsererror")) {
-          setError("Arquivo inválido. Certifique-se de que é um XML de NF-e.");
+          setError("Arquivo inválido. Confira se é o XML da NF-e (não o PDF/DANFE).");
           return;
         }
 
         const dets  = Array.from(doc.getElementsByTagName("det"));
         if (dets.length === 0) {
-          setError("Nenhum produto encontrado no XML. Verifique se é um arquivo de NF-e válido.");
+          setError("Nenhum produto encontrado no XML. Confira se é o arquivo de uma NF-e.");
           return;
         }
 
@@ -179,12 +177,26 @@ export default function NotaPage() {
         sessionStorage.setItem("nf_chave", getTag(doc.documentElement, "chNFe") || "");
         sessionStorage.setItem("nf_tipo",  "xml");
 
-        setXmlInfo({ nome: emitNome, itens: itens.length });
+        setXmlInfo({ nome: emitNome, itens: itens.length, arquivo: file.name });
       } catch {
         setError("Erro ao processar o arquivo XML.");
       }
     };
     reader.readAsText(file, "UTF-8");
+  }
+
+  function handleXmlInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) readXmlFile(file);
+    /* Limpa para permitir escolher o mesmo arquivo de novo */
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) readXmlFile(file);
   }
 
   async function handleBuscarNfce(e: React.FormEvent) {
@@ -194,232 +206,223 @@ export default function NotaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-navy-900 relative overflow-hidden">
-      <div aria-hidden="true" className="absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{ width: "800px", height: "450px", background: "radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.11) 0%, transparent 70%)" }} />
-
-      <DashboardSidebar />
-      <DashboardTopBar />
+    <div className="min-h-screen bg-ink">
+      <DashboardSidebar workspaceName={wsName} />
+      <DashboardTopBar  workspaceName={wsName} />
 
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6 lg:py-8 flex flex-col gap-6">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5">
 
-            {/* Header */}
-            <div>
-              <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest mb-1">Nova entrada</p>
-              <h1 className="font-display font-bold text-xl sm:text-2xl text-white">Importar compra</h1>
-              <p className="text-slate-400 text-sm mt-1.5">Selecione o formato para importar os produtos automaticamente.</p>
-            </div>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Importar compra</h1>
+            <p className="text-sm lg:text-[15px] font-bold text-fg-muted">Os produtos da nota entram no estoque de uma vez, depois de você revisar.</p>
+          </div>
 
-            {/* ── Seletor de tipo ── */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { id: "xml",  label: "XML",    icon: <FileXmlIcon />,   desc: "Arquivo .xml da NF-e",         soon: false },
-                { id: "nfce", label: "NFC-e",  icon: <ReceiptIcon />,   desc: "Nota Fiscal do Consumidor",    soon: false },
-                { id: "nfe",  label: "NF-e",   icon: <DocumentIcon />,  desc: "Nota Fiscal Eletrônica",       soon: true  },
-              ].map((opt) => {
+          {/* ── Formato da nota ── */}
+          <fieldset className="flex flex-col gap-3">
+            <legend className="text-lg font-black mb-3">Qual nota você tem?</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {TIPOS.map((opt) => {
                 const active = tipo === opt.id;
                 return (
                   <button
                     key={opt.id}
                     type="button"
                     disabled={opt.soon}
-                    onClick={() => { setTipo(opt.id as TipoNota); setError(""); setChave(""); }}
-                    className="relative flex flex-col items-center gap-2 rounded-2xl p-4 text-center transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{
-                      background: active ? "rgba(37,99,235,0.15)" : "rgba(22,32,52,0.8)",
-                      border:     active ? "1px solid rgba(59,130,246,0.5)" : "1px solid rgba(255,255,255,0.08)",
-                    }}
+                    aria-pressed={active}
+                    onClick={() => { setTipo(opt.id); setError(""); setChave(""); setXmlInfo(null); }}
+                    className={`relative flex sm:flex-col items-center sm:items-start gap-3.5 sm:gap-3 p-4 rounded-4xl text-left cursor-pointer transition-colors disabled:cursor-not-allowed ${
+                      active ? "bg-inverse text-ink" : "bg-surface text-fg hover:bg-[#19243a] disabled:hover:bg-surface"
+                    } ${opt.soon ? "opacity-55" : ""}`}
                   >
+                    <span className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${active ? "bg-ink text-accent" : "bg-surface-2 text-fg-soft"}`}>
+                      <opt.Icon className="w-6 h-6" />
+                    </span>
+                    <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      <span className="text-[15px] font-black">{opt.label}</span>
+                      <span className={`text-[13px] font-bold leading-snug ${active ? "text-inverse-muted" : "text-fg-muted"}`}>{opt.desc}</span>
+                    </span>
                     {opt.soon && (
-                      <span className="absolute top-2 right-2 text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Em breve</span>
+                      <span className="sm:absolute sm:top-4 sm:right-4 flex-shrink-0 px-2.5 py-1 rounded-full bg-surface-2 text-[11px] font-black text-fg-muted">
+                        Em breve
+                      </span>
                     )}
-                    <span className={active ? "text-blue-400" : "text-slate-400"}>{opt.icon}</span>
-                    <span className={`text-sm font-semibold ${active ? "text-white" : "text-slate-300"}`}>{opt.label}</span>
-                    <span className="text-[11px] text-slate-500 leading-tight">{opt.desc}</span>
                   </button>
                 );
               })}
             </div>
+          </fieldset>
 
-            {/* ── Conteúdo por tipo ── */}
-            {tipo === "nfce" && (
-              <div className={cardBase} style={cardStyle}>
-                <h3 className="text-sm font-semibold text-white">Como deseja consultar?</h3>
+          {tipo === null && (
+            <p className="py-10 px-6 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/[0.08] rounded-5xl">
+              Escolha o tipo de nota para começar.
+            </p>
+          )}
 
-                {/* Sub-opções */}
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { id: "qrcode", label: "QR Code",           icon: <QrCodeIcon />, soon: false },
-                    { id: "chave",  label: "Número de consulta", icon: <HashIcon />,   soon: false },
-                  ].map((opt) => {
+          {/* ── NFC-e ── */}
+          {tipo === "nfce" && (
+            <section aria-labelledby="nota-nfce" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id="nota-nfce" className="text-lg font-black">Como você quer consultar?</h2>
+                <div role="group" aria-label="Forma de consulta" className="flex gap-1 p-1 rounded-full bg-ink">
+                  {([
+                    { id: "qrcode", label: "QR Code" },
+                    { id: "chave",  label: "Chave de acesso" },
+                  ] as const).map((opt) => {
                     const active = modo === opt.id;
                     return (
                       <button
                         key={opt.id}
                         type="button"
-                        disabled={opt.soon}
-                        onClick={() => { setModo(opt.id as ModoNfce); setError(""); }}
-                        className="relative flex items-center gap-3 rounded-xl px-4 py-3 text-left transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{
-                          background: active ? "rgba(37,99,235,0.12)" : "rgba(15,23,42,0.5)",
-                          border:     active ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.07)",
-                        }}
+                        aria-pressed={active}
+                        onClick={() => { setModo(opt.id); setError(""); }}
+                        className={`min-h-[40px] px-4 rounded-full text-[13px] cursor-pointer transition-colors duration-200 ${
+                          active ? "bg-inverse text-ink font-black" : "text-fg-muted font-extrabold hover:text-fg"
+                        }`}
                       >
-                        {opt.soon && (
-                          <span className="absolute top-1.5 right-2 text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Em breve</span>
-                        )}
-                        <span className={active ? "text-blue-400" : "text-slate-500"}>{opt.icon}</span>
-                        <span className={`text-sm font-medium ${active ? "text-white" : "text-slate-400"}`}>{opt.label}</span>
+                        {opt.label}
                       </button>
                     );
                   })}
                 </div>
-
-                {/* ── QR Code ── */}
-                {modo === "qrcode" && (
-                  <div className="flex flex-col items-center gap-4 pt-1">
-                    {error && (
-                      <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2 w-full">
-                        {error}
-                      </p>
-                    )}
-                    {loading ? (
-                      <div className="flex flex-col items-center gap-3 py-6">
-                        <SpinnerIcon />
-                        <p className="text-sm text-slate-400">Consultando nota fiscal…</p>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => { setError(""); setShowQrScanner(true); }}
-                        className="flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
-                        style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
-                      >
-                        <QrCodeIcon /> Escanear QR Code do cupom
-                      </button>
-                    )}
-                    <p className="text-[11px] text-slate-600 text-center">
-                      Aponte a câmera para o QR Code impresso no cupom fiscal (NFC-e de SP).
-                    </p>
-                  </div>
-                )}
-
-                {/* ── Formulário: número de consulta ── */}
-                {modo === "chave" && (
-                  <form onSubmit={handleBuscarNfce} className="flex flex-col gap-4 pt-1">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">
-                        Chave de acesso (44 dígitos)
-                      </label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={chave}
-                        onChange={(e) => handleChaveChange(e.target.value)}
-                        placeholder="3526 0306 0572 2302 3970 6504 0000 0116 6014 0012 8035"
-                        className="w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder-slate-700 outline-none transition-all duration-200 font-mono"
-                        style={{ background: "rgba(15,23,42,0.6)", border: "1px solid rgba(255,255,255,0.08)" }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.5)")}
-                        onBlur={(e)  => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)")}
-                      />
-                      <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-[11px] text-slate-600">
-                          Impressa no cupom fiscal abaixo do código de barras.
-                        </p>
-                        <p className={`text-[11px] tabular-nums ${chaveDigitos === 44 ? "text-green-400" : "text-slate-600"}`}>
-                          {chaveDigitos}/44
-                        </p>
-                      </div>
-                    </div>
-
-                    {error && (
-                      <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
-                        {error}
-                      </p>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={!podeBuscar || loading}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-                      style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
-                    >
-                      {loading ? <><SpinnerIcon /> Consultando…</> : <><SearchIcon /> Buscar nota</>}
-                    </button>
-                  </form>
-                )}
               </div>
-            )}
 
-            {/* ── XML ── */}
-            {tipo === "xml" && (
-              <div className={cardBase} style={cardStyle}>
-                <h3 className="text-sm font-semibold text-white">Selecione o arquivo XML da NF-e</h3>
-                <p className="text-xs text-slate-500 -mt-2">
-                  O fornecedor envia o XML por e-mail junto com o DANFE (PDF da nota).
-                </p>
-
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".xml,text/xml,application/xml"
-                  className="hidden"
-                  onChange={handleXmlFile}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => { fileRef.current?.click(); setXmlInfo(null); setError(""); }}
-                  className="flex flex-col items-center justify-center gap-3 w-full rounded-xl py-10 transition-all duration-200 cursor-pointer"
-                  style={{ border: "2px dashed rgba(255,255,255,0.1)", background: "rgba(15,23,42,0.4)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(59,130,246,0.4)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)")}
-                >
-                  <FileXmlIcon />
-                  <span className="text-sm text-slate-400">Clique para selecionar o arquivo <span className="text-white font-medium">.xml</span></span>
-                </button>
-
-                {error && (
-                  <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>
-                )}
-
-                {xmlInfo && (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-3 rounded-xl px-4 py-3"
-                      style={{ background: "rgba(5,150,105,0.1)", border: "1px solid rgba(16,185,129,0.25)" }}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                      <div>
-                        <p className="text-sm font-medium text-emerald-300">
-                          {xmlInfo.itens} {xmlInfo.itens === 1 ? "produto encontrado" : "produtos encontrados"}
-                        </p>
-                        {xmlInfo.nome && <p className="text-xs text-slate-500 mt-0.5">{xmlInfo.nome}</p>}
-                      </div>
+              {modo === "qrcode" && (
+                <div className="flex flex-col gap-4">
+                  {error && <ErrorBox>{error}</ErrorBox>}
+                  {loading ? (
+                    <div role="status" className="flex flex-col items-center gap-3 py-8 text-fg-muted">
+                      <Spinner className="w-7 h-7" />
+                      <p className="text-sm font-bold">Consultando a nota na Sefaz…</p>
                     </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => router.push("/nota/revisao")}
-                      className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5"
-                      style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)", boxShadow: "0 4px 14px rgba(37,99,235,0.35)" }}
+                      onClick={() => { setError(""); setShowQrScanner(true); }}
+                      className="min-h-[56px] flex items-center justify-center gap-2.5 rounded-full bg-accent text-ink text-base font-black cursor-pointer hover:brightness-110 transition-[filter]"
                     >
-                      Revisar produtos
+                      <QrIcon className="w-[22px] h-[22px]" /> Escanear QR Code do cupom
                     </button>
+                  )}
+                  <p className="text-[13px] font-bold text-fg-subtle text-center leading-relaxed">
+                    Aponte a câmera para o QR Code impresso no fim do cupom (NFC-e de SP).
+                  </p>
+                </div>
+              )}
+
+              {modo === "chave" && (
+                <form onSubmit={handleBuscarNfce} className="flex flex-col gap-4">
+                  <FormField
+                    label="Chave de acesso (44 dígitos)"
+                    htmlFor="nota-chave"
+                    hint={
+                      <span className="flex items-center justify-between gap-3 text-[13px] font-bold text-fg-subtle">
+                        <span id="nota-chave-hint">Fica no cupom, logo abaixo do código de barras.</span>
+                        <span className={`tabular-nums font-black ${podeBuscar ? "text-ok" : ""}`}>{chaveDigitos}/44</span>
+                      </span>
+                    }
+                  >
+                    {/* textarea: os 44 dígitos não cabem numa linha no celular */}
+                    <textarea
+                      id="nota-chave"
+                      rows={2}
+                      inputMode="numeric"
+                      autoComplete="off"
+                      spellCheck={false}
+                      aria-describedby="nota-chave-hint"
+                      value={chave}
+                      onChange={(e) => handleChaveChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); e.currentTarget.form?.requestSubmit(); }
+                      }}
+                      placeholder="3526 0306 0572 2302 3970 6504 0000 0116 6014 0012 8035"
+                      className={`${inputClass} h-auto py-3 resize-none tabular-nums tracking-wide leading-relaxed`}
+                    />
+                  </FormField>
+
+                  {error && <ErrorBox>{error}</ErrorBox>}
+
+                  <button
+                    type="submit"
+                    disabled={!podeBuscar || loading}
+                    className="min-h-[54px] flex items-center justify-center gap-2 rounded-full bg-accent text-ink text-base font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? <Spinner /> : <SearchIcon strokeWidth={2.4} />}
+                    {loading ? "Consultando…" : "Buscar nota"}
+                  </button>
+                </form>
+              )}
+            </section>
+          )}
+
+          {/* ── XML ── */}
+          {tipo === "xml" && (
+            <section aria-labelledby="nota-xml" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 id="nota-xml" className="text-lg font-black">Arquivo XML da NF-e</h2>
+                <p className="text-sm font-bold text-fg-muted">O fornecedor manda o XML por e-mail junto com o DANFE (o PDF da nota).</p>
+              </div>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xml,text/xml,application/xml"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={handleXmlInput}
+              />
+
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                className={`flex flex-col items-center justify-center gap-3 w-full rounded-4xl py-10 px-6 border-2 border-dashed cursor-pointer transition-colors ${
+                  dragOver ? "border-accent bg-accent/10" : "border-white/[0.14] bg-ink/60 hover:border-accent/60"
+                }`}
+              >
+                <span className="w-14 h-14 rounded-full bg-surface-2 text-accent flex items-center justify-center">
+                  <FileCodeIcon className="w-7 h-7" />
+                </span>
+                <span className="text-[15px] font-black">Escolher arquivo .xml</span>
+                <span className="hidden sm:block text-[13px] font-bold text-fg-subtle">ou arraste o arquivo para cá</span>
+              </button>
+
+              {error && <ErrorBox>{error}</ErrorBox>}
+
+              {xmlInfo && (
+                <div className="flex flex-col gap-3">
+                  <div role="status" className="flex items-center gap-3.5 p-4 rounded-4xl bg-ok/10">
+                    <span className="w-10 h-10 rounded-full bg-ok text-ink flex items-center justify-center flex-shrink-0">
+                      <CheckIcon className="w-5 h-5" strokeWidth={3} />
+                    </span>
+                    <div className="min-w-0 flex flex-col gap-0.5">
+                      <p className="text-[15px] font-black text-ok">
+                        {xmlInfo.itens} {xmlInfo.itens === 1 ? "produto encontrado" : "produtos encontrados"}
+                      </p>
+                      <p className="text-[13px] font-bold text-fg-muted truncate">
+                        {xmlInfo.nome ? `${xmlInfo.nome} · ` : ""}{xmlInfo.arquivo}
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => router.push("/nota/revisao")}
+                    className="min-h-[54px] flex items-center justify-center gap-2 rounded-full bg-accent text-ink text-base font-black cursor-pointer hover:brightness-110 transition-[filter]"
+                  >
+                    Revisar produtos <ArrowRightIcon strokeWidth={2.4} />
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
 
-            {/* Placeholder NF-e (em breve) */}
-            {tipo === "nfe" && (
-              <div className={`${cardBase} items-center py-10`} style={cardStyle}>
-                <p className="text-slate-400 text-sm text-center">Esta funcionalidade estará disponível em breve.</p>
-              </div>
-            )}
-
-          </div>
+          <p className="flex items-start gap-2.5 px-1 text-[13px] font-bold text-fg-subtle leading-relaxed">
+            <ScanIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            Para dar entrada ou saída de um produto só, use o botão Escanear no menu.
+          </p>
         </div>
       </main>
 
@@ -429,7 +432,7 @@ export default function NotaPage() {
         <BarcodeScanner
           title="Escanear QR Code"
           subtitle="Aponte para o QR Code do cupom fiscal (NFC-e)"
-          hint="Mantenha o cupom a ~20 cm da câmera, bem iluminado e sem reflexo. Se demorar, use 'Número de consulta'."
+          hint="Mantenha o cupom a ~20 cm da câmera, bem iluminado e sem reflexo. Se demorar, use a chave de acesso."
           preferQr
           onDetect={handleQrDetect}
           onClose={() => setShowQrScanner(false)}

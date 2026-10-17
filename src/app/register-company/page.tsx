@@ -6,6 +6,7 @@ import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import InputField from "@/components/auth/InputField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
+import { ArrowRightIcon } from "@/components/ui/icons";
 
 const BENEFITS = [
   {
@@ -38,7 +39,7 @@ const BENEFITS = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
-    text: "30 dias gratuitos no Growth, sem cartão",
+    text: "14 dias gratuitos no Growth, sem cartão",
   },
 ];
 
@@ -101,143 +102,83 @@ export default function RegisterCompanyPage() {
 
   return (
     <OnboardingShell currentStep={1}>
-      <div className="flex flex-col flex-1">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 lg:py-12">
+        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-5 items-stretch">
 
-        {/* ─── Form ─── */}
-        <div className="flex flex-col md:flex-row flex-1">
-
-          {/* Left panel — info (desktop only) */}
-          <div
-            className="hidden md:flex w-80 lg:w-96 flex-shrink-0 flex-col justify-between p-10 lg:p-12"
-            style={{
-              background: "rgba(15,23,42,0.6)",
-              borderRight: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <div>
-              <p className="text-brand-400 text-xs font-semibold uppercase tracking-widest mb-3">
-                Passo 1 de 2
+          <section className="bg-panel rounded-6xl p-7 lg:p-9 flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-extrabold text-accent">Passo 1 de 2</p>
+              <h1 className="text-[28px] lg:text-[34px] font-black tracking-tight leading-tight">Cadastre sua empresa</h1>
+              <p className="text-[15px] font-bold text-fg-muted leading-relaxed">
+                Esses dados identificam a empresa dentro do Estoquizen. Você pode mudar depois nas configurações.
               </p>
-              <h2 className="font-display font-bold text-2xl lg:text-3xl text-white leading-snug">
-                Cadastre sua empresa
-              </h2>
-              <p className="text-slate-400 text-sm mt-3 leading-relaxed">
-                Essas informações serão usadas no seu perfil de empresa dentro
-                do Estoquizen.
-              </p>
-
-              <ul className="mt-8 flex flex-col gap-4">
-                {BENEFITS.map((b) => (
-                  <li key={b.text} className="flex items-center gap-3">
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-brand-400"
-                      style={{
-                        background: "rgba(29,78,216,0.15)",
-                        border: "1px solid rgba(59,130,246,0.15)",
-                      }}
-                    >
-                      {b.icon}
-                    </div>
-                    <span className="text-sm text-slate-400">{b.text}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
-
-            {/* Decorative chart bars */}
-            <div
-              className="mt-10 rounded-xl p-4 flex items-end gap-1.5 h-20"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
-              aria-hidden="true"
-            >
-              {[35, 55, 40, 75, 60, 85, 70, 90, 65, 80].map((h, i) => (
-                <div
-                  key={i}
-                  className="flex-1 rounded-t-sm"
-                  style={{
-                    height: `${h}%`,
-                    background:
-                      i === 9
-                        ? "linear-gradient(180deg,#3B82F6,#2563EB)"
-                        : "rgba(59,130,246,0.22)",
-                  }}
-                />
+            <ul className="hidden md:flex flex-col gap-3">
+              {BENEFITS.map((b) => (
+                <li key={b.text} className="flex items-center gap-3 rounded-3xl bg-surface p-3">
+                  <span className="w-10 h-10 rounded-full bg-surface-2 text-accent flex items-center justify-center flex-shrink-0">{b.icon}</span>
+                  <span className="text-sm font-bold text-fg-soft">{b.text}</span>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
 
-          {/* Right panel — form */}
-          <div className="flex-1 flex items-center justify-center px-5 py-8 md:p-10 lg:p-16">
-            <div className="w-full max-w-md">
-              <h3 className="font-display font-bold text-xl text-white mb-6">
-                Informações da empresa
-              </h3>
+          <section className="bg-surface rounded-6xl p-7 lg:p-9">
+            <h2 className="text-xl font-black mb-6">Informações da empresa</h2>
+            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+              <InputField
+                label="Nome da empresa"
+                id="company-name"
+                type="text"
+                placeholder="Ex.: Mercadinho do Bairro"
+                autoComplete="organization"
+                value={values.name}
+                onChange={handleChange("name")}
+              />
+              <InputField
+                label="CPF"
+                id="cpf"
+                type="text"
+                inputMode="numeric"
+                placeholder="000.000.000-00"
+                value={values.cpf}
+                onChange={handleChange("cpf")}
+                error={cpfError || undefined}
+              />
+              <InputField
+                label="Endereço"
+                id="address"
+                type="text"
+                placeholder="Rua, número, cidade — UF"
+                autoComplete="street-address"
+                value={values.address}
+                onChange={handleChange("address")}
+              />
+              <InputField
+                label="Telefone"
+                id="phone"
+                type="tel"
+                placeholder="(00) 00000-0000"
+                autoComplete="tel"
+                value={values.phone}
+                onChange={handleChange("phone")}
+              />
 
-              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-                <InputField
-                  label="Nome da empresa"
-                  id="company-name"
-                  type="text"
-                  placeholder="Ex: Loja do João LTDA"
-                  autoComplete="organization"
-                  value={values.name}
-                  onChange={handleChange("name")}
-                />
-                <div className="flex flex-col gap-1">
-                  <InputField
-                    label="CPF"
-                    id="cpf"
-                    type="text"
-                    placeholder="000.000.000-00"
-                    value={values.cpf}
-                    onChange={handleChange("cpf")}
-                  />
-                  {cpfError && <p className="text-xs text-red-400 pl-1">{cpfError}</p>}
-                </div>
-                <InputField
-                  label="Endereço"
-                  id="address"
-                  type="text"
-                  placeholder="Rua, número, cidade — UF"
-                  autoComplete="street-address"
-                  value={values.address}
-                  onChange={handleChange("address")}
-                />
-                <InputField
-                  label="Telefone"
-                  id="phone"
-                  type="tel"
-                  placeholder="(00) 00000-0000"
-                  autoComplete="tel"
-                  value={values.phone}
-                  onChange={handleChange("phone")}
-                />
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <SecondaryButton
-                    type="button"
-                    icon={<BackIcon />}
-                    onClick={() => router.push("/select-workspace")}
-                    className="sm:w-auto sm:flex-shrink-0"
-                  >
-                    Voltar
-                  </SecondaryButton>
-                  <PrimaryButton
-                    type="submit"
-                    loading={loading}
-                    className="flex-1"
-                  >
-                    {!loading && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    )}
-                    Continuar
-                  </PrimaryButton>
-                </div>
-              </form>
-            </div>
-          </div>
+              <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                <SecondaryButton
+                  type="button"
+                  icon={<BackIcon />}
+                  onClick={() => router.push("/select-workspace")}
+                  className="sm:w-auto sm:px-7 sm:flex-shrink-0 !bg-surface-2 hover:!bg-white/10"
+                >
+                  Voltar
+                </SecondaryButton>
+                <PrimaryButton type="submit" loading={loading} className="flex-1">
+                  Continuar <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
+                </PrimaryButton>
+              </div>
+            </form>
+          </section>
 
         </div>
       </div>

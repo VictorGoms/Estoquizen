@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
           required
         />
 
-        {error && <p className="text-xs text-red-400 text-center -mb-1">{error}</p>}
+        {error && <p role="alert" className="text-sm font-bold text-zero text-center">{error}</p>}
 
         <PrimaryButton type="submit" loading={loading} disabled={!password || !confirm}>
           Salvar nova senha

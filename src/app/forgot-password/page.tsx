@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import AuthLayout from "@/components/auth/AuthLayout";
 import InputField from "@/components/auth/InputField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
+import { MailIcon } from "@/components/ui/icons";
 
 const COOLDOWN_S = 60;
 
@@ -52,24 +53,17 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <AuthLayout title="Email enviado" subtitle="Verifique sua caixa de entrada">
-        <div className="flex flex-col items-center gap-5 text-center py-2">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(5,150,105,0.15)", border: "1px solid rgba(16,185,129,0.25)" }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="#6EE7B7" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
+      <AuthLayout title="Email enviado" subtitle="Verifique sua caixa de entrada" icon={<MailIcon className="w-7 h-7" />}>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-full bg-surface-2 rounded-3xl px-4 py-4">
+            <p className="text-sm font-bold text-fg-muted">Enviamos um link de redefinição para</p>
+            <p className="text-[15px] font-black text-fg mt-1 break-all">{email}</p>
           </div>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Enviamos um link de redefinição para <span className="text-white font-medium">{email}</span>.<br />
-            O link expira em 1 hora.
-          </p>
+          <p className="text-sm font-semibold text-fg-muted">O link expira em 1 hora.</p>
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer"
+            className="min-h-[44px] text-sm text-accent hover:brightness-110 font-extrabold cursor-pointer"
           >
             Voltar para o login
           </button>
@@ -92,17 +86,17 @@ export default function ForgotPasswordPage() {
           required
         />
 
-        {error && <p className="text-xs text-red-400 text-center -mb-1">{error}</p>}
+        {error && <p role="alert" className="text-sm font-bold text-zero text-center">{error}</p>}
 
         <PrimaryButton type="submit" loading={loading} disabled={!email.trim() || cooldown > 0}>
           {cooldown > 0 ? `Aguarde ${cooldown}s` : "Enviar link de redefinição"}
         </PrimaryButton>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm font-bold text-fg-muted">
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="text-brand-400 hover:text-brand-300 font-medium transition-colors duration-200 cursor-pointer"
+            className="text-accent hover:brightness-110 font-extrabold cursor-pointer"
           >
             Voltar para o login
           </button>

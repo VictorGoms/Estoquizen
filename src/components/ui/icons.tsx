@@ -93,6 +93,18 @@ export const CheckIcon = (p: IconProps) => (
 export const XIcon = (p: IconProps) => (
   <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>
 );
+export const MailIcon = (p: IconProps) => (
+  <Icon {...p}><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></Icon>
+);
+export const BanIcon = (p: IconProps) => (
+  <Icon {...p}><circle cx="12" cy="12" r="9" /><path d="m5.6 5.6 12.8 12.8" /></Icon>
+);
+export const MenuIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></Icon>
+);
+export const LayersIcon = (p: IconProps) => (
+  <Icon {...p}><path d="m12 3 9 5-9 5-9-5 9-5Z" /><path d="m3 13 9 5 9-5" /></Icon>
+);
 export const CameraIcon = (p: IconProps) => (
   <Icon {...p}><path d="M4 8a2 2 0 0 1 2-2h1.5l1.3-2h6.4l1.3 2H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8Z" /><circle cx="12" cy="12.5" r="3.5" /></Icon>
 );
