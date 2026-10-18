@@ -20,7 +20,7 @@ import { mutateStats } from "@/hooks/useStats";
 import { mutateMovements, mutateProductMovements, useProductMovements } from "@/hooks/useMovements";
 import { sanitizeText, sanitizeCode } from "@/lib/sanitize";
 import { api } from "@/lib/api";
-import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo, parseQtyInput, parsePriceInput } from "@/lib/stock";
 import {
   ArrowLeftIcon, BoxIcon, CameraIcon, PencilIcon, TrashIcon, ScanIcon, InIcon, OutIcon, CheckIcon, Spinner,
 } from "@/components/ui/icons";
@@ -129,9 +129,9 @@ export default function ItemDetailPage() {
 
   function resetEditFields(p: Product) {
     setEditName(p.name);
-    setEditPrice(String(p.price));
+    setEditPrice(Number(p.price).toFixed(2).replace(".", ","));
     setEditLocation(p.location ?? "");
-    setEditMinQty(String(p.min_qty));
+    setEditMinQty(String(Number(p.min_qty)).replace(".", ","));
   }
 
   async function handleDelete() {
@@ -151,14 +151,21 @@ export default function ItemDetailPage() {
     if (!product) return;
     setSaving(true);
     setActionError("");
-    const newMinQty = parseInt(editMinQty, 10);
+    /* Aceita decimais com vírgula (antes parseInt truncava 1,5 para 1) */
+    const newMinQty = editMinQty.trim() ? parseQtyInput(editMinQty) : product.min_qty;
+    const newPrice  = editPrice.trim()  ? parsePriceInput(editPrice) : product.price;
+    if (Number.isNaN(newMinQty) || Number.isNaN(newPrice)) {
+      setSaving(false);
+      setActionError("Valor inválido. Use números, com vírgula para decimais (ex.: 2,5).");
+      return;
+    }
     const { error: err } = await supabase
       .from("products")
       .update({
         name:     sanitizeText(editName, 200),
-        price:    parseFloat(editPrice) || product.price,
+        price:    newPrice,
         location: sanitizeText(editLocation, 200) || null,
-        min_qty:  isNaN(newMinQty) ? product.min_qty : newMinQty,
+        min_qty:  newMinQty,
       })
       .eq("id", product.id);
 
@@ -167,9 +174,9 @@ export default function ItemDetailPage() {
     setProduct((p) => p ? {
       ...p,
       name:     editName,
-      price:    parseFloat(editPrice) || p.price,
+      price:    newPrice,
       location: editLocation || null,
-      min_qty:  isNaN(newMinQty) ? p.min_qty : newMinQty,
+      min_qty:  newMinQty,
     } : p);
     const ws = getWorkspace();
     if (ws) mutateProducts(ws.id);
@@ -362,10 +369,10 @@ export default function ItemDetailPage() {
                     </FormField>
                     <div className="grid grid-cols-2 gap-3">
                       <FormField label="Preço unitário (R$)" htmlFor="edit-preco">
-                        <input id="edit-preco" type="number" step="0.01" min="0" inputMode="decimal" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className={inputClass} />
+                        <input id="edit-preco" type="text" inputMode="decimal" autoComplete="off" placeholder="0,00" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className={inputClass} />
                       </FormField>
                       <FormField label="Estoque mínimo" htmlFor="edit-minimo">
-                        <input id="edit-minimo" type="number" min="0" inputMode="numeric" placeholder="0" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} className={inputClass} />
+                        <input id="edit-minimo" type="text" inputMode="decimal" autoComplete="off" placeholder="0" value={editMinQty} onChange={(e) => setEditMinQty(e.target.value)} className={inputClass} />
                       </FormField>
                     </div>
                     <FormField label="Localização" htmlFor="edit-local">

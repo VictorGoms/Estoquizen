@@ -13,6 +13,7 @@ import { sanitizeCode } from "@/lib/sanitize";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { mutateProducts } from "@/hooks/useProducts";
 import { api } from "@/lib/api";
+import { parseQtyInput, parsePriceInput } from "@/lib/stock";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 const UNITS = ["un", "kg", "g", "L", "ml", "cx", "pct"];
@@ -178,6 +179,18 @@ function NovoItemContent() {
       setError("Preencha o nome do produto.");
       return;
     }
+    /* Aceita decimais com vírgula (2,5 kg); antes parseInt truncava para 2 sem avisar */
+    const qtyNum   = qty.trim()    ? parseQtyInput(qty)      : 0;
+    const minNum   = minQty.trim() ? parseQtyInput(minQty)   : 0;
+    const priceNum = price.trim()  ? parsePriceInput(price)  : 0;
+    if (Number.isNaN(qtyNum) || Number.isNaN(minNum)) {
+      setError("Quantidade inválida. Use números, com vírgula para decimais (ex.: 2,5).");
+      return;
+    }
+    if (Number.isNaN(priceNum)) {
+      setError("Preço inválido. Use o formato 12,50.");
+      return;
+    }
     setSaving(true);
 
     const ws = getWorkspace();
@@ -207,9 +220,9 @@ function NovoItemContent() {
         name,
         code:      code.trim() || null,
         unit:      unit || "un",
-        price:     parseFloat(price.replace(/\./g, "").replace(",", ".")) || 0,
-        qty:       parseInt(qty, 10)    || 0,
-        min_qty:   parseInt(minQty, 10) || 0,
+        price:     priceNum,
+        qty:       qtyNum,
+        min_qty:   minNum,
         location:  location.trim() || undefined,
         supplier:  supplier.trim() || undefined,
         ...(imageUrl ? { image_url: imageUrl } : {}),
@@ -301,10 +314,10 @@ function NovoItemContent() {
             <Section title="Estoque">
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Quantidade inicial" htmlFor="novo-qtd">
-                  <input id="novo-qtd" type="number" min="0" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" className={inputClass} />
+                  <input id="novo-qtd" type="text" inputMode="decimal" autoComplete="off" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" className={inputClass} />
                 </FormField>
                 <FormField label="Estoque mínimo" htmlFor="novo-minimo">
-                  <input id="novo-minimo" type="number" min="0" inputMode="numeric" value={minQty} onChange={(e) => setMinQty(e.target.value)} placeholder="0" className={inputClass} />
+                  <input id="novo-minimo" type="text" inputMode="decimal" autoComplete="off" value={minQty} onChange={(e) => setMinQty(e.target.value)} placeholder="0" className={inputClass} />
                 </FormField>
               </div>
               <FormField label="Unidade" htmlFor="novo-unidade">

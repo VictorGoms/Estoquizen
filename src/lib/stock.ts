@@ -38,10 +38,27 @@ export function personInitials(name: string): string {
   return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
 }
 
+/*
+ * Número digitado no formato brasileiro: com vírgula, o ponto é separador de milhar
+ * ("1.234,5" → 1234.5); sem vírgula, o ponto é decimal ("2.5" → 2.5). Texto com letras é
+ * inválido (parseFloat aceitava "2abc" como 2).
+ */
+function parseDecimalBR(value: string): number {
+  const s = value.trim();
+  const norm = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s;
+  return /^(\d+\.?\d*|\.\d+)$/.test(norm) ? Number(norm) : NaN;
+}
+
 /** Converte o texto digitado ("1,5", "2") em número com até 3 casas. NaN se inválido. */
 export function parseQtyInput(value: string): number {
-  const n = parseFloat(value.replace(",", ".").trim());
+  const n = parseDecimalBR(value);
   return Number.isFinite(n) ? Math.round(n * 1000) / 1000 : NaN;
+}
+
+/** Converte o preço digitado ("1.234,56", "12,5") em número com 2 casas. NaN se inválido. */
+export function parsePriceInput(value: string): number {
+  const n = parseDecimalBR(value);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : NaN;
 }
 
 /**
