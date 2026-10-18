@@ -11,7 +11,8 @@ import BarcodeScanner   from "@/components/ui/BarcodeScanner";
 import FormField, { inputClass } from "@/components/ui/FormField";
 import { ArrowRightIcon, CheckIcon, DocumentIcon, ScanIcon, SearchIcon, Spinner } from "@/components/ui/icons";
 import { useRole, can } from "@/hooks/useRole";
-import { usePlan, hasFeature } from "@/hooks/usePlan";
+import { usePlan, planInfo, inicioDoMesBrasil } from "@/hooks/usePlan";
+import { supabase }     from "@/lib/supabase";
 import PlanUpsell       from "@/components/ui/PlanUpsell";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { api }          from "@/lib/api";
@@ -78,6 +79,20 @@ export default function NotaPage() {
     if (ws) setWsName(ws.name);
   }, []);
 
+  /* Basic lê até 2 notas por mês (EQZ-27): conta as do mês para avisar antes de tentar */
+  const cota = planInfo(plan)?.notasPorMes ?? null;
+  const [notasUsadas, setNotasUsadas] = useState<number | null>(null);
+  useEffect(() => {
+    const ws = getWorkspace();
+    if (!ws || cota === null) return;
+    supabase
+      .from("nota_imports")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", ws.id)
+      .gte("created_at", inicioDoMesBrasil())
+      .then(({ count }) => setNotasUsadas(count ?? 0));
+  }, [cota]);
+
   function handleQrDetect(raw: string) {
     setShowQrScanner(false);
     setError("");
@@ -126,8 +141,15 @@ export default function NotaPage() {
   if (role === null) return <PageLoader />;
   if (!can(role, "canAccessNota")) return <AccessDenied />;
   if (planLoading) return <PageLoader />;
-  /* Basic não tem importação de nota (a tela de planos promete só no Growth e no Pro) */
-  if (plan && !hasFeature(plan, "nfe")) return <PlanUpsell feature="nfe" />;
+  /* A API e o banco conferem de novo; aqui é só para não deixar a pessoa preencher à toa */
+  if (cota !== null && notasUsadas !== null && notasUsadas >= cota) {
+    return (
+      <PlanUpsell
+        title="As notas deste mês já foram lidas"
+        desc={`O plano ${planInfo(plan)?.label} lê até ${cota} notas de compra por mês. No Growth e no Pro não há limite. A contagem recomeça no dia 1º.`}
+      />
+    );
+  }
 
   const chaveDigitos = chave.replace(/\s/g, "").length;
   const podeBuscar   = chaveDigitos === 44;
@@ -222,6 +244,11 @@ export default function NotaPage() {
           <div className="flex flex-col gap-1">
             <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Importar compra</h1>
             <p className="text-sm lg:text-[15px] font-bold text-fg-muted">Os produtos da nota entram no estoque de uma vez, depois de você revisar.</p>
+            {cota !== null && notasUsadas !== null && (
+              <p className="text-[13px] font-bold text-fg-subtle">
+                Plano {planInfo(plan)?.label}: {notasUsadas} de {cota} notas usadas este mês.
+              </p>
+            )}
           </div>
 
           {/* ── Formato da nota ── */}

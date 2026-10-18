@@ -10,8 +10,6 @@ import ProductReviewCard, { type ReviewProduct } from "@/components/nota/Product
 import { ArrowLeftIcon, BoxIcon, CheckIcon, PencilIcon, Spinner } from "@/components/ui/icons";
 import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
-import { usePlan, hasFeature } from "@/hooks/usePlan";
-import PlanUpsell from "@/components/ui/PlanUpsell";
 import { formatBRL } from "@/lib/stock";
 
 interface NfceRawItem {
@@ -63,7 +61,6 @@ function normName(s: string): string {
 
 export default function NotaRevisaoPage() {
   const router  = useRouter();
-  const { plan } = usePlan();
   const [chave, setChave]       = useState("");
   const [tipo, setTipo]         = useState("");
   const [wsName, setWsName]     = useState("");
@@ -167,8 +164,6 @@ export default function NotaRevisaoPage() {
   const existingCount = products.filter((p) => p.status === "existente").length;
   const divergentCount = products.filter((p) => p.status === "divergente").length;
   const docLabel = tipo === "xml" ? "NF-e (XML)" : "NFC-e";
-
-  if (plan && !hasFeature(plan, "nfe")) return <PlanUpsell feature="nfe" />;
 
   return (
     <div className="min-h-screen bg-ink">

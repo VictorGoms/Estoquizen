@@ -18,8 +18,7 @@ import { ArrowRightIcon, CheckIcon, ChevronDownIcon, Spinner } from "@/component
 import { supabase } from "@/lib/supabase";
 import { dbErrorPt } from "@/lib/dbMessages";
 import { getWorkspace } from "@/hooks/useWorkspace";
-import { usePlan, hasFeature } from "@/hooks/usePlan";
-import PlanUpsell from "@/components/ui/PlanUpsell";
+import { usePlan, planInfo } from "@/hooks/usePlan";
 import { api } from "@/lib/api";
 import { deriveStatus, formatBRL, formatQty, STATUS_LABEL, type StockStatus } from "@/lib/stock";
 
@@ -51,6 +50,7 @@ const PERIODS = [
   { id: "7",  short: "7 dias",  label: "Últimos 7 dias",  days: 7  },
   { id: "30", short: "30 dias", label: "Últimos 30 dias", days: 30 },
   { id: "90", short: "3 meses", label: "Últimos 3 meses", days: 90 },
+  { id: "365", short: "12 meses", label: "Últimos 12 meses", days: 365 },
 ];
 
 const DIST: Array<{ status: StockStatus; bar: string }> = [
@@ -156,7 +156,7 @@ export default function DashboardMetricasPage() {
 
       try {
         const movements = await api.get<{ delta: number; created_at: string }[]>(
-          `/products/${selectedProduct}/movements?since=${encodeURIComponent(since)}`
+          `/products/${selectedProduct}/movements?since=${encodeURIComponent(since)}&limit=1000`
         );
         if (ignore) return;
 
@@ -213,10 +213,15 @@ export default function DashboardMetricasPage() {
   const months  = period.days / 30;
   const product = products.find((p) => p.id === selectedProduct) ?? null;
   const productStatus = product ? deriveStatus(product.qty, product.min_qty) : "normal";
-  const xAxisInterval = selectedPeriod === "7" ? 0 : selectedPeriod === "30" ? 4 : 14;
+  const xAxisInterval = selectedPeriod === "7" ? 0 : selectedPeriod === "30" ? 4 : selectedPeriod === "90" ? 14 : 30;
 
-  /* Basic não tem métricas (a tela de planos promete só no Growth e no Pro) */
-  if (plan && !hasFeature(plan, "metricas")) return <PlanUpsell feature="metricas" />;
+  /* Histórico das métricas por plano (EQZ-27): 30 dias no Basic, 3 meses no Growth, 12 meses no Pro.
+     Enquanto o plano carrega, fica nos 3 meses de antes. */
+  const maxDias = planInfo(plan)?.metricasDias ?? 90;
+  const periods = PERIODS.filter((p) => p.days <= maxDias);
+  const maisHistorico = maxDias < 90
+    ? "3 meses de histórico no Growth e 12 meses no Pro."
+    : maxDias < 365 ? "12 meses de histórico no plano Pro." : "";
 
   /* ─── Render ─── */
   return (
@@ -382,8 +387,8 @@ export default function DashboardMetricasPage() {
                         <ChevronDownIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-fg-muted pointer-events-none" strokeWidth={2.4} />
                       </div>
 
-                      <div role="group" aria-label="Período" className="flex gap-1 p-1 rounded-full bg-ink self-start lg:self-auto">
-                        {PERIODS.map((p) => {
+                      <div role="group" aria-label="Período" className="flex gap-1 p-1 rounded-full bg-ink self-start lg:self-auto max-w-full overflow-x-auto">
+                        {periods.map((p) => {
                           const active = selectedPeriod === p.id;
                           return (
                             <button
@@ -401,6 +406,9 @@ export default function DashboardMetricasPage() {
                         })}
                       </div>
                     </div>
+                    {maisHistorico && (
+                      <p className="-mt-1 text-[13px] font-bold text-fg-subtle">{maisHistorico}</p>
+                    )}
 
                     {!product ? (
                       <p className="py-10 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/[0.08] rounded-4xl">

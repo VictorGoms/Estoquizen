@@ -6,20 +6,26 @@ import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 
 export type Plan = "basic" | "growth" | "pro";
-export type PlanFeature = "nfe" | "metricas";
 
 /**
- * Recursos de cada plano (SCRUM-57): o que a tela de planos promete. Os mesmos de
- * src/lib/plans.ts da API, que barra a importação de nota no Basic (as métricas são só no front).
+ * Recursos de cada plano, pelos planos fechados em 2026-10-17 (EQZ-27). Os mesmos de
+ * src/lib/plans.ts da API, que confere a cota de notas (as métricas são aplicadas aqui).
+ * notasPorMes: null = sem limite.
  */
-export const PLAN_FEATURES: Record<Plan, Record<PlanFeature, boolean>> = {
-  basic:  { nfe: false, metricas: false },
-  growth: { nfe: true,  metricas: true  },
-  pro:    { nfe: true,  metricas: true  },
+export const PLAN_INFO: Record<Plan, { label: string; notasPorMes: number | null; metricasDias: number; membros: number | null }> = {
+  basic:  { label: "Basic",  notasPorMes: 2,    metricasDias: 30,  membros: 3    },
+  growth: { label: "Growth", notasPorMes: null, metricasDias: 90,  membros: 10   },
+  pro:    { label: "Pro",    notasPorMes: null, metricasDias: 365, membros: null },
 };
 
-export function hasFeature(plan: Plan | null | undefined, feature: PlanFeature): boolean {
-  return plan ? PLAN_FEATURES[plan]?.[feature] ?? false : false;
+export function planInfo(plan: Plan | null | undefined) {
+  return plan ? PLAN_INFO[plan] ?? null : null;
+}
+
+/** Início do mês corrente no horário de Brasília (UTC-3), como a API e o banco contam. */
+export function inicioDoMesBrasil(): string {
+  const brt = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  return new Date(Date.UTC(brt.getUTCFullYear(), brt.getUTCMonth(), 1, 3)).toISOString();
 }
 
 /** Plano do workspace ativo. `loading` até saber; se a consulta falhar, `plan` fica null. */

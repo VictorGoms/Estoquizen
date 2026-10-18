@@ -13,6 +13,7 @@ import LevelBar from "@/components/estoque/LevelBar";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace, setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { can } from "@/hooks/useRole";
+import { usePlan, planInfo } from "@/hooks/usePlan";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { useMovements, type Movement } from "@/hooks/useMovements";
 import { deriveStatus, formatBRL, formatQty, timeAgo, type StockStatus } from "@/lib/stock";
@@ -92,6 +93,9 @@ export default function DashboardPage() {
   const [wsId, setWsId]         = useState<string | undefined>(undefined);
   const [role, setRole]         = useState<WorkspaceRole>("member");
   const [period, setPeriod]     = useState<Period>(7);
+  /* Métricas por plano (EQZ-27): o Basic vai até 30 dias */
+  const { plan } = usePlan();
+  const periods = PERIODS.filter((p) => p.days <= (planInfo(plan)?.metricasDias ?? 90));
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar ao dashboard ── */
   const { products, loading: productsLoading } = useProducts(wsId);
@@ -325,7 +329,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-bold text-fg-muted">Entradas e saídas registradas</p>
                 </div>
                 <div role="group" aria-label="Período" className="flex gap-1 p-1 rounded-full bg-ink">
-                  {PERIODS.map((p) => {
+                  {periods.map((p) => {
                     const active = period === p.days;
                     return (
                       <button

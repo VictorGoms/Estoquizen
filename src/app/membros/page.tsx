@@ -42,7 +42,8 @@ interface ApiMemberRow {
   } | null;
 }
 
-const MEMBER_LIMITS: Record<string, number> = { basic: 3, growth: 7, pro: 12 };
+/* Equipe por plano (EQZ-27): 3 / 10 / sem limite no Pro (null) */
+const MEMBER_LIMITS: Record<string, number | null> = { basic: 3, growth: 10, pro: null };
 
 const ROLE_LABEL: Record<Role, string> = {
   owner:  "Proprietário",
@@ -158,7 +159,7 @@ export default function MembrosPage() {
   const totalAdmins    = members.filter((m) => m.role === "owner" || m.role === "admin").length;
   const totalPendentes = pendentes.length;
   const membersUsed    = totalAtivos + totalPendentes;
-  const memberLimit    = wsPlan ? (MEMBER_LIMITS[wsPlan] ?? 12) : null;
+  const memberLimit    = wsPlan ? (MEMBER_LIMITS[wsPlan] ?? null) : null;
   const atLimit        = memberLimit !== null && membersUsed >= memberLimit;
 
   return (

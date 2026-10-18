@@ -2,23 +2,10 @@
 
 import Link from "next/link";
 import { useRole, can } from "@/hooks/useRole";
-import type { PlanFeature } from "@/hooks/usePlan";
 
-const TEXTS: Record<PlanFeature, { title: string; desc: string }> = {
-  nfe: {
-    title: "Importar nota está no Growth e no Pro",
-    desc:  "Com a importação, os produtos da nota de compra entram no estoque de uma vez, pela chave, pelo QR Code ou pelo XML.",
-  },
-  metricas: {
-    title: "Métricas estão no Growth e no Pro",
-    desc:  "Veja o giro de cada produto e como o estoque evolui por período.",
-  },
-};
-
-/** Recurso fora do plano atual (SCRUM-57): explica e leva o dono para trocar de plano. */
-export default function PlanUpsell({ feature }: { feature: PlanFeature }) {
+/** Recurso além do plano atual (EQZ-27): explica e leva o dono para trocar de plano. */
+export default function PlanUpsell({ title, desc }: { title: string; desc: string }) {
   const canUpgrade = can(useRole(), "canGerenciarAssinatura");
-  const t = TEXTS[feature];
 
   return (
     <div className="min-h-screen bg-ink flex flex-col items-center justify-center gap-5 px-6 text-center">
@@ -28,8 +15,8 @@ export default function PlanUpsell({ feature }: { feature: PlanFeature }) {
         </svg>
       </span>
       <div className="flex flex-col gap-1.5 max-w-md">
-        <h1 className="text-2xl font-black">{t.title}</h1>
-        <p className="text-[15px] font-bold text-fg-muted leading-relaxed">{t.desc}</p>
+        <h1 className="text-2xl font-black">{title}</h1>
+        <p className="text-[15px] font-bold text-fg-muted leading-relaxed">{desc}</p>
         {!canUpgrade && (
           <p className="text-sm font-bold text-fg-subtle mt-1">Fale com o dono do workspace para mudar de plano.</p>
         )}
