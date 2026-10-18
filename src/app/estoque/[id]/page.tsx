@@ -35,6 +35,7 @@ interface Product {
   min_qty: number;
   max_qty: number | null;
   location: string | null;
+  category: string | null;
   supplier: string | null;
   image_url:   string | null;
   nota_fiscal: string | null;
@@ -65,6 +66,7 @@ export default function ItemDetailPage() {
   const [editName, setEditName]         = useState("");
   const [editPrice, setEditPrice]       = useState("");
   const [editLocation, setEditLocation] = useState("");
+  const [editCategory, setEditCategory] = useState("");
   const [editMinQty, setEditMinQty]     = useState("");
   const [saving, setSaving]             = useState(false);
   const [saved, setSaved]               = useState(false);
@@ -99,7 +101,7 @@ export default function ItemDetailPage() {
 
       const { data, error: err } = await supabase
         .from("products")
-        .select("id, name, code, unit, price, qty, min_qty, max_qty, location, supplier, image_url, nota_fiscal, created_at")
+        .select("id, name, code, unit, price, qty, min_qty, max_qty, location, category, supplier, image_url, nota_fiscal, created_at")
         .eq("id", id)
         .eq("workspace_id", ws.id)
         .single();
@@ -131,6 +133,7 @@ export default function ItemDetailPage() {
     setEditName(p.name);
     setEditPrice(Number(p.price).toFixed(2).replace(".", ","));
     setEditLocation(p.location ?? "");
+    setEditCategory(p.category ?? "");
     setEditMinQty(String(Number(p.min_qty)).replace(".", ","));
   }
 
@@ -165,6 +168,7 @@ export default function ItemDetailPage() {
         name:     sanitizeText(editName, 200),
         price:    newPrice,
         location: sanitizeText(editLocation, 200) || null,
+        category: sanitizeText(editCategory, 60),
         min_qty:  newMinQty,
       })
       .eq("id", product.id);
@@ -176,6 +180,7 @@ export default function ItemDetailPage() {
       name:     editName,
       price:    newPrice,
       location: editLocation || null,
+      category: editCategory.trim() || null,
       min_qty:  newMinQty,
     } : p);
     const ws = getWorkspace();
@@ -302,6 +307,7 @@ export default function ItemDetailPage() {
 
   const info: Array<[string, string]> = [
     ["Preço unitário", formatBRL(product.price)],
+    ["Categoria",      product.category || "—"],
     ["Localização",    product.location ?? "—"],
     ["Fornecedor",     product.supplier ?? "—"],
     ["Cadastrado em",  new Date(product.created_at).toLocaleDateString("pt-BR")],
@@ -377,6 +383,9 @@ export default function ItemDetailPage() {
                     </div>
                     <FormField label="Localização" htmlFor="edit-local">
                       <input id="edit-local" type="text" autoComplete="off" placeholder="Ex.: Prateleira A3" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className={inputClass} />
+                    </FormField>
+                    <FormField label="Categoria" htmlFor="edit-categoria">
+                      <input id="edit-categoria" type="text" autoComplete="off" maxLength={60} placeholder="Ex.: Bebidas" value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className={inputClass} />
                     </FormField>
                     <div className="flex gap-3">
                       <button

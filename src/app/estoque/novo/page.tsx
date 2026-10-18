@@ -71,6 +71,7 @@ function NovoItemContent() {
   const [qty, setQty]           = useState("");
   const [minQty, setMinQty]     = useState("0");
   const [location, setLocation] = useState("");
+  const [category, setCategory] = useState("");
   const [supplier, setSupplier] = useState("");
   const [imageFile, setImageFile]       = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -224,6 +225,7 @@ function NovoItemContent() {
         qty:       qtyNum,
         min_qty:   minNum,
         location:  location.trim() || undefined,
+        category:  category.trim() || undefined,
         supplier:  supplier.trim() || undefined,
         ...(imageUrl ? { image_url: imageUrl } : {}),
       });
@@ -362,6 +364,9 @@ function NovoItemContent() {
                   <input id="novo-local" type="text" autoComplete="off" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex.: Prateleira A3" className={inputClass} />
                 </FormField>
               </div>
+              <FormField label="Categoria" htmlFor="novo-categoria">
+                <input id="novo-categoria" type="text" autoComplete="off" maxLength={60} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ex.: Bebidas" className={inputClass} />
+              </FormField>
               <FormField label="Fornecedor" htmlFor="novo-fornecedor">
                 <input id="novo-fornecedor" type="text" autoComplete="organization" value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="Ex.: Distribuidora Central" className={inputClass} />
               </FormField>
