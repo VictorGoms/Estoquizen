@@ -115,38 +115,39 @@ export default function NotaRevisaoPage() {
       );
       const byCode       = new Map(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
       const bySourceName = new Map(existing.map((p) => [normName(p.source_name ?? p.name), p.id]));
-      /* Rastreia produtos criados nesta sessão para evitar duplicatas se a mesma NF-e
-         tiver dois itens com nomes iguais (ou o usuário escanear a mesma NF-e duas vezes) */
-      const createdNow   = new Map<string, string>(); // normName → id
 
-      const doc    = tipo === "xml" ? "NF-e" : "NFC-e";
-      const reason = chave ? `${doc} ${chave.slice(0, 8)}…` : doc;
+      type ImportItem = { product_id?: string; name: string; code?: string; unit: string; price: number; qty: number };
+      const itens: ImportItem[] = [];
+      /* A mesma nota pode trazer o mesmo produto novo em duas linhas: vira um produto só */
+      const novosPorNome = new Map<string, ImportItem>();
 
-      /* Processamento sequencial — evita race condition em nomes repetidos */
       for (const p of products) {
         const key        = normName(p.name);
-        const existingId = (p.code ? byCode.get(p.code) : undefined)
-          ?? bySourceName.get(key)
-          ?? createdNow.get(key);
+        const existingId = (p.code ? byCode.get(p.code) : undefined) ?? bySourceName.get(key);
+        const base       = { name: p.name, code: p.code || undefined, unit: p.unit, price: p.unitPrice, qty: p.qty };
 
-        if (!existingId) {
-          /* Cria produto novo com a quantidade da NF-e */
-          const created = await api.post<{ id: string }>("/products", {
-            workspace_id: ws.id,
-            name:  p.name,
-            code:  p.code || undefined,
-            unit:  p.unit,
-            price: p.unitPrice,
-            qty:   p.qty,
-          });
-          createdNow.set(key, created.id);
+        if (existingId) {
+          itens.push({ ...base, product_id: existingId });
+        } else if (novosPorNome.has(key)) {
+          novosPorNome.get(key)!.qty += p.qty;
         } else {
-          /* Registra entrada e tenta atualizar o preço para o último valor da NF-e */
-          await api.post(`/products/${existingId}/adjust`, { delta: p.qty, reason });
-          api.patch(`/products/${existingId}`, { price: p.unitPrice }).catch(() => {});
+          novosPorNome.set(key, base);
+          itens.push(base);
         }
       }
 
+      /* A API importa tudo numa transação e recusa a mesma nota de novo (409) */
+      await api.post("/nfe/importar", {
+        workspace_id: ws.id,
+        tipo:  tipo === "xml" ? "xml" : "nfce",
+        chave: chave || null,
+        itens,
+      });
+
+      try {
+        sessionStorage.removeItem("nf_items");
+        sessionStorage.removeItem("nf_chave");
+      } catch { /* sem sessionStorage */ }
       setConfirmed(true);
       setTimeout(() => router.push("/estoque"), 1800);
     } catch (err) {
