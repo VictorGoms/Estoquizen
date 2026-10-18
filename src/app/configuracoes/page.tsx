@@ -172,7 +172,7 @@ export default function ConfiguracoesPage() {
       await api.delete(`/workspaces/${workspace.id}`);
       clearSession();
       clearWorkspace();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       router.push("/login");
     } catch (err) {
       setCancelError(err instanceof Error ? err.message : "Erro ao encerrar assinatura.");

@@ -7,6 +7,7 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import PasswordField from "@/components/auth/PasswordField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import PageLoader from "@/components/ui/PageLoader";
+import { MIN_PASSWORD, authErrorPt, readAuthLinkError } from "@/lib/authMessages";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -15,13 +16,18 @@ export default function ResetPasswordPage() {
   const [loading, setLoading]   = useState(false);
   const [checking, setChecking] = useState(true);
   const [error, setError]       = useState("");
+  /* Link expirado ou já usado: antes a tela mandava para o login sem explicar */
+  const [linkError, setLinkError] = useState("");
 
   useEffect(() => {
+    const fromUrl = readAuthLinkError();
+    if (fromUrl) { setLinkError(fromUrl); setChecking(false); return; }
+
     const code = new URLSearchParams(window.location.search).get("code");
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error: exchErr }) => {
-        if (exchErr) { router.replace("/login"); return; }
+        if (exchErr) { setLinkError(authErrorPt(exchErr.message)); setChecking(false); return; }
         // Limpa o code da URL sem recarregar a página
         window.history.replaceState({}, "", "/reset-password");
         setChecking(false);
@@ -37,19 +43,29 @@ export default function ResetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 6) { setError("A senha deve ter pelo menos 6 caracteres."); return; }
+    if (password.length < MIN_PASSWORD) { setError(`A senha deve ter pelo menos ${MIN_PASSWORD} caracteres.`); return; }
     if (password !== confirm) { setError("As senhas não coincidem."); return; }
 
     setLoading(true);
     setError("");
 
     const { error: err } = await supabase.auth.updateUser({ password });
-    if (err) { setError("Não foi possível redefinir a senha. Tente novamente."); setLoading(false); return; }
+    if (err) { setError(authErrorPt(err.message)); setLoading(false); return; }
 
     router.replace("/select-workspace");
   }
 
   if (checking) return <PageLoader />;
+
+  if (linkError) {
+    return (
+      <AuthLayout title="Link inválido" subtitle={linkError}>
+        <PrimaryButton type="button" onClick={() => router.replace("/forgot-password")}>
+          Pedir um novo link
+        </PrimaryButton>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout title="Nova senha" subtitle="Escolha uma senha segura para sua conta">
@@ -57,7 +73,7 @@ export default function ResetPasswordPage() {
         <PasswordField
           label="Nova senha"
           id="password"
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required

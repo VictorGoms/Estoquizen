@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/components/ui/PageLoader";
 import { markSessionActive } from "@/lib/session";
+import { readAuthLinkError } from "@/lib/authMessages";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -22,14 +23,14 @@ export default function AuthCallbackPage() {
       }
     }
 
+    /* Link expirado ou já usado: o login explica, em vez de só reaparecer */
+    if (readAuthLinkError()) { router.replace("/login?link=expirado"); return; }
+
     const code = new URLSearchParams(window.location.search).get("code");
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
-        console.log("[callback] exchange error:", error?.message);
-        console.log("[callback] session:", data.session ? "OK" : "NULL");
-        console.log("[callback] user_metadata:", JSON.stringify(data.session?.user?.user_metadata));
-        if (error) { router.replace("/login"); return; }
+        if (error) { router.replace("/login?link=expirado"); return; }
         const session = data.session ?? (await supabase.auth.getSession()).data.session;
         if (!session) { router.replace("/login"); return; }
         redirect(session);

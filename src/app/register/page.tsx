@@ -9,6 +9,7 @@ import PrimaryButton from "@/components/auth/PrimaryButton";
 import SocialButton from "@/components/auth/SocialButton";
 import Divider from "@/components/auth/Divider";
 import { supabase } from "@/lib/supabase";
+import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
 import { MailIcon, CheckIcon } from "@/components/ui/icons";
 
 export default function RegisterPage() {
@@ -36,11 +37,16 @@ export default function RegisterPage() {
       return;
     }
     setTermsError(false);
+    /* O campo dizia "Mínimo 8", mas nada checava: valia o mínimo do Supabase (6) */
+    if (values.password.length < MIN_PASSWORD) {
+      setError(`A senha deve ter pelo menos ${MIN_PASSWORD} caracteres.`);
+      return;
+    }
     setLoading(true);
     setError("");
 
     /* Garante que não há sessão de outro usuário ativa */
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
 
     const { data, error: authError } = await supabase.auth.signUp({
       email: values.email,
@@ -49,7 +55,7 @@ export default function RegisterPage() {
     });
 
     setLoading(false);
-    if (authError) { setError(authError.message); return; }
+    if (authError) { setError(authErrorPt(authError.message)); return; }
 
     if (data.session) {
       /* Confirmação de email desativada — usuário já está logado */

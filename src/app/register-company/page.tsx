@@ -7,6 +7,8 @@ import InputField from "@/components/auth/InputField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
 import { ArrowRightIcon } from "@/components/ui/icons";
+import { supabase } from "@/lib/supabase";
+import { sanitizeText } from "@/lib/sanitize";
 
 const BENEFITS = [
   {
@@ -53,7 +55,8 @@ const BackIcon = () => (
 export default function RegisterCompanyPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [values, setValues] = useState({ name: "", cpf: "", address: "", phone: "" });
+  /* Endereço saiu: era pedido e descartado. O telefone agora vai para o perfil. */
+  const [values, setValues] = useState({ name: "", cpf: "", phone: "" });
   const [cpfError, setCpfError] = useState("");
 
   function formatCpf(raw: string): string {
@@ -87,7 +90,7 @@ export default function RegisterCompanyPage() {
     };
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!values.name.trim()) return;
     if (values.cpf && !validateCpf(values.cpf)) {
@@ -97,6 +100,13 @@ export default function RegisterCompanyPage() {
     sessionStorage.setItem("pendingWorkspaceName", values.name.trim());
     sessionStorage.setItem("pendingCpf", values.cpf.replace(/\D/g, ""));
     setLoading(true);
+
+    const phone = sanitizeText(values.phone, 20);
+    if (phone) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await supabase.from("profiles").update({ phone }).eq("id", user.id);
+    }
+
     router.push("/plan-selection");
   }
 
@@ -146,16 +156,7 @@ export default function RegisterCompanyPage() {
                 error={cpfError || undefined}
               />
               <InputField
-                label="Endereço"
-                id="address"
-                type="text"
-                placeholder="Rua, número, cidade — UF"
-                autoComplete="street-address"
-                value={values.address}
-                onChange={handleChange("address")}
-              />
-              <InputField
-                label="Telefone"
+                label="Telefone para contato (opcional)"
                 id="phone"
                 type="tel"
                 placeholder="(00) 00000-0000"

@@ -151,7 +151,7 @@ export default function PerfilPage() {
 
   async function handleLogout() {
     clearSession();
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     clearWorkspace();
     router.push("/login");
   }

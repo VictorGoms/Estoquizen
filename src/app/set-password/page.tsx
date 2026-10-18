@@ -8,6 +8,7 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import PasswordField from "@/components/auth/PasswordField";
 import { UsersIcon, ArrowRightIcon } from "@/components/ui/icons";
 import PageLoader from "@/components/ui/PageLoader";
+import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export default function SetPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 6) { setError("A senha deve ter pelo menos 6 caracteres."); return; }
+    if (password.length < MIN_PASSWORD) { setError(`A senha deve ter pelo menos ${MIN_PASSWORD} caracteres.`); return; }
     if (password !== confirm) { setError("As senhas não coincidem."); return; }
 
     setLoading(true);
@@ -71,7 +72,7 @@ export default function SetPasswordPage() {
 
     try {
       const { error: pwErr } = await supabase.auth.updateUser({ password });
-      if (pwErr) throw new Error(pwErr.message);
+      if (pwErr) throw new Error(authErrorPt(pwErr.message));
 
       const { error: rpcErr } = await supabase.rpc("accept_workspace_invite");
       if (rpcErr) throw new Error(rpcErr.message);
@@ -97,7 +98,7 @@ export default function SetPasswordPage() {
         <PasswordField
           label="Nova senha"
           id="password"
-          placeholder="Mínimo 6 caracteres"
+          placeholder="Mínimo 8 caracteres"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

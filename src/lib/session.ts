@@ -67,7 +67,8 @@ export function touchActivity() {
 
 /** Clear all session data (call before signing out) */
 export function clearSession() {
-  sessionStorage.removeItem(SESSION_KEY);
-  sessionStorage.removeItem("estoquizen_user_profile");
+  /* Tudo da aba: marcador, perfil em cache, cadastro pendente e nota em revisão
+     (antes só os dois primeiros saíam e o resto ficava para o próximo login) */
+  sessionStorage.clear();
   localStorage.removeItem(ACTIVITY_KEY);
 }

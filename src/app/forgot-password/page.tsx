@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { authErrorPt } from "@/lib/authMessages";
 import AuthLayout from "@/components/auth/AuthLayout";
 import InputField from "@/components/auth/InputField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
@@ -32,21 +33,14 @@ export default function ForgotPasswordPage() {
 
     const clean = email.trim().toLowerCase();
 
-    /* Verifica se o email está cadastrado em auth.users */
-    const { data: exists } = await supabase.rpc("email_exists", { p_email: clean });
-
-    if (!exists) {
-      setError("Este email não está cadastrado no Estoquizen.");
-      setLoading(false);
-      return;
-    }
-
+    /* Não consulta mais se o e-mail existe: dizer "não está cadastrado" deixava qualquer pessoa
+       descobrir quem tem conta. O Supabase só envia se a conta existir; a resposta é a mesma. */
     const { error: err } = await supabase.auth.resetPasswordForEmail(clean, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
     setLoading(false);
-    if (err) { setError("Não foi possível enviar o email. Tente novamente."); return; }
+    if (err) { setError(authErrorPt(err.message)); return; }
     setSent(true);
     setCooldown(COOLDOWN_S);
   }
@@ -56,10 +50,10 @@ export default function ForgotPasswordPage() {
       <AuthLayout title="Email enviado" subtitle="Verifique sua caixa de entrada" icon={<MailIcon className="w-7 h-7" />}>
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="w-full bg-surface-2 rounded-3xl px-4 py-4">
-            <p className="text-sm font-bold text-fg-muted">Enviamos um link de redefinição para</p>
+            <p className="text-sm font-bold text-fg-muted">Se houver uma conta com este e-mail, enviamos um link de redefinição para</p>
             <p className="text-[15px] font-black text-fg mt-1 break-all">{email}</p>
           </div>
-          <p className="text-sm font-semibold text-fg-muted">O link expira em 1 hora.</p>
+          <p className="text-sm font-semibold text-fg-muted">O link expira em 1 hora. Não chegou? Confira o spam.</p>
           <button
             type="button"
             onClick={() => router.push("/login")}

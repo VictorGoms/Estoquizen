@@ -18,6 +18,10 @@ export default function LoginPage() {
   const [values, setValues]   = useState({ email: "", password: "" });
 
   useEffect(() => {
+    /* O /auth/callback manda para cá quando o link do e-mail expirou ou já foi usado */
+    if (new URLSearchParams(window.location.search).get("link") === "expirado") {
+      setError("Este link expirou ou já foi usado. Entre com sua senha ou peça um novo link.");
+    }
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.replace("/select-workspace");
     });
