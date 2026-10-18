@@ -7,6 +7,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/lib/userContext";
 import Link from "next/link";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
@@ -60,6 +61,8 @@ export default function PerfilPage() {
   const [wsName, setWsName]         = useState("");
   const [loading, setLoading]       = useState(true);
   const [profile, setProfile]       = useState<Profile | null>(null);
+  /* Menu lateral e barra do topo leem o perfil do contexto (com cache na sessão) */
+  const { setProfile: setUserProfile } = useUser();
   const [name, setName]             = useState("");
   const [phone, setPhone]           = useState("");
   const [saving, setSaving]         = useState(false);
@@ -121,6 +124,7 @@ export default function PerfilPage() {
       if (dbErr) { setImgError(dbErr.message); return; }
 
       setProfile((p) => p ? { ...p, avatar_url: publicUrl } : p);
+      setUserProfile({ avatarUrl: publicUrl });
     } catch (err: unknown) {
       setImgError(err instanceof Error ? err.message : "Erro ao enviar imagem");
     } finally {
@@ -140,6 +144,7 @@ export default function PerfilPage() {
     setSaving(false);
     if (err) { setError(err.message); return; }
     setProfile((p) => p ? { ...p, name, phone } : p);
+    setUserProfile({ userName: name });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
