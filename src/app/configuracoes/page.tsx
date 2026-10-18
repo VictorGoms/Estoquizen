@@ -10,8 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { dbErrorPt } from "@/lib/dbMessages";
 import { api } from "@/lib/api";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
-import { clearSession } from "@/lib/session";
 import { useRole, can } from "@/hooks/useRole";
+import { exportProductsCsv, exportMovementsCsv } from "@/lib/exportCsv";
 import AccessDenied from "@/components/ui/AccessDenied";
 import FormField, { inputClass } from "@/components/ui/FormField";
 import { CheckIcon, Spinner } from "@/components/ui/icons";
@@ -39,12 +39,23 @@ interface Workspace {
   plan: Plan;
 }
 
-/* ─── Cancellation steps ─── */
+/* ─── Passos da exclusão do workspace ─── */
 type CancelStep = "idle" | "warn" | "confirm";
+
+interface Subscription {
+  status: string;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  cancel_at_period_end: boolean;
+}
 
 export default function ConfiguracoesPage() {
   const router = useRouter();
   const wsRole = useRole();
+  /* Volta do portal depois de cancelar: o webhook atualiza a assinatura logo em seguida */
+  const [justCanceled, setJustCanceled] = useState(false);
 
   const [wsName, setWsName]   = useState("");
   const [userName, setUserName] = useState("");
@@ -58,15 +69,14 @@ export default function ConfiguracoesPage() {
   const [saved, setSaved]       = useState(false);
   const [error, setError]       = useState("");
 
-  const [subscription, setSubscription] = useState<{
-    status: string;
-    trial_ends_at: string | null;
-    current_period_end: string | null;
-    stripe_customer_id: string | null;
-    cancel_at_period_end: boolean;
-  } | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [upgradingTo, setUpgradingTo]   = useState<Plan | null>(null);
-  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState<"manage" | "cancel" | null>(null);
+  const [portalError, setPortalError]     = useState("");
+
+  const [exporting, setExporting]   = useState<"produtos" | "movimentacoes" | null>(null);
+  const [exportMsg, setExportMsg]   = useState("");
+  const [exportError, setExportError] = useState("");
 
   const [cancelStep, setCancelStep]     = useState<CancelStep>("idle");
   const [deleteInput, setDeleteInput]   = useState("");
@@ -77,6 +87,7 @@ export default function ConfiguracoesPage() {
     async function load() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
+      setJustCanceled(new URLSearchParams(window.location.search).get("assinatura") === "cancelada");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -87,9 +98,7 @@ export default function ConfiguracoesPage() {
       const [wsResult, countResult, subResult] = await Promise.all([
         supabase.from("workspaces").select("id, name, description, plan").eq("id", ws.id).single(),
         supabase.from("products").select("*", { count: "exact", head: true }).eq("workspace_id", ws.id),
-        api.get<{ status: string; trial_ends_at: string | null; current_period_end: string | null; stripe_customer_id: string | null; cancel_at_period_end: boolean } | null>(
-          `/billing/subscription?workspace_id=${ws.id}`
-        ).catch(() => null),
+        api.get<Subscription | null>(`/billing/subscription?workspace_id=${ws.id}`).catch(() => null),
       ]);
 
       if (wsResult.data) {
@@ -120,16 +129,39 @@ export default function ConfiguracoesPage() {
     }
   }
 
-  async function handlePortal() {
+  /* "cancel" abre direto a tela de cancelamento do portal (vale no fim do ciclo; os dados ficam) */
+  async function handlePortal(flow?: "cancel") {
     if (!workspace) return;
-    setPortalLoading(true);
+    setPortalLoading(flow === "cancel" ? "cancel" : "manage");
+    setPortalError("");
     try {
       const { url } = await api.post<{ url: string }>("/billing/portal", {
         workspace_id: workspace.id,
+        ...(flow && { flow }),
       });
       window.location.href = url;
-    } catch {
-      setPortalLoading(false);
+    } catch (err) {
+      setPortalError(err instanceof Error ? err.message : "Não foi possível abrir o portal. Tente novamente.");
+      setPortalLoading(null);
+    }
+  }
+
+  async function handleExport(what: "produtos" | "movimentacoes") {
+    if (!workspace) return;
+    setExporting(what);
+    setExportMsg("");
+    setExportError("");
+    try {
+      const n = what === "produtos"
+        ? await exportProductsCsv(workspace.id, workspace.name)
+        : await exportMovementsCsv(workspace.id, workspace.name);
+      setExportMsg(what === "produtos"
+        ? `${n} ${n === 1 ? "produto exportado" : "produtos exportados"}.`
+        : `${n} ${n === 1 ? "movimentação exportada" : "movimentações exportadas"}.`);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Não foi possível exportar. Tente novamente.");
+    } finally {
+      setExporting(null);
     }
   }
 
@@ -164,19 +196,18 @@ export default function ConfiguracoesPage() {
     setTimeout(() => setSaved(false), 2500);
   }
 
-  async function handleCancelSubscription() {
+  async function handleDeleteWorkspace() {
     if (!workspace || deleteInput !== workspace.name) return;
     setCancelling(true);
     setCancelError("");
 
     try {
       await api.delete(`/workspaces/${workspace.id}`);
-      clearSession();
+      /* Continua logado: a pessoa pode ter outros workspaces (antes ia para o /login) */
       clearWorkspace();
-      await supabase.auth.signOut({ scope: "local" });
-      router.push("/login");
+      router.push("/select-workspace");
     } catch (err) {
-      setCancelError(err instanceof Error ? err.message : "Erro ao encerrar assinatura.");
+      setCancelError(err instanceof Error ? err.message : "Não foi possível excluir o workspace.");
       setCancelling(false);
     }
   }
@@ -190,6 +221,9 @@ export default function ConfiguracoesPage() {
   const usagePct = Math.min(100, Math.round((productCount / limit) * 100));
   const usageBar = usagePct >= 90 ? "bg-zero" : usagePct >= 70 ? "bg-low" : "bg-ok";
   const confirmLabel = `Digite "${workspace?.name ?? ""}" para confirmar`;
+  const paying          = subscription?.status === "active" || subscription?.status === "past_due";
+  const scheduledCancel = paying && !!subscription?.cancel_at_period_end;
+  const canCancel       = paying && !!subscription?.stripe_subscription_id && !subscription?.cancel_at_period_end && !justCanceled;
 
   if (!can(wsRole, "canAccessConfiguracoes")) return <AccessDenied />;
 
@@ -240,31 +274,57 @@ export default function ConfiguracoesPage() {
 
             <dl className="flex flex-col">
               <div className="flex items-center justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08] text-sm">
-                <dt className="font-bold text-fg-muted">{subscription?.status === "trialing" ? "Trial expira em" : "Próxima renovação"}</dt>
+                <dt className="font-bold text-fg-muted">
+                  {subscription?.status === "trialing" ? "Trial expira em" : scheduledCancel ? "Acesso até" : "Próxima renovação"}
+                </dt>
                 <dd className="font-extrabold">
                   {subscription?.status === "trialing"
                     ? (formatDate(subscription.trial_ends_at) ?? "—")
-                    : subscription?.status === "active"
+                    : subscription?.status === "active" || subscription?.status === "past_due"
                     ? (formatDate(subscription.current_period_end) ?? "—")
                     : "—"}
                 </dd>
               </div>
             </dl>
 
+            {(justCanceled || scheduledCancel) && (
+              <p role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 text-sm font-bold text-low leading-relaxed">
+                Cancelamento agendado. O acesso completo continua até o fim do ciclo pago e os dados ficam guardados.
+                Para desfazer, use &quot;Gerenciar assinatura e pagamento&quot;.
+              </p>
+            )}
+
             {!can(wsRole, "canGerenciarAssinatura") ? (
               <p className="px-5 py-3.5 rounded-4xl bg-surface-2/60 text-sm font-bold text-fg-subtle">
                 Só o dono do workspace pode trocar de plano e gerenciar a assinatura.
               </p>
             ) : subscription?.stripe_customer_id ? (
-              <button
-                type="button"
-                onClick={handlePortal}
-                disabled={portalLoading}
-                className="w-full min-h-[52px] flex items-center justify-between px-5 rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-60"
-              >
-                <span>{portalLoading ? "Abrindo…" : "Gerenciar assinatura e pagamento"}</span>
-                <ExternalIcon />
-              </button>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handlePortal()}
+                  disabled={!!portalLoading}
+                  className="w-full min-h-[52px] flex items-center justify-between px-5 rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-60"
+                >
+                  <span>{portalLoading === "manage" ? "Abrindo…" : "Gerenciar assinatura e pagamento"}</span>
+                  <ExternalIcon />
+                </button>
+                {canCancel && (
+                  <button
+                    type="button"
+                    onClick={() => handlePortal("cancel")}
+                    disabled={!!portalLoading}
+                    className="w-full min-h-[52px] flex items-center justify-between gap-3 px-5 rounded-full text-[15px] font-extrabold text-fg-muted cursor-pointer hover:bg-surface-2 hover:text-fg transition-colors disabled:opacity-60"
+                  >
+                    <span className="text-left">
+                      {portalLoading === "cancel" ? "Abrindo…" : "Cancelar assinatura"}
+                      <span className="block text-[13px] font-bold text-fg-subtle">Vale no fim do ciclo pago. Os dados não são apagados.</span>
+                    </span>
+                    <ExternalIcon />
+                  </button>
+                )}
+                {portalError && <p role="alert" className="text-sm font-bold text-zero">{portalError}</p>}
+              </div>
             ) : (
               <p className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-3.5 rounded-4xl bg-surface-2/60 text-sm font-bold text-fg-subtle">
                 <span>Gerenciar assinatura</span>
@@ -300,13 +360,46 @@ export default function ConfiguracoesPage() {
             </button>
           </form>
 
-          {/* ── Encerrar assinatura — só owner ── */}
-          {can(wsRole, "canEncerrarAssinatura") && (
-            <section aria-labelledby="cfg-encerrar" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4 ring-1 ring-zero/25">
+          {/* ── Exportar dados — vale também no modo somente leitura ── */}
+          <section id="exportar" aria-labelledby="cfg-exportar" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4 scroll-mt-20">
+            <div className="flex flex-col gap-1.5">
+              <h2 id="cfg-exportar" className="text-lg font-black">Exportar dados</h2>
+              <p className="text-sm font-semibold text-fg-muted leading-relaxed">
+                Baixe uma planilha (CSV) para abrir no Excel ou no Google Planilhas. Funciona mesmo sem assinatura ativa.
+              </p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleExport("produtos")}
+                disabled={!!exporting}
+                className="min-h-[48px] flex items-center justify-center gap-2 rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-60"
+              >
+                {exporting === "produtos" && <Spinner className="w-4 h-4" />}
+                {exporting === "produtos" ? "Gerando…" : "Produtos"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleExport("movimentacoes")}
+                disabled={!!exporting}
+                className="min-h-[48px] flex items-center justify-center gap-2 rounded-full bg-surface-2 text-[15px] font-extrabold cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-60"
+              >
+                {exporting === "movimentacoes" && <Spinner className="w-4 h-4" />}
+                {exporting === "movimentacoes" ? "Gerando…" : "Movimentações"}
+              </button>
+            </div>
+            {exportMsg   && <p role="status" className="text-sm font-bold text-ok">{exportMsg}</p>}
+            {exportError && <p role="alert"  className="text-sm font-bold text-zero">{exportError}</p>}
+          </section>
+
+          {/* ── Excluir workspace — só owner. Cancelar só a assinatura fica no bloco do plano ── */}
+          {can(wsRole, "canExcluirWorkspace") && (
+            <section aria-labelledby="cfg-excluir" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4 ring-1 ring-zero/25">
               <div className="flex flex-col gap-1.5">
-                <h2 id="cfg-encerrar" className="text-lg font-black text-zero">Encerrar assinatura</h2>
+                <h2 id="cfg-excluir" className="text-lg font-black text-zero">Excluir workspace</h2>
                 <p className="text-sm font-semibold text-fg-muted leading-relaxed">
-                  Ao encerrar, <strong className="text-fg font-extrabold">todos os dados são excluídos para sempre</strong>: produtos, movimentações, membros e o workspace.
+                  Apaga <strong className="text-fg font-extrabold">para sempre</strong> produtos, movimentações, membros e o workspace.
+                  Se houver assinatura paga, ela é cancelada na hora. Para guardar uma cópia, exporte os dados antes.
                 </p>
               </div>
 
@@ -316,7 +409,7 @@ export default function ConfiguracoesPage() {
                   onClick={() => setCancelStep("warn")}
                   className="min-h-[48px] rounded-full bg-zero/10 text-zero text-[15px] font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
                 >
-                  Encerrar assinatura
+                  Excluir workspace
                 </button>
               )}
 
@@ -367,12 +460,12 @@ export default function ConfiguracoesPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={handleCancelSubscription}
+                      onClick={handleDeleteWorkspace}
                       disabled={deleteInput !== workspace?.name || cancelling}
                       className="flex-1 min-h-[48px] rounded-full bg-zero text-ink text-sm font-black cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {cancelling && <Spinner className="w-4 h-4" />}
-                      {cancelling ? "Encerrando…" : "Encerrar definitivamente"}
+                      {cancelling ? "Excluindo…" : "Excluir definitivamente"}
                     </button>
                   </div>
                 </div>

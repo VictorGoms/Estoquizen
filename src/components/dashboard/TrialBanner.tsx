@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { useRole, can } from "@/hooks/useRole";
 import { BellIcon } from "@/components/ui/icons";
@@ -23,7 +24,9 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
   const [sub, setSub]         = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
   /* A API só aceita checkout e portal do owner; os outros veem o aviso sem o botão */
-  const canManage             = can(useRole(), "canGerenciarAssinatura");
+  const role                  = useRole();
+  const canManage             = can(role, "canGerenciarAssinatura");
+  const canExport             = can(role, "canAccessConfiguracoes");
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -101,6 +104,9 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
 
   if (!title) return null;
 
+  /* Somente leitura: dá para levar os dados embora antes de o workspace ser excluído */
+  const readOnly = sub.status === "trial_expired" || sub.status === "canceled";
+
   return (
     <div
       role={urgent ? "alert" : "status"}
@@ -118,20 +124,30 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
-      {canManage ? (
-        <button
-          type="button"
-          disabled={loading}
-          onClick={btnAction}
-          className={`flex-shrink-0 min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter] hover:brightness-110 disabled:opacity-50 ${
-            urgent ? "bg-zero text-ink" : "bg-accent text-ink"
-          }`}
-        >
-          {loading ? "Aguarde…" : btnLabel}
-        </button>
-      ) : (
-        <p className="text-[13px] font-bold text-fg-muted">Fale com o dono do workspace.</p>
-      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        {readOnly && canExport && (
+          <Link
+            href="/configuracoes#exportar"
+            className="flex-shrink-0 min-h-[44px] px-4 flex items-center rounded-full text-sm font-extrabold text-fg-soft hover:bg-white/5 transition-colors"
+          >
+            Exportar dados
+          </Link>
+        )}
+        {canManage ? (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={btnAction}
+            className={`flex-shrink-0 min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter] hover:brightness-110 disabled:opacity-50 ${
+              urgent ? "bg-zero text-ink" : "bg-accent text-ink"
+            }`}
+          >
+            {loading ? "Aguarde…" : btnLabel}
+          </button>
+        ) : (
+          <p className="text-[13px] font-bold text-fg-muted">Fale com o dono do workspace.</p>
+        )}
+      </div>
     </div>
   );
 }

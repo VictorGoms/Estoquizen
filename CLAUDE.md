@@ -65,7 +65,7 @@ Apenas 3: `owner`, `admin`, `member`
 | canAccessNota           | ✓     | ✓     | ✗      |
 | canAccessConfiguracoes  | ✓     | ✓     | ✗      |
 | canGerenciarAssinatura  | ✓     | ✗     | ✗      |
-| canEncerrarAssinatura   | ✓     | ✗     | ✗      |
+| canExcluirWorkspace     | ✓     | ✗     | ✗      |
 | canEditEstoque          | ✓     | ✓     | ✗      |
 | canAddMembro            | ✓     | ✓     | ✗      |
 | canEditMembro           | ✓     | ✓     | ✗      |
@@ -84,7 +84,6 @@ Apenas 3: `owner`, `admin`, `member`
 - `/estoque`             — Lista de produtos
 - `/estoque/[id]`        — Detalhe do produto (com histórico)
 - `/estoque/novo`        — Cadastro de produto
-- `/estoque/item`        — Rota antiga do protótipo; só redireciona para `/estoque`
 - `/nota`                — Input de NF-e
 - `/nota/revisao`        — Revisão da NF-e
 - `/membros`             — Lista de membros
@@ -132,6 +131,8 @@ components/
 - **`api.ts`** — cliente HTTP (`api.get/post/patch/delete`); injeta Bearer token do Supabase automaticamente; base URL via `NEXT_PUBLIC_API_URL`
 - **`session.ts`** — gestão de sessão em duas camadas: `sessionStorage` (fecha ao fechar o browser) + `localStorage` para inatividade (timeout: 2h); funções: `markSessionActive`, `isBrowserSessionActive`, `isActivityValid`, `touchActivity`, `clearSession`
 - **`sanitize.ts`** — sanitização de inputs: `sanitizeText`, `sanitizeEmail`, `sanitizeNumber`, `sanitizeCode`
+- **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
+- **`exportCsv.ts`** — `exportProductsCsv` / `exportMovementsCsv`: CSV no formato do Excel em português (`;`, vírgula decimal, BOM), paginado de 1000 em 1000; usado em `/configuracoes#exportar`
 
 ## Hooks (`src/hooks/`)
 - **`useRole.ts`** — lê role do workspace ativo do localStorage; exporta `useRole()`, `can(role, permission)` e `PERMISSIONS`
