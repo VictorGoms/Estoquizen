@@ -5,7 +5,16 @@ import { BrowserMultiFormatReader, BrowserQRCodeReader } from "@zxing/browser";
 import { DecodeHintType } from "@zxing/library";
 import { ArrowLeftIcon, XIcon, Spinner } from "@/components/ui/icons";
 
-type ScanState = "requesting" | "scanning" | "unsupported" | "error" | "no_mediadevices";
+type ScanState = "requesting" | "scanning" | "unsupported" | "error" | "no_mediadevices" | "timeout";
+
+/* Sem câmera (ou com ela presa em outro app) o getUserMedia pode nunca responder */
+const CAMERA_TIMEOUT_MS = 10_000;
+
+const CAM_ERROR = {
+  denied:   { title: "Permissão negada",          desc: "Permita o acesso à câmera nas configurações do navegador e tente novamente." },
+  notfound: { title: "Nenhuma câmera encontrada", desc: "Este aparelho não tem câmera disponível. Digite o código abaixo." },
+  busy:     { title: "Câmera em uso",             desc: "Outro app está usando a câmera. Feche-o e tente novamente, ou digite o código." },
+} as const;
 
 const KeyboardIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -39,8 +48,12 @@ export default function BarcodeScanner({
   const zxingRef  = useRef<{ stop: () => void } | null>(null);
 
   const activeRef = useRef(false); // false enquanto desmontado
+  const attemptRef = useRef(0);    // cada startCamera é uma tentativa; respostas de tentativas antigas são descartadas
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [scanState, setScanState]   = useState<ScanState>("requesting");
+  /* Antes toda falha virava "Permissão negada", mesmo sem câmera ou com ela em uso */
+  const [camError, setCamError]     = useState<"denied" | "notfound" | "busy">("denied");
   const [manualMode, setManualMode] = useState(false);
   const [manualCode, setManualCode] = useState("");
 
@@ -90,8 +103,18 @@ export default function BarcodeScanner({
 
   const startCamera = useCallback(async () => {
     if (!activeRef.current) return;
+    stopCamera();
+    const attempt = ++attemptRef.current;
+    const stale = () => !activeRef.current || attempt !== attemptRef.current;
     setScanState("requesting");
     setManualMode(false);
+
+    /* Passou do tempo e ainda pedindo: oferece tentar de novo ou digitar. Se a câmera responder
+       depois (ex.: a pessoa demorou no aviso de permissão), segue normalmente. */
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      if (!stale()) setScanState((s) => (s === "requesting" ? "timeout" : s));
+    }, CAMERA_TIMEOUT_MS);
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setScanState("no_mediadevices");
@@ -103,13 +126,19 @@ export default function BarcodeScanner({
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
       }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
-    } catch {
-      if (!activeRef.current) return;
+    } catch (err) {
+      if (stale()) return;
+      const name = (err as DOMException)?.name;
+      setCamError(
+        name === "NotFoundError" || name === "OverconstrainedError" ? "notfound"
+        : name === "NotReadableError" || name === "AbortError" ? "busy"
+        : "denied",
+      );
       setScanState("error");
       return;
     }
 
-    if (!activeRef.current) { stream?.getTracks().forEach((t) => t.stop()); return; }
+    if (stale()) { stream?.getTracks().forEach((t) => t.stop()); return; }
     streamRef.current = stream;
 
     /* ── Caminho 1: BarcodeDetector nativo (Android/macOS Chrome) ── */
@@ -118,7 +147,7 @@ export default function BarcodeScanner({
         videoRef.current.srcObject = stream;
         try { await videoRef.current.play(); } catch { /* AbortError ignorado */ }
       }
-      if (!activeRef.current) return;
+      if (stale()) return;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const detector = new (window as any).BarcodeDetector({
@@ -127,21 +156,21 @@ export default function BarcodeScanner({
       setScanState("scanning");
 
       const tick = async () => {
-        if (!activeRef.current) return;
+        if (stale()) return;
         if (!videoRef.current || videoRef.current.readyState < 2) {
           rafRef.current = requestAnimationFrame(tick);
           return;
         }
         try {
           const barcodes = await detector.detect(videoRef.current);
-          if (barcodes.length > 0 && activeRef.current) {
+          if (barcodes.length > 0 && !stale()) {
             playBeep();
             stopCamera();
             onDetect(barcodes[0].rawValue as string);
             return;
           }
         } catch { /* non-fatal */ }
-        if (activeRef.current) rafRef.current = requestAnimationFrame(tick);
+        if (!stale()) rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);
       return;
@@ -149,7 +178,7 @@ export default function BarcodeScanner({
 
     /* ── Caminho 2: zxing-js — deixa o zxing controlar o vídeo ── */
     try {
-      if (!activeRef.current) return;
+      if (stale()) return;
 
       const qrHints = new Map([[DecodeHintType.TRY_HARDER, false]]);
       const reader = preferQr
@@ -159,7 +188,7 @@ export default function BarcodeScanner({
 
       let detected = false;
       const controls = await reader.decodeFromStream(stream, videoRef.current!, (result) => {
-        if (!result || detected || !activeRef.current) return;
+        if (!result || detected || stale()) return;
         detected = true;
         playBeep();
         controls.stop();
@@ -169,10 +198,10 @@ export default function BarcodeScanner({
         onDetect(result.getText());
       });
 
-      if (!activeRef.current) { controls.stop(); return; }
+      if (stale()) { controls.stop(); return; }
       zxingRef.current = { stop: () => controls.stop() };
     } catch {
-      if (activeRef.current) setScanState("unsupported");
+      if (!stale()) setScanState("unsupported");
     }
   }, [stopCamera, onDetect, preferQr]);
 
@@ -181,6 +210,7 @@ export default function BarcodeScanner({
     startCamera();
     return () => {
       activeRef.current = false;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       stopCamera();
     };
   }, [startCamera, stopCamera]);
@@ -247,8 +277,18 @@ export default function BarcodeScanner({
 
       {scanState === "error" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center">
-          <p className="text-fg font-black text-sm">Permissão negada</p>
-          <p className="text-fg-muted text-[13px] font-bold">Permita o acesso à câmera nas configurações do navegador e tente novamente.</p>
+          <p className="text-fg font-black text-sm">{CAM_ERROR[camError].title}</p>
+          <p className="text-fg-muted text-[13px] font-bold">{CAM_ERROR[camError].desc}</p>
+          <button type="button" onClick={startCamera} className="mt-1 min-h-[44px] px-4 rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10">
+            Tentar novamente
+          </button>
+        </div>
+      )}
+
+      {scanState === "timeout" && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center">
+          <p className="text-fg font-black text-sm">A câmera não respondeu</p>
+          <p className="text-fg-muted text-[13px] font-bold">Feche outros apps que usam a câmera e tente de novo, ou digite o código abaixo.</p>
           <button type="button" onClick={startCamera} className="mt-1 min-h-[44px] px-4 rounded-full bg-surface-2 text-sm font-extrabold cursor-pointer hover:bg-white/10">
             Tentar novamente
           </button>
@@ -269,7 +309,7 @@ export default function BarcodeScanner({
       type="button"
       onClick={() => setManualMode(true)}
       className={`flex items-center justify-center gap-2 min-h-[44px] px-4 rounded-full text-sm font-extrabold cursor-pointer transition-colors duration-200 ${
-        scanState === "no_mediadevices" ? "text-accent" : "text-fg-muted hover:text-fg"
+        scanState === "no_mediadevices" || scanState === "timeout" || scanState === "error" ? "text-accent" : "text-fg-muted hover:text-fg"
       }`}
     >
       <KeyboardIcon />
