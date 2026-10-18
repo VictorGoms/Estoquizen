@@ -11,6 +11,7 @@ import PageError from "@/components/ui/PageError";
 import AccessDenied from "@/components/ui/AccessDenied";
 import { supabase } from "@/lib/supabase";
 import { dbErrorPt } from "@/lib/dbMessages";
+import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
 import { ArrowLeftIcon, CheckIcon, TrashIcon, Spinner } from "@/components/ui/icons";
@@ -132,16 +133,16 @@ export default function MemberDetailPage() {
     setSaving(true);
     setSaveError("");
 
-    const { error: err } = await supabase
-      .from("workspace_members")
-      .update({ role, status })
-      .eq("id", member.memberId);
-
-    setSaving(false);
-    if (err) {
-      setSaveError(dbErrorPt(err));
+    const ws = getWorkspace();
+    try {
+      if (!ws) throw new Error("Nenhum workspace selecionado.");
+      await api.patch(`/members/${member.userId}?workspace_id=${ws.id}`, { role, status });
+    } catch (err) {
+      setSaving(false);
+      setSaveError(err instanceof Error ? err.message : "Não foi possível salvar.");
       return;
     }
+    setSaving(false);
     setOriginalRole(role);
     setOriginalStatus(status);
     setSaved(true);
@@ -151,11 +152,14 @@ export default function MemberDetailPage() {
   async function handleRemove() {
     if (!member) return;
     setRemoving(true);
-    const { error: err } = await supabase.from("workspace_members").delete().eq("id", member.memberId);
-    if (err) {
+    const ws = getWorkspace();
+    try {
+      if (!ws) throw new Error("Nenhum workspace selecionado.");
+      await api.delete(`/members/${member.userId}?workspace_id=${ws.id}`);
+    } catch (err) {
       setRemoving(false);
       setConfirm(false);
-      setSaveError(dbErrorPt(err, "Não foi possível remover o membro."));
+      setSaveError(err instanceof Error ? err.message : "Não foi possível remover o membro.");
       return;
     }
     router.push("/membros");

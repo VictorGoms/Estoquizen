@@ -7,7 +7,6 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
-import { dbErrorPt } from "@/lib/dbMessages";
 import { api } from "@/lib/api";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
@@ -176,13 +175,15 @@ export default function ConfiguracoesPage() {
     setSaving(true);
     setError("");
 
-    const { error: err } = await supabase
-      .from("workspaces")
-      .update({ name: editName.trim(), description: editDesc.trim() || null })
-      .eq("id", workspace.id);
-
+    /* Pela API: ela checa a assinatura (somente leitura) e o banco não aceita mais escrita direta */
+    try {
+      await api.patch(`/workspaces/${workspace.id}`, { name: editName.trim(), description: editDesc.trim() || null });
+    } catch (err) {
+      setSaving(false);
+      setError(err instanceof Error ? err.message : "Não foi possível salvar.");
+      return;
+    }
     setSaving(false);
-    if (err) { setError(dbErrorPt(err)); return; }
 
     setWorkspace((w) => w ? { ...w, name: editName.trim(), description: editDesc.trim() || null } : w);
     setWsName(editName.trim());

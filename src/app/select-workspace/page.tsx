@@ -9,6 +9,7 @@ import SecondaryButton from "@/components/workspace/SecondaryButton";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import { setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
@@ -93,10 +94,8 @@ export default function SelectWorkspacePage() {
   async function handleAccept(row: PendingRow) {
     if (!row.workspaces) return;
     setAccepting(row.id);
-    await supabase
-      .from("workspace_members")
-      .update({ status: "ativo" })
-      .eq("id", row.id);
+    /* Pela API, que só muda o status (direto no banco dava para trocar o papel junto) */
+    await api.post("/members/accept", { workspace_id: row.workspaces.id }).catch(() => null);
     await load();
     setAccepting(null);
   }

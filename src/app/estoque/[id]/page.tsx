@@ -163,19 +163,20 @@ export default function ItemDetailPage() {
       setActionError("Valor inválido. Use números, com vírgula para decimais (ex.: 2,5).");
       return;
     }
-    const { error: err } = await supabase
-      .from("products")
-      .update({
+    try {
+      await api.patch(`/products/${product.id}`, {
         name:     sanitizeText(editName, 200),
         price:    newPrice,
         location: sanitizeText(editLocation, 200) || null,
         category: sanitizeText(editCategory, 60),
         min_qty:  newMinQty,
-      })
-      .eq("id", product.id);
-
+      });
+    } catch (err) {
+      setSaving(false);
+      setActionError(err instanceof Error ? err.message : "Não foi possível salvar.");
+      return;
+    }
     setSaving(false);
-    if (err) { setActionError(dbErrorPt(err)); return; }
     setProduct((p) => p ? {
       ...p,
       name:     editName,
@@ -216,8 +217,11 @@ export default function ItemDetailPage() {
     setImgUploading(true);
     setActionError("");
     try {
+      const ws = getWorkspace();
+      if (!ws) return;
       const compressed = await compressImage(file);
-      const path = `${product.id}.jpg`;
+      /* Pasta do workspace: o storage só deixa gravar na pasta de um workspace do qual a pessoa é membro */
+      const path = `${ws.id}/${product.id}.jpg`;
 
       const { error: upErr } = await supabase.storage
         .from("product-images")
@@ -235,20 +239,10 @@ export default function ItemDetailPage() {
       /* Adiciona timestamp para quebrar cache do browser a cada novo upload */
       const publicUrl = urlData?.publicUrl ? `${urlData.publicUrl}?t=${Date.now()}` : "";
 
-      // Persiste no banco — silencia se a coluna ainda não existir
-      const { error: updateErr } = await supabase
-        .from("products")
-        .update({ image_url: publicUrl })
-        .eq("id", product.id);
-
-      if (updateErr && !updateErr.message.includes("image_url")) {
-        setActionError(dbErrorPt(updateErr, "Não foi possível salvar a imagem."));
-        return;
-      }
+      await api.patch(`/products/${product.id}`, { image_url: publicUrl });
 
       setProduct((p) => p ? { ...p, image_url: publicUrl } : p);
-      const ws = getWorkspace();
-      if (ws) mutateProducts(ws.id);
+      mutateProducts(ws.id);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao enviar imagem");
     } finally {
@@ -261,11 +255,12 @@ export default function ItemDetailPage() {
     if (!product) return;
     setNfScanning(false);
     const clean = sanitizeCode(scannedCode);
-    const { error: err } = await supabase
-      .from("products")
-      .update({ code: clean })
-      .eq("id", product.id);
-    if (!err) setProduct((p) => p ? { ...p, code: clean } : p);
+    try {
+      await api.patch(`/products/${product.id}`, { code: clean });
+      setProduct((p) => p ? { ...p, code: clean } : p);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Não foi possível salvar o código.");
+    }
   }
 
   function handleMoved(newQty: number, delta: number) {
