@@ -12,24 +12,47 @@ async function getToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+/* Mensagem quando a resposta não traz { error } (ex.: página HTML de erro do proxy) */
+const STATUS_MESSAGES: Record<number, string> = {
+  401: "Sua sessão expirou. Entre novamente.",
+  403: "Você não tem permissão para esta ação.",
+  404: "Não encontrado.",
+  429: "Muitas requisições. Aguarde um momento e tente novamente.",
+  502: "Servidor indisponível no momento. Tente novamente em instantes.",
+  503: "Servidor indisponível no momento. Tente novamente em instantes.",
+  504: "O servidor demorou para responder. Tente novamente.",
+};
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
 ): Promise<T> {
   const token = await getToken();
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers: {
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
-  });
 
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error ?? "Erro na API");
-  return json.data as T;
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method,
+      headers: {
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    throw new Error("Sem conexão com o servidor. Verifique a internet e tente novamente.");
+  }
+
+  /* res.json() direto quebrava com "Unexpected token <" quando vinha HTML, e com 204 (sem corpo) */
+  const text = await res.text();
+  let json: { data?: unknown; error?: string | null } | null = null;
+  try { json = text ? JSON.parse(text) : null; } catch { /* resposta não-JSON */ }
+
+  if (!res.ok) {
+    throw new Error(json?.error || STATUS_MESSAGES[res.status] || `Erro ${res.status}. Tente novamente.`);
+  }
+  return (json?.data ?? undefined) as T;
 }
 
 export const api = {
