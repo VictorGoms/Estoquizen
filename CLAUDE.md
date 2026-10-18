@@ -52,6 +52,11 @@ permitindo que o celular (HTTPS) alcance o Fastify (HTTP) sem mixed-content erro
 - Gráfico de Métricas usa Recharts com as cores do tema em hex (`#60a5fa` entradas, `#eef3fb` saídas), sem degradê
 - Os utilitários do tema antigo (`bg-*-gradient`, `shadow-card/btn`, `.btn-primary`, `.glass-card`) foram removidos: não recriar
 
+## Escritas no banco (SCRUM-48)
+- Toda escrita passa pela API (`src/lib/api.ts`). O banco não aceita mais escrita direta de produto, estoque, movimentação, workspace e membro (só por GRANT/policy limitados)
+- Exceções que seguem direto no Supabase: o próprio perfil (nome, telefone, foto), recusar o próprio convite e upload de fotos no storage
+- Foto de produto vai em `product-images/<workspace_id>/...`: o storage recusa outra pasta
+
 ## Regras críticas de React
 - NÃO usar `Date.now()`, `Math.random()` ou `window` diretamente no render
 - Lógica dependente de horário/browser → `useEffect` + `useState` com valor inicial estável
