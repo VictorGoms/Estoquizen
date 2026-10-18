@@ -10,6 +10,7 @@ export const PERMISSIONS = {
   owner: {
     canAccessNota:          true,
     canAccessConfiguracoes: true,
+    canGerenciarAssinatura: true,
     canEncerrarAssinatura:  true,
     canEditEstoque:         true,
     canAddMembro:           true,
@@ -19,6 +20,7 @@ export const PERMISSIONS = {
   admin: {
     canAccessNota:          true,
     canAccessConfiguracoes: true,
+    canGerenciarAssinatura: false,
     canEncerrarAssinatura:  false,
     canEditEstoque:         true,
     canAddMembro:           true,
@@ -28,6 +30,7 @@ export const PERMISSIONS = {
   member: {
     canAccessNota:          false,
     canAccessConfiguracoes: false,
+    canGerenciarAssinatura: false,
     canEncerrarAssinatura:  false,
     canEditEstoque:         false,
     canAddMembro:           false,

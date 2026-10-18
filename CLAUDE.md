@@ -64,6 +64,7 @@ Apenas 3: `owner`, `admin`, `member`
 |-------------------------|-------|-------|--------|
 | canAccessNota           | ✓     | ✓     | ✗      |
 | canAccessConfiguracoes  | ✓     | ✓     | ✗      |
+| canGerenciarAssinatura  | ✓     | ✗     | ✗      |
 | canEncerrarAssinatura   | ✓     | ✗     | ✗      |
 | canEditEstoque          | ✓     | ✓     | ✗      |
 | canAddMembro            | ✓     | ✓     | ✗      |

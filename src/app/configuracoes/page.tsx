@@ -215,7 +215,7 @@ export default function ConfiguracoesPage() {
                   <span className="text-sm font-bold text-fg-muted">{plan.limit}</span>
                 </p>
               </div>
-              {workspace?.plan !== "pro" && (
+              {workspace?.plan !== "pro" && can(wsRole, "canGerenciarAssinatura") && (
                 <button
                   type="button"
                   onClick={() => handleUpgrade(workspace?.plan === "basic" ? "growth" : "pro")}
@@ -250,7 +250,11 @@ export default function ConfiguracoesPage() {
               </div>
             </dl>
 
-            {subscription?.stripe_customer_id ? (
+            {!can(wsRole, "canGerenciarAssinatura") ? (
+              <p className="px-5 py-3.5 rounded-4xl bg-surface-2/60 text-sm font-bold text-fg-subtle">
+                Só o dono do workspace pode trocar de plano e gerenciar a assinatura.
+              </p>
+            ) : subscription?.stripe_customer_id ? (
               <button
                 type="button"
                 onClick={handlePortal}

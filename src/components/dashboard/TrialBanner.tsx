@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
+import { useRole, can } from "@/hooks/useRole";
 import { BellIcon } from "@/components/ui/icons";
 
 interface Subscription {
@@ -19,6 +20,8 @@ function daysUntil(dateStr: string): number {
 export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
   const [sub, setSub]         = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
+  /* A API só aceita checkout e portal do owner; os outros veem o aviso sem o botão */
+  const canManage             = can(useRole(), "canGerenciarAssinatura");
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -108,16 +111,20 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
         </div>
       </div>
 
-      <button
-        type="button"
-        disabled={loading}
-        onClick={btnAction}
-        className={`flex-shrink-0 min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter] hover:brightness-110 disabled:opacity-50 ${
-          urgent ? "bg-zero text-ink" : "bg-accent text-ink"
-        }`}
-      >
-        {loading ? "Aguarde…" : btnLabel}
-      </button>
+      {canManage ? (
+        <button
+          type="button"
+          disabled={loading}
+          onClick={btnAction}
+          className={`flex-shrink-0 min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter] hover:brightness-110 disabled:opacity-50 ${
+            urgent ? "bg-zero text-ink" : "bg-accent text-ink"
+          }`}
+        >
+          {loading ? "Aguarde…" : btnLabel}
+        </button>
+      ) : (
+        <p className="text-[13px] font-bold text-fg-muted">Fale com o dono do workspace.</p>
+      )}
     </div>
   );
 }
