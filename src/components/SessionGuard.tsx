@@ -15,6 +15,9 @@ import {
   isActivityValid,
   touchActivity,
   clearSession,
+  askOtherTabs,
+  answerOtherTabs,
+  joinBrowserSession,
   INACTIVITY_MS,
 } from "@/lib/session";
 
@@ -28,39 +31,56 @@ export default function SessionGuard({ children }: { children: React.ReactNode }
 
   async function forceSignOut() {
     clearSession();
-    await supabase.auth.signOut();
+    /* "local": encerra só neste navegador. O padrão (global) derrubava também o celular. */
+    await supabase.auth.signOut({ scope: "local" });
     router.replace("/login");
   }
 
   useEffect(() => {
-    // ── 1. On mount: verify both session layers ──────────────────────────
-    if (!isBrowserSessionActive()) {
-      // Browser was closed or tab was fresh-opened — end the Supabase session
-      forceSignOut();
-      return;
-    }
+    let cancelled = false;
+    let stopAnswering = () => {};
 
-    if (!isActivityValid()) {
-      // User was inactive for too long
-      forceSignOut();
-      return;
-    }
-
-    // ── 2. Activity listeners — reset the inactivity clock ───────────────
     function handleActivity() {
       touchActivity();
     }
 
-    ACTIVITY_EVENTS.forEach((ev) => window.addEventListener(ev, handleActivity, { passive: true }));
-
-    // ── 3. Periodic inactivity check ─────────────────────────────────────
-    intervalRef.current = setInterval(() => {
-      if (!isActivityValid()) {
-        forceSignOut();
+    async function start() {
+      // ── 1. Sessão do navegador: aba nova pergunta às outras antes de sair ──
+      if (!isBrowserSessionActive()) {
+        const alive = await askOtherTabs();
+        if (cancelled) return;
+        if (!alive) {
+          // Nenhuma aba aberta respondeu: o navegador foi fechado
+          forceSignOut();
+          return;
+        }
+        joinBrowserSession();
       }
-    }, CHECK_INTERVAL_MS);
+
+      if (!isActivityValid()) {
+        // User was inactive for too long
+        forceSignOut();
+        return;
+      }
+
+      stopAnswering = answerOtherTabs();
+
+      // ── 2. Activity listeners — reset the inactivity clock ───────────────
+      ACTIVITY_EVENTS.forEach((ev) => window.addEventListener(ev, handleActivity, { passive: true }));
+
+      // ── 3. Periodic inactivity check ─────────────────────────────────────
+      intervalRef.current = setInterval(() => {
+        if (!isActivityValid()) {
+          forceSignOut();
+        }
+      }, CHECK_INTERVAL_MS);
+    }
+
+    start();
 
     return () => {
+      cancelled = true;
+      stopAnswering();
       ACTIVITY_EVENTS.forEach((ev) => window.removeEventListener(ev, handleActivity));
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
