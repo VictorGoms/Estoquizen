@@ -174,6 +174,12 @@ export default function MovementForm({
       </label>
 
       {error && <p role="alert" className="text-sm font-bold text-zero">{error}</p>}
+      {/* O botão fica desativado nesse caso, então o aviso aparece enquanto a pessoa digita */}
+      {!error && insufficient && (
+        <p role="alert" className="text-sm font-bold text-zero">
+          Estoque insuficiente. Disponível: {formatQty(product.qty)} {product.unit}
+        </p>
+      )}
 
       <button
         type="submit"
