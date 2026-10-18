@@ -18,6 +18,8 @@ import { ArrowRightIcon, CheckIcon, ChevronDownIcon, Spinner } from "@/component
 import { supabase } from "@/lib/supabase";
 import { dbErrorPt } from "@/lib/dbMessages";
 import { getWorkspace } from "@/hooks/useWorkspace";
+import { usePlan, hasFeature } from "@/hooks/usePlan";
+import PlanUpsell from "@/components/ui/PlanUpsell";
 import { api } from "@/lib/api";
 import { deriveStatus, formatBRL, formatQty, STATUS_LABEL, type StockStatus } from "@/lib/stock";
 
@@ -95,6 +97,7 @@ function MovTooltip({ active, payload, label, unit }: {
 /* ─── Page ─── */
 export default function DashboardMetricasPage() {
   const router = useRouter();
+  const { plan } = usePlan();
 
   const [wsName, setWsName]     = useState("");
   const [userName, setUserName] = useState("");
@@ -211,6 +214,9 @@ export default function DashboardMetricasPage() {
   const product = products.find((p) => p.id === selectedProduct) ?? null;
   const productStatus = product ? deriveStatus(product.qty, product.min_qty) : "normal";
   const xAxisInterval = selectedPeriod === "7" ? 0 : selectedPeriod === "30" ? 4 : 14;
+
+  /* Basic não tem métricas (a tela de planos promete só no Growth e no Pro) */
+  if (plan && !hasFeature(plan, "metricas")) return <PlanUpsell feature="metricas" />;
 
   /* ─── Render ─── */
   return (

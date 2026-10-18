@@ -11,6 +11,8 @@ import BarcodeScanner   from "@/components/ui/BarcodeScanner";
 import FormField, { inputClass } from "@/components/ui/FormField";
 import { ArrowRightIcon, CheckIcon, DocumentIcon, ScanIcon, SearchIcon, Spinner } from "@/components/ui/icons";
 import { useRole, can } from "@/hooks/useRole";
+import { usePlan, hasFeature } from "@/hooks/usePlan";
+import PlanUpsell       from "@/components/ui/PlanUpsell";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { api }          from "@/lib/api";
 
@@ -58,6 +60,7 @@ function ErrorBox({ children }: { children: React.ReactNode }) {
 export default function NotaPage() {
   const router  = useRouter();
   const role    = useRole();
+  const { plan, loading: planLoading } = usePlan();
 
   const [wsName,       setWsName]       = useState("");
   const [tipo,         setTipo]         = useState<TipoNota | null>(null);
@@ -107,7 +110,7 @@ export default function NotaPage() {
     try {
       const result = await api.post<{ chave: string; total_itens: number; itens: unknown[] }>(
         "/nfe/consultar",
-        { tipo: "nfce", chave: chaveRaw }
+        { tipo: "nfce", chave: chaveRaw, workspace_id: getWorkspace()?.id }
       );
       sessionStorage.setItem("nf_items", JSON.stringify(result.itens));
       sessionStorage.setItem("nf_chave", result.chave);
@@ -122,6 +125,9 @@ export default function NotaPage() {
 
   if (role === null) return <PageLoader />;
   if (!can(role, "canAccessNota")) return <AccessDenied />;
+  if (planLoading) return <PageLoader />;
+  /* Basic não tem importação de nota (a tela de planos promete só no Growth e no Pro) */
+  if (plan && !hasFeature(plan, "nfe")) return <PlanUpsell feature="nfe" />;
 
   const chaveDigitos = chave.replace(/\s/g, "").length;
   const podeBuscar   = chaveDigitos === 44;
