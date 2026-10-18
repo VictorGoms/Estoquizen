@@ -16,6 +16,7 @@ import LevelBar from "@/components/estoque/LevelBar";
 import { inputClass } from "@/components/ui/FormField";
 import { ArrowRightIcon, CheckIcon, ChevronDownIcon, Spinner } from "@/components/ui/icons";
 import { supabase } from "@/lib/supabase";
+import { dbErrorPt } from "@/lib/dbMessages";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { api } from "@/lib/api";
 import { deriveStatus, formatBRL, formatQty, STATUS_LABEL, type StockStatus } from "@/lib/stock";
@@ -126,7 +127,7 @@ export default function DashboardMetricasPage() {
         .eq("workspace_id", ws.id)
         .order("name");
 
-      if (err) { setError(err.message); setLoading(false); return; }
+      if (err) { setError(dbErrorPt(err, "Não foi possível carregar as métricas.")); setLoading(false); return; }
       setProducts((data ?? []).map((p) => ({
         ...p,
         qty: Number(p.qty),

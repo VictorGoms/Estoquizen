@@ -13,6 +13,8 @@ interface Subscription {
   cancel_at_period_end: boolean;
 }
 
+const PLAN_LABEL: Record<string, string> = { basic: "Basic", growth: "Growth", pro: "Pro" };
+
 function daysUntil(dateStr: string): number {
   return Math.max(0, Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
 }
@@ -71,6 +73,11 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
     urgent = days <= 3;
     title = urgent ? `Seu trial expira em ${days} ${days === 1 ? "dia" : "dias"}!` : `Trial: ${days} ${days === 1 ? "dia" : "dias"} restante${days !== 1 ? "s" : ""}`;
     desc  = "Assine para continuar com acesso completo após o período gratuito.";
+  } else if (sub.status === "trial_expired" && !sub.trial_ends_at) {
+    /* Sem data de trial = nunca teve trial (Basic/Pro, ou CPF que já usou o trial): falta pagar */
+    urgent = true;
+    title = "Pagamento pendente";
+    desc  = `O pagamento do plano ${PLAN_LABEL[sub.plan] ?? sub.plan} não foi concluído. Você está em modo somente leitura até assinar.`;
   } else if (sub.status === "trial_expired") {
     urgent = true;
     title = "Seu trial expirou";

@@ -258,7 +258,7 @@ export default function BarcodeScanner({
       {scanState === "no_mediadevices" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 px-6 text-center">
           <p className="text-fg font-black text-sm">Câmera não disponível</p>
-          <p className="text-fg-muted text-[13px] font-bold">A câmera requer HTTPS. Use a entrada manual abaixo.</p>
+          <p className="text-fg-muted text-[13px] font-bold">Este navegador não liberou a câmera. Use a entrada manual abaixo.</p>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
+import { dbErrorPt } from "@/lib/dbMessages";
 import { useUser } from "@/lib/userContext";
 import Link from "next/link";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
@@ -112,7 +113,7 @@ export default function PerfilPage() {
       const { error: upErr } = await supabase.storage
         .from("profile-images")
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-      if (upErr) { setImgError(upErr.message); return; }
+      if (upErr) { setImgError(dbErrorPt(upErr, "Não foi possível enviar a imagem.")); return; }
 
       const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(path);
       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
@@ -121,7 +122,7 @@ export default function PerfilPage() {
         .from("profiles")
         .update({ avatar_url: publicUrl })
         .eq("id", profile.id);
-      if (dbErr) { setImgError(dbErr.message); return; }
+      if (dbErr) { setImgError(dbErrorPt(dbErr, "Não foi possível salvar a imagem.")); return; }
 
       setProfile((p) => p ? { ...p, avatar_url: publicUrl } : p);
       setUserProfile({ avatarUrl: publicUrl });
@@ -142,7 +143,7 @@ export default function PerfilPage() {
       .update({ name, phone: phone || null })
       .eq("id", profile.id);
     setSaving(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(dbErrorPt(err)); return; }
     setProfile((p) => p ? { ...p, name, phone } : p);
     setUserProfile({ userName: name });
     setSaved(true);

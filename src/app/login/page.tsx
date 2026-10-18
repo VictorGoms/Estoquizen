@@ -126,7 +126,7 @@ export default function LoginPage() {
             onClick={() => router.push("/register")}
             className="text-accent hover:brightness-110 font-extrabold cursor-pointer"
           >
-            Solicitar acesso
+            Criar conta
           </button>
         </p>
       </form>

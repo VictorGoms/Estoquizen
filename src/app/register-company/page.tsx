@@ -140,7 +140,7 @@ export default function RegisterCompanyPage() {
                 label="Nome da empresa"
                 id="company-name"
                 type="text"
-                placeholder="Ex.: Mercadinho do Bairro"
+                placeholder="Ex.: Mercado Silva"
                 autoComplete="organization"
                 value={values.name}
                 onChange={handleChange("name")}

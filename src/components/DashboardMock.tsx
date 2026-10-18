@@ -13,7 +13,7 @@ export default function DashboardMock() {
         <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center text-sm font-black">AN</span>
         <span className="flex-1 min-w-0">
           <span className="block text-[17px] font-black leading-tight">Boa tarde, Ana!</span>
-          <span className="block text-[13px] font-bold text-fg-muted">Mercadinho do Bairro</span>
+          <span className="block text-[13px] font-bold text-fg-muted">Mercado Silva</span>
         </span>
       </div>
 

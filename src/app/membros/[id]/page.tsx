@@ -10,6 +10,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
 import AccessDenied from "@/components/ui/AccessDenied";
 import { supabase } from "@/lib/supabase";
+import { dbErrorPt } from "@/lib/dbMessages";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
 import { ArrowLeftIcon, CheckIcon, TrashIcon, Spinner } from "@/components/ui/icons";
@@ -89,7 +90,7 @@ export default function MemberDetailPage() {
         .single();
 
       if (err || !wmData) {
-        setError(err?.message ?? "Membro não encontrado");
+        setError(err && err.code !== "PGRST116" ? dbErrorPt(err, "Não foi possível carregar o membro.") : "Membro não encontrado");
         setLoading(false);
         return;
       }
@@ -138,7 +139,7 @@ export default function MemberDetailPage() {
 
     setSaving(false);
     if (err) {
-      setSaveError(err.message);
+      setSaveError(dbErrorPt(err));
       return;
     }
     setOriginalRole(role);
@@ -154,7 +155,7 @@ export default function MemberDetailPage() {
     if (err) {
       setRemoving(false);
       setConfirm(false);
-      setSaveError(err.message);
+      setSaveError(dbErrorPt(err, "Não foi possível remover o membro."));
       return;
     }
     router.push("/membros");
@@ -165,7 +166,8 @@ export default function MemberDetailPage() {
   const canEditOwner = can(wsRole, "canEditOwnerRole");
   const lockedOwner  = originalRole === "owner" && !canEditOwner;
   const roleOptions  = (Object.keys(ROLE_CONFIG) as Role[]).filter((r) => r !== "owner" || canEditOwner);
-  const statusCfg = STATUS_OPTIONS.find((s) => s.id === status)!;
+  /* O cartão mostra o que está salvo; o formulário, a escolha ainda não salva */
+  const statusCfg = STATUS_OPTIONS.find((s) => s.id === originalStatus)!;
 
   if (loading) {
     return (
@@ -219,7 +221,7 @@ export default function MemberDetailPage() {
                   <p className="text-sm font-bold text-fg-muted break-all">{member.email}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap justify-center">
-                  <span className="text-xs font-black px-2.5 py-1 rounded-full bg-surface-2 text-fg-soft">{ROLE_CONFIG[role].label}</span>
+                  <span className="text-xs font-black px-2.5 py-1 rounded-full bg-surface-2 text-fg-soft">{ROLE_CONFIG[originalRole].label}</span>
                   <span className="flex items-center gap-1.5 text-xs font-extrabold text-fg-muted">
                     <span className={`w-2 h-2 rounded-full ${statusCfg.dot}`} />
                     {statusCfg.label}

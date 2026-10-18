@@ -7,6 +7,7 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
+import { dbErrorPt } from "@/lib/dbMessages";
 import { api } from "@/lib/api";
 import { getWorkspace, clearWorkspace } from "@/hooks/useWorkspace";
 import { clearSession } from "@/lib/session";
@@ -149,7 +150,7 @@ export default function ConfiguracoesPage() {
       .eq("id", workspace.id);
 
     setSaving(false);
-    if (err) { setError(err.message); return; }
+    if (err) { setError(dbErrorPt(err)); return; }
 
     setWorkspace((w) => w ? { ...w, name: editName.trim(), description: editDesc.trim() || null } : w);
     setWsName(editName.trim());

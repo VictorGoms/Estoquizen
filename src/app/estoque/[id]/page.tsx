@@ -13,6 +13,7 @@ import FormField, { inputClass } from "@/components/ui/FormField";
 import StatusChip from "@/components/estoque/StatusChip";
 import MovementForm from "@/components/estoque/MovementForm";
 import { supabase } from "@/lib/supabase";
+import { dbErrorPt } from "@/lib/dbMessages";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
 import { mutateProducts } from "@/hooks/useProducts";
@@ -107,7 +108,7 @@ export default function ItemDetailPage() {
         .single();
 
       if (err || !data) {
-        setLoadError(err?.message ?? "Produto não encontrado");
+        setLoadError(err && err.code !== "PGRST116" ? dbErrorPt(err, "Não foi possível carregar o produto.") : "Produto não encontrado");
         setLoading(false);
         return;
       }
@@ -174,7 +175,7 @@ export default function ItemDetailPage() {
       .eq("id", product.id);
 
     setSaving(false);
-    if (err) { setActionError(err.message); return; }
+    if (err) { setActionError(dbErrorPt(err)); return; }
     setProduct((p) => p ? {
       ...p,
       name:     editName,
@@ -223,11 +224,7 @@ export default function ItemDetailPage() {
         .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
 
       if (upErr) {
-        setActionError(
-          upErr.message.toLowerCase().includes("not found") || upErr.message.toLowerCase().includes("bucket")
-            ? "Bucket 'product-images' não encontrado. Crie-o em Supabase → Storage → New Bucket."
-            : upErr.message
-        );
+        setActionError(dbErrorPt(upErr, "Não foi possível enviar a imagem."));
         return;
       }
 
@@ -245,7 +242,7 @@ export default function ItemDetailPage() {
         .eq("id", product.id);
 
       if (updateErr && !updateErr.message.includes("image_url")) {
-        setActionError(updateErr.message);
+        setActionError(dbErrorPt(updateErr, "Não foi possível salvar a imagem."));
         return;
       }
 
