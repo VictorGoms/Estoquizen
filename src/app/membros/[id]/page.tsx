@@ -150,11 +150,21 @@ export default function MemberDetailPage() {
   async function handleRemove() {
     if (!member) return;
     setRemoving(true);
-    await supabase.from("workspace_members").delete().eq("id", member.memberId);
+    const { error: err } = await supabase.from("workspace_members").delete().eq("id", member.memberId);
+    if (err) {
+      setRemoving(false);
+      setConfirm(false);
+      setSaveError(err.message);
+      return;
+    }
     router.push("/membros");
   }
 
   const isDirty   = role !== originalRole || status !== originalStatus;
+  /* Só o owner altera ou remove outro owner e promove alguém a owner (o banco também bloqueia) */
+  const canEditOwner = can(wsRole, "canEditOwnerRole");
+  const lockedOwner  = originalRole === "owner" && !canEditOwner;
+  const roleOptions  = (Object.keys(ROLE_CONFIG) as Role[]).filter((r) => r !== "owner" || canEditOwner);
   const statusCfg = STATUS_OPTIONS.find((s) => s.id === status)!;
 
   if (loading) {
@@ -223,7 +233,7 @@ export default function MemberDetailPage() {
                 </dl>
               </section>
 
-              {!confirm ? (
+              {lockedOwner ? null : !confirm ? (
                 <button
                   type="button"
                   onClick={() => setConfirm(true)}
@@ -253,12 +263,17 @@ export default function MemberDetailPage() {
             </div>
 
             {/* ── Edição ── */}
+            {lockedOwner ? (
+              <p className="bg-surface rounded-5xl p-5 lg:p-6 text-[15px] font-bold text-fg-muted">
+                Só o dono pode alterar ou remover outro dono do workspace.
+              </p>
+            ) : (
             <form onSubmit={handleSave} className="flex flex-col gap-4">
               <fieldset className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
                 <legend className="sr-only">Função no workspace</legend>
                 <p className="text-lg font-black" aria-hidden="true">Função no workspace</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {(Object.keys(ROLE_CONFIG) as Role[]).map((r) => {
+                  {roleOptions.map((r) => {
                     const cfg    = ROLE_CONFIG[r];
                     const active = role === r;
                     return (
@@ -324,6 +339,7 @@ export default function MemberDetailPage() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       </main>
