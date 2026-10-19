@@ -75,7 +75,7 @@ Interface web do **Estoquizen**, um SaaS de gestão de estoque para pequenos neg
 
 | | |
 |---|---|
-| Framework | Next.js 16 (App Router) + React 18 |
+| Framework | Next.js 16 (App Router) + React 19 |
 | Linguagem | TypeScript (strict) |
 | Estilo | Tailwind CSS 3 (tema próprio) |
 | Auth / dados | Supabase JS (Auth, consultas com RLS, Storage) |
