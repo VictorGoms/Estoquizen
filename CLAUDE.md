@@ -6,6 +6,7 @@
 - Linguagem: TypeScript strict
 - Auth / DB: Supabase (`@supabase/supabase-js`)
 - Scanner: `@zxing/browser` + `@zxing/library`
+- Excel: `read-excel-file` (fixo em 9.3.10), carregado sob demanda só na importação de planilha
 
 ## Variáveis de ambiente necessárias
 Criar `.env.local` na raiz com:
@@ -89,6 +90,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/estoque`             — Lista de produtos
 - `/estoque/[id]`        — Detalhe do produto (com histórico)
 - `/estoque/novo`        — Cadastro de produto
+- `/estoque/importar`    — Importar planilha (owner/admin): CSV ou Excel (.xlsx), colunas adivinhadas pelo cabeçalho e trocáveis, prévia com erro por linha, pula o que já existe (código ou, sem código, nome) e corta no limite do plano
 - `/nota`                — Input de NF-e
 - `/nota/revisao`        — Revisão da NF-e
 - `/membros`             — Lista de membros
@@ -141,6 +143,7 @@ components/
 - **`sanitize.ts`** — sanitização de inputs: `sanitizeText`, `sanitizeEmail`, `sanitizeNumber`, `sanitizeCode`
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
+- **`planilha.ts`** — importação de planilha (EQZ-14): `lerArquivo` (CSV `;`/`,`/tab com UTF-8 ou Windows-1252, ou .xlsx), `adivinharColunas`, `validar` (número em formato brasileiro, código em notação científica, já cadastrado, repetido) e `baixarModelo`
 - **`exportCsv.ts`** — `exportProductsCsv` / `exportMovementsCsv`: CSV no formato do Excel em português (`;`, vírgula decimal, BOM), paginado de 1000 em 1000; usado em `/configuracoes#exportar`
 
 ## Hooks (`src/hooks/`)

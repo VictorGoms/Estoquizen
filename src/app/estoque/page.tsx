@@ -25,7 +25,7 @@ import { deriveStatus, formatBRL, formatQty, stockLevel, previsaoDias, formatPre
 import { useForecast } from "@/hooks/useForecast";
 import { useLastOutflow } from "@/hooks/useLastOutflow";
 import { usePlan, planInfo } from "@/hooks/usePlan";
-import { PlusIcon, SearchIcon, ScanIcon, DocumentIcon, PlusMinusIcon, BoxIcon } from "@/components/ui/icons";
+import { PlusIcon, SearchIcon, ScanIcon, DocumentIcon, PlusMinusIcon, BoxIcon, UploadIcon } from "@/components/ui/icons";
 
 type Filter = "todos" | StockStatus | "parados";
 type Sort   = "nome" | "menor" | "valor";
@@ -251,6 +251,11 @@ export default function EstoquePage() {
                 </Link>
               )}
               {canEdit && (
+                <Link href="/estoque/importar" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
+                  <UploadIcon /> Importar planilha
+                </Link>
+              )}
+              {canEdit && (
                 <Link href="/estoque/novo" className="flex items-center gap-2.5 min-h-[48px] px-[22px] rounded-full bg-accent text-ink text-[15px] font-black hover:brightness-110 transition-[filter]">
                   <PlusIcon strokeWidth={2.6} /> Adicionar produto
                 </Link>
@@ -286,6 +291,9 @@ export default function EstoquePage() {
                           <DocumentIcon /> Ler nota de compra
                         </Link>
                       )}
+                      <Link href="/estoque/importar" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                        <UploadIcon /> Importar planilha
+                      </Link>
                     </div>
                   </>
                 )}
@@ -420,6 +428,11 @@ export default function EstoquePage() {
                       {rows.length === 0 ? "Cadastre um produto ou importe uma compra para começar." : "Tente outro termo ou filtro."}
                     </p>
                   </div>
+                  {rows.length === 0 && canEdit && (
+                    <Link href="/estoque/importar" className="min-h-[44px] px-5 flex items-center gap-2 rounded-full bg-surface-2 text-sm font-extrabold hover:bg-white/10">
+                      <UploadIcon className="w-4 h-4" /> Já tem uma planilha? Importe
+                    </Link>
+                  )}
                   {(search || filter !== "todos") && (
                     <button
                       type="button"
