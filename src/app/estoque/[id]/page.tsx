@@ -21,7 +21,8 @@ import { mutateStats } from "@/hooks/useStats";
 import { mutateMovements, mutateProductMovements, useProductMovements } from "@/hooks/useMovements";
 import { sanitizeText, sanitizeCode } from "@/lib/sanitize";
 import { api } from "@/lib/api";
-import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo, parseQtyInput, parsePriceInput } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo, parseQtyInput, parsePriceInput, previsaoDias, formatPrevisao } from "@/lib/stock";
+import { useForecast } from "@/hooks/useForecast";
 import {
   ArrowLeftIcon, BoxIcon, CameraIcon, PencilIcon, TrashIcon, ScanIcon, InIcon, OutIcon, CheckIcon, Spinner,
 } from "@/components/ui/icons";
@@ -56,6 +57,8 @@ export default function ItemDetailPage() {
 
   const [product, setProduct]   = useState<Product | null>(null);
   const [wsName, setWsName]     = useState("");
+  const [wsId, setWsId]         = useState<string | null>(null);
+  const forecast                = useForecast(wsId);
   const [userName, setUserName] = useState("");
   const [loading, setLoading]   = useState(true);
   const [loadError, setLoadError]     = useState("");
@@ -93,6 +96,7 @@ export default function ItemDetailPage() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
       setWsName(ws.name);
+      setWsId(ws.id);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -294,8 +298,9 @@ export default function ItemDetailPage() {
     );
   }
 
-  const status = deriveStatus(product.qty, product.min_qty);
-  const level  = stockLevel(product.qty, product.min_qty, product.max_qty);
+  const status   = deriveStatus(product.qty, product.min_qty);
+  const level    = stockLevel(product.qty, product.min_qty, product.max_qty);
+  const previsao = previsaoDias(product.qty, product.created_at, forecast.get(product.id), now);
 
   const info: Array<[string, string]> = [
     ["Preço unitário", formatBRL(product.price)],
@@ -442,6 +447,11 @@ export default function ItemDetailPage() {
                   </div>
                   <StatusChip status={status} onLight />
                 </div>
+                {previsao !== null && (
+                  <p className="text-sm lg:text-[15px] font-extrabold text-ink/80">
+                    {formatPrevisao(previsao)} no ritmo de saída dos últimos 30 dias
+                  </p>
+                )}
                 <div aria-hidden="true" className="relative h-2.5 rounded-full bg-ink/15">
                   {level.fill > 0 && <div className="h-full rounded-full bg-ink" style={{ width: `${Math.max(level.fill * 100, 4)}%` }} />}
                   {level.minMark > 0 && (

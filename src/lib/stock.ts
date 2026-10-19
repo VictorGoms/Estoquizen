@@ -86,3 +86,25 @@ export function timeAgo(iso: string, now: number): string {
   if (d < 7)    return `há ${d} dias`;
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 }
+
+/*
+ * Previsão "dura ~X dias" (EQZ-16): média simples das saídas dos últimos 30 dias. Com menos de
+ * 30 dias de cadastro, divide pelos dias que o produto existe; com menos de 7, não prevê
+ * (pouco histórico engana). Sem saídas no período, também não prevê.
+ */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function previsaoDias(qty: number, createdAt: string, saidas30d: number | undefined, now: number): number | null {
+  if (!now || !saidas30d || saidas30d <= 0 || qty <= 0) return null;
+  const janela = Math.min(30, (now - new Date(createdAt).getTime()) / DAY_MS);
+  if (janela < 7) return null;
+  return qty / (saidas30d / janela);
+}
+
+/** "acaba hoje", "dura ~1 dia", "dura ~12 dias", "dura mais de 1 ano" */
+export function formatPrevisao(dias: number): string {
+  if (dias < 1)    return "acaba hoje";
+  if (dias > 365)  return "dura mais de 1 ano";
+  const d = Math.round(dias);
+  return d === 1 ? "dura ~1 dia" : `dura ~${d} dias`;
+}

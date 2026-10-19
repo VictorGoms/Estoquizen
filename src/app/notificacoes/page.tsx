@@ -11,7 +11,8 @@ import StatusChip from "@/components/estoque/StatusChip";
 import LevelBar from "@/components/estoque/LevelBar";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
-import { formatQty, type StockStatus } from "@/lib/stock";
+import { formatQty, previsaoDias, formatPrevisao, type StockStatus } from "@/lib/stock";
+import { useForecast } from "@/hooks/useForecast";
 import { BellIcon, CheckIcon } from "@/components/ui/icons";
 
 interface AlertProduct {
@@ -22,9 +23,10 @@ interface AlertProduct {
   unit: string;
   location: string | null;
   image_url: string | null;
+  created_at: string;
 }
 
-function AlertRow({ p, status }: { p: AlertProduct; status: StockStatus }) {
+function AlertRow({ p, status, previsao }: { p: AlertProduct; status: StockStatus; previsao: number | null }) {
   return (
     <li>
       <Link href={`/estoque/${p.id}`} className="flex items-center gap-3.5 p-3 pr-4 rounded-[22px] bg-surface hover:bg-[#19243a] transition-colors">
@@ -36,7 +38,8 @@ function AlertRow({ p, status }: { p: AlertProduct; status: StockStatus }) {
           </span>
           <LevelBar fill={p.min_qty ? Math.min(p.qty / p.min_qty, 1) : 0} status={status} />
           <span className="text-[13px] font-bold text-fg-muted truncate">
-            {formatQty(p.qty)} de {formatQty(p.min_qty)} {p.unit} mínimo{p.location ? ` · ${p.location}` : ""}
+            {formatQty(p.qty)} de {formatQty(p.min_qty)} {p.unit} mínimo
+            {previsao !== null ? ` · ${formatPrevisao(previsao)}` : p.location ? ` · ${p.location}` : ""}
           </span>
         </span>
       </Link>
@@ -50,12 +53,17 @@ export default function NotificacoesPage() {
   const [userName, setUserName]     = useState("");
   const [alerts, setAlerts]         = useState<AlertProduct[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [wsId, setWsId]             = useState<string | null>(null);
+  const [now, setNow]               = useState(0);
+  const forecast                    = useForecast(wsId);
 
   useEffect(() => {
     async function load() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
       setWsName(ws.name);
+      setWsId(ws.id);
+      setNow(Date.now());
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -65,7 +73,7 @@ export default function NotificacoesPage() {
 
       const { data } = await supabase
         .from("products")
-        .select("id, name, qty, min_qty, unit, location, image_url")
+        .select("id, name, qty, min_qty, unit, location, image_url, created_at")
         .eq("workspace_id", ws.id);
 
       const rows = (data ?? []).map((p) => ({ ...p, qty: Number(p.qty), min_qty: Number(p.min_qty ?? 0) }));
@@ -116,7 +124,7 @@ export default function NotificacoesPage() {
                     Zerados · {zerados.length}
                   </h2>
                   <ul className="flex flex-col gap-2.5">
-                    {zerados.map((p) => <AlertRow key={p.id} p={p} status="zerado" />)}
+                    {zerados.map((p) => <AlertRow key={p.id} p={p} status="zerado" previsao={null} />)}
                   </ul>
                 </section>
               )}
@@ -127,7 +135,7 @@ export default function NotificacoesPage() {
                     Estoque baixo · {baixos.length}
                   </h2>
                   <ul className="flex flex-col gap-2.5">
-                    {baixos.map((p) => <AlertRow key={p.id} p={p} status="baixo" />)}
+                    {baixos.map((p) => <AlertRow key={p.id} p={p} status="baixo" previsao={previsaoDias(p.qty, p.created_at, forecast.get(p.id), now)} />)}
                   </ul>
                 </section>
               )}

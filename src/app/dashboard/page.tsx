@@ -17,7 +17,8 @@ import { can } from "@/hooks/useRole";
 import { usePlan, planInfo } from "@/hooks/usePlan";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { useMovements, type Movement } from "@/hooks/useMovements";
-import { deriveStatus, formatBRL, formatQty, timeAgo, type StockStatus } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, timeAgo, previsaoDias, formatPrevisao, type StockStatus } from "@/lib/stock";
+import { useForecast } from "@/hooks/useForecast";
 import {
   ScanIcon, DocumentIcon, BoxIcon, PlusIcon, ArrowRightIcon, ArrowUpRightIcon, InIcon, OutIcon, CheckIcon,
 } from "@/components/ui/icons";
@@ -100,6 +101,7 @@ export default function DashboardPage() {
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar ao dashboard ── */
   const { products, loading: productsLoading } = useProducts(wsId);
+  const forecast = useForecast(wsId);
   const { movements, loading: movLoading }     = useMovements(wsId, period);
 
   useEffect(() => {
@@ -314,7 +316,12 @@ export default function DashboardPage() {
                           </span>
                           <LevelBar fill={p.min_qty ? Math.min(p.qty / p.min_qty, 1) : 0} status={status} />
                           <span className="text-[13px] font-bold text-fg-muted truncate">
-                            {formatQty(p.qty)} de {formatQty(p.min_qty ?? 0)} {p.unit} mínimo{p.location ? ` · ${p.location}` : ""}
+                            {formatQty(p.qty)} de {formatQty(p.min_qty ?? 0)} {p.unit} mínimo
+                            {(() => {
+                              /* Previsão pela média de saídas (EQZ-16), quando há histórico suficiente */
+                              const dias = previsaoDias(p.qty, p.created_at, forecast.get(p.id), now);
+                              return dias !== null ? ` · ${formatPrevisao(dias)}` : p.location ? ` · ${p.location}` : "";
+                            })()}
                           </span>
                         </span>
                       </Link>

@@ -21,7 +21,8 @@ import { useRole, can } from "@/hooks/useRole";
 import { useProducts, mutateProducts, type Product } from "@/hooks/useProducts";
 import { mutateStats } from "@/hooks/useStats";
 import { mutateMovements } from "@/hooks/useMovements";
-import { deriveStatus, formatBRL, formatQty, stockLevel, type StockStatus } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, stockLevel, previsaoDias, formatPrevisao, type StockStatus } from "@/lib/stock";
+import { useForecast } from "@/hooks/useForecast";
 import { PlusIcon, SearchIcon, ScanIcon, DocumentIcon, PlusMinusIcon, BoxIcon } from "@/components/ui/icons";
 
 type Filter = "todos" | StockStatus;
@@ -39,9 +40,11 @@ const FILTERS: { id: Filter; label: string; dot?: string }[] = [
 /* Mesmo breakpoint do menu lateral (lg): a partir daqui a lista ganha o painel de detalhe */
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
-function ProductCard({ p, selected, onOpen, onMove }: {
+function ProductCard({ p, selected, previsao, onOpen, onMove }: {
   p: Row;
   selected: boolean;
+  /** Dias até acabar (EQZ-16); na lista só aparece quando falta uma semana ou menos */
+  previsao: number | null;
   onOpen: () => void;
   onMove?: () => void;
 }) {
@@ -68,6 +71,11 @@ function ProductCard({ p, selected, onOpen, onMove }: {
       >
         <span className="text-[15px] lg:text-base font-extrabold leading-tight line-clamp-2">{p.name}</span>
         <span className={`text-xs lg:text-[13px] font-bold truncate ${muted}`}>{p.location || p.code}</span>
+        {previsao !== null && previsao <= 7 && (
+          <span className={`text-xs lg:text-[13px] font-extrabold ${selected ? "text-ink" : previsao < 1 ? "text-zero" : "text-low"}`}>
+            {formatPrevisao(previsao)}
+          </span>
+        )}
       </button>
 
       <span className={`mt-auto border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/[0.12]"}`} />
@@ -117,6 +125,10 @@ export default function EstoquePage() {
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar para a tela ── */
   const { products, loading, error } = useProducts(wsId);
+  const forecast = useForecast(wsId);
+  const [now, setNow] = useState(0);
+  useEffect(() => { setNow(Date.now()); }, [products]);
+  const previsaoDe = (p: Product) => previsaoDias(p.qty, p.created_at, forecast.get(p.id), now);
 
   useEffect(() => {
     async function load() {
@@ -366,6 +378,7 @@ export default function EstoquePage() {
                         <ProductCard
                           p={p}
                           selected={p.id === selectedId}
+                          previsao={previsaoDe(p)}
                           onOpen={() => openProduct(p.id)}
                           onMove={canEdit ? () => setSheetId(p.id) : undefined}
                         />
@@ -376,6 +389,7 @@ export default function EstoquePage() {
                     <div className="hidden lg:block w-[360px] xl:w-[380px] flex-shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-none rounded-5xl">
                       <ProductPanel
                         product={selected}
+                        previsao={previsaoDe(selected)}
                         canEdit={canEdit}
                         onMoved={(newQty, delta) => applyMovement(selected, newQty, delta)}
                       />

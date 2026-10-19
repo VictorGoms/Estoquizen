@@ -59,5 +59,6 @@ export function useProducts(workspaceId: string | undefined) {
 /** Invalida o cache de produtos — chamar após criar, deletar ou ajustar estoque */
 export function mutateProducts(workspaceId: string) {
   mutate(["product-count", workspaceId]);
+  mutate(["forecast", workspaceId]); /* a previsão muda com cada entrada/saída */
   return mutate(["products", workspaceId]);
 }

@@ -7,16 +7,18 @@ import StatusChip from "@/components/estoque/StatusChip";
 import LevelBar from "@/components/estoque/LevelBar";
 import MovementForm from "@/components/estoque/MovementForm";
 import { PencilIcon, ArrowRightIcon } from "@/components/ui/icons";
-import { deriveStatus, formatBRL, formatQty, stockLevel } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, stockLevel, formatPrevisao } from "@/lib/stock";
 
 interface ProductPanelProps {
   product: Product;
+  /** Dias até acabar pela média de saídas (EQZ-16); null sem histórico suficiente */
+  previsao?: number | null;
   canEdit: boolean;
   onMoved: (newQty: number, delta: number) => void;
 }
 
 /** Painel lateral do estoque no computador: detalhes do produto selecionado + entrada/saída. */
-export default function ProductPanel({ product, canEdit, onMoved }: ProductPanelProps) {
+export default function ProductPanel({ product, previsao = null, canEdit, onMoved }: ProductPanelProps) {
   const status = deriveStatus(product.qty, product.min_qty ?? 0);
   const level  = stockLevel(product.qty, product.min_qty ?? 0, product.max_qty);
 
@@ -24,6 +26,7 @@ export default function ProductPanel({ product, canEdit, onMoved }: ProductPanel
     ["Preço unitário", formatBRL(product.price)],
     ["Valor em estoque", formatBRL(product.qty * product.price)],
   ];
+  if (previsao !== null) info.unshift(["Previsão", formatPrevisao(previsao)]);
   if (product.location) info.push(["Localização", product.location]);
   if (product.supplier) info.push(["Fornecedor", product.supplier]);
 
