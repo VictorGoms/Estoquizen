@@ -12,5 +12,8 @@ export function useLastOutflow(workspaceId: string | undefined | null, enabled =
     },
     { dedupingInterval: 2 * 60 * 1000, revalidateOnFocus: false },
   );
-  return data ?? new Map();
+  return data ?? VAZIO;
 }
+
+/* Mesma referência enquanto carrega ou quando o plano não tem o recurso */
+const VAZIO = new Map<string, string>();

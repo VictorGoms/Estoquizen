@@ -16,8 +16,11 @@ export function useForecast(workspaceId: string | undefined | null): Map<string,
     },
     { dedupingInterval: 2 * 60 * 1000, revalidateOnFocus: false },
   );
-  return data ?? new Map();
+  return data ?? VAZIO;
 }
+
+/* Mesma referência enquanto carrega (um Map novo a cada render refaz memos e efeitos) */
+const VAZIO = new Map<string, number>();
 
 export function mutateForecast(workspaceId: string) {
   return mutate(["forecast", workspaceId]);

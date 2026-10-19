@@ -20,6 +20,9 @@ export interface Product {
   updated_at:   string;
 }
 
+/* Mesma referência enquanto carrega: um [] novo a cada render dispara efeitos e memos sem parar */
+const SEM_PRODUTOS: Product[] = [];
+
 const PAGE = 1000; /* o PostgREST devolve no máximo 1000 linhas; o Pro vai até 2000 produtos */
 
 const fetcher = async (workspaceId: string): Promise<Product[]> => {
@@ -50,7 +53,7 @@ export function useProducts(workspaceId: string | undefined) {
   );
 
   return {
-    products: data ?? [],
+    products: data ?? SEM_PRODUTOS,
     loading:  isLoading,
     error:    error as Error | undefined,
   };

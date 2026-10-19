@@ -2,6 +2,9 @@ import useSWR, { mutate } from "swr";
 import { supabase } from "@/lib/supabase";
 import type { ContagemRow } from "@/lib/contagem";
 
+/* Mesma referência enquanto carrega */
+const SEM_CONTAGENS: ContagemRow[] = [];
+
 /** Contagens dos últimos 90 dias do workspace (EQZ-17): base da escolha do dia, da sequência e da confiabilidade. */
 export function useStockCounts(workspaceId: string | undefined | null, enabled = true) {
   const { data, isLoading } = useSWR(
@@ -20,7 +23,7 @@ export function useStockCounts(workspaceId: string | undefined | null, enabled =
     },
     { revalidateOnFocus: false },
   );
-  return { contagens: data ?? [], loading: isLoading };
+  return { contagens: data ?? SEM_CONTAGENS, loading: isLoading };
 }
 
 export function mutateStockCounts(workspaceId: string) {

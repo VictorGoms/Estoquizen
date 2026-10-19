@@ -129,7 +129,8 @@ export default function EstoquePage() {
   const { products, loading, error } = useProducts(wsId);
   const forecast = useForecast(wsId);
   const [now, setNow] = useState(0);
-  useEffect(() => { setNow(Date.now()); }, [products]);
+  /* Uma vez ao abrir: depender de `products` entrava em laço enquanto a lista carregava */
+  useEffect(() => { setNow(Date.now()); }, []);
   const previsaoDe = (p: Product) => previsaoDias(p.qty, p.created_at, forecast.get(p.id), now);
   /* "Parados" (EQZ-18, Growth e Pro): com estoque e sem saída há 60 dias */
   const { plan } = usePlan();
