@@ -8,72 +8,7 @@ import PrimaryButton from "@/components/auth/PrimaryButton";
 import SecondaryButton from "@/components/workspace/SecondaryButton";
 import { api } from "@/lib/api";
 import { ArrowRightIcon } from "@/components/ui/icons";
-
-const PLANS = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: "R$ 19,90",
-    priceNote: "/mês",
-    description: "Para começar sem complicação",
-    highlighted: false,
-    badge: undefined,
-    trialNote: undefined,
-    features: [
-      { text: "Até 50 produtos", included: true },
-      { text: "Até 3 membros", included: true },
-      { text: "Controle de estoque", included: true },
-      { text: "Scanner de código de barras", included: true },
-      { text: "Alertas de estoque baixo", included: true },
-      { text: "Exportar planilha (CSV)", included: true },
-      { text: "Ler nota de compra: 2 por mês", included: true },
-      { text: "Métricas dos últimos 30 dias", included: true },
-      { text: "Suporte prioritário", included: false },
-    ],
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    price: "R$ 29,90",
-    priceNote: "/mês",
-    description: "Para negócios em crescimento",
-    highlighted: true,
-    badge: "Mais popular",
-    trialNote: "14 dias grátis",
-    features: [
-      { text: "Até 300 produtos", included: true },
-      { text: "Até 10 membros", included: true },
-      { text: "Controle de estoque", included: true },
-      { text: "Scanner de código de barras", included: true },
-      { text: "Alertas de estoque baixo", included: true },
-      { text: "Exportar planilha (CSV)", included: true },
-      { text: "Ler nota de compra sem limite (XML e NFC-e de SP)", included: true },
-      { text: "Métricas de até 3 meses", included: true },
-      { text: "Suporte prioritário", included: false },
-    ],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "R$ 59,90",
-    priceNote: "/mês",
-    description: "Para operações completas",
-    highlighted: false,
-    badge: undefined,
-    trialNote: undefined,
-    features: [
-      { text: "Até 2.000 produtos", included: true },
-      { text: "Equipe sem limite", included: true },
-      { text: "Controle de estoque", included: true },
-      { text: "Scanner de código de barras", included: true },
-      { text: "Alertas de estoque baixo", included: true },
-      { text: "Exportar planilha (CSV)", included: true },
-      { text: "Ler nota de compra sem limite (XML e NFC-e de SP)", included: true },
-      { text: "Métricas de até 12 meses", included: true },
-      { text: "Suporte prioritário", included: true },
-    ],
-  },
-];
+import { PLANOS as PLANS } from "@/lib/planos";
 
 const BackIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -1,4 +1,4 @@
-import { ScanIcon, DocumentIcon, BellIcon, ChartIcon, UsersIcon, LayersIcon } from "@/components/ui/icons";
+import { ScanIcon, DocumentIcon, BellIcon, ChartIcon, UsersIcon, LayersIcon, ClockIcon, CartIcon, UploadIcon, CheckIcon } from "@/components/ui/icons";
 
 /* Só o que o app faz hoje. */
 const SMALL = [
@@ -8,9 +8,29 @@ const SMALL = [
     text: "Cada produto tem seu mínimo. Quando a quantidade chega nele, o produto aparece no início e no sino de avisos.",
   },
   {
+    Icon: ClockIcon,
+    title: "Previsão de quando acaba",
+    text: "Pelas saídas dos últimos 30 dias, cada produto mostra quanto ainda dura: \"dura ~5 dias\".",
+  },
+  {
+    Icon: CartIcon,
+    title: "Lista de compras pronta",
+    text: "O que está no mínimo ou acaba em 7 dias vira uma lista com a quantidade sugerida, pronta para mandar no WhatsApp.",
+  },
+  {
+    Icon: UploadIcon,
+    title: "Traga sua planilha",
+    text: "Importe o Excel ou CSV que você já usa. As colunas são reconhecidas e você vê a prévia antes de salvar.",
+  },
+  {
+    Icon: CheckIcon,
+    title: "Contagem do dia",
+    text: "No Growth e no Pro, alguns produtos por dia para conferir em 2 minutos. Se não bater, o estoque é corrigido na hora.",
+  },
+  {
     Icon: ChartIcon,
     title: "Métricas por período",
-    text: "Entradas, saídas e valor em estoque nos últimos 7 dias, 30 dias ou 3 meses.",
+    text: "Entradas, saídas e valor em estoque por período: 30 dias no Basic, até 12 meses no Pro.",
   },
   {
     Icon: UsersIcon,

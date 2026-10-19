@@ -8,6 +8,8 @@ import { MenuIcon, XIcon } from "@/components/ui/icons";
 const NAV_LINKS = [
   { label: "Recursos",      href: "#recursos" },
   { label: "Como funciona", href: "#como-funciona" },
+  { label: "Preços",        href: "#precos" },
+  { label: "Perguntas",     href: "#perguntas" },
 ];
 
 export default function Header() {

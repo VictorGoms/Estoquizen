@@ -4,7 +4,7 @@ const STEPS = [
   {
     Icon: BoxIcon,
     title: "Cadastre os produtos",
-    text: "À mão, pelo código de barras (o nome costuma vir sozinho) ou importando a NFC-e da última compra.",
+    text: "À mão, pelo código de barras (o nome costuma vir sozinho), lendo a nota da última compra ou importando a planilha que você já usa.",
   },
   {
     Icon: PlusMinusIcon,
