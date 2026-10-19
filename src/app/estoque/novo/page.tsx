@@ -12,6 +12,8 @@ import { supabase } from "@/lib/supabase";
 import { sanitizeCode } from "@/lib/sanitize";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { mutateProducts } from "@/hooks/useProducts";
+import { useProductLimit } from "@/hooks/useProductLimit";
+import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
 import { api } from "@/lib/api";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
@@ -57,6 +59,9 @@ function NovoItemContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const [wsName, setWsName]     = useState("");
+  const [wsId, setWsId]         = useState<string | null>(null);
+  /* No limite do plano a API recusa; avisa antes de a pessoa preencher (EQZ-06) */
+  const productLimit            = useProductLimit(wsId);
   const [userName, setUserName] = useState("");
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
@@ -111,6 +116,7 @@ function NovoItemContent() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
       setWsName(ws.name);
+      setWsId(ws.id);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -255,6 +261,8 @@ function NovoItemContent() {
               <p className="text-sm lg:text-[15px] font-bold text-fg-muted">Comece pelo código de barras: o nome costuma vir sozinho.</p>
             </div>
           </div>
+
+          <ProductLimitBanner workspaceId={wsId} />
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
 
@@ -424,7 +432,7 @@ function NovoItemContent() {
               </button>
               <button
                 type="submit"
-                disabled={saving}
+                disabled={saving || !!productLimit?.at}
                 className="flex-[2] min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
               >
                 {saving ? <><Spinner /> Salvando…</> : "Adicionar produto"}

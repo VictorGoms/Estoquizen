@@ -7,6 +7,7 @@ import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import TrialBanner from "@/components/dashboard/TrialBanner";
+import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
 import ProductAvatar from "@/components/estoque/ProductAvatar";
 import StatusChip from "@/components/estoque/StatusChip";
 import LevelBar from "@/components/estoque/LevelBar";
@@ -180,6 +181,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-6 lg:gap-7">
 
           {wsId && <TrialBanner workspaceId={wsId} />}
+          {wsId && <ProductLimitBanner workspaceId={wsId} />}
 
           <div className="flex flex-col gap-1">
             <h1 suppressHydrationWarning className="text-[26px] lg:text-[32px] font-black tracking-tight leading-tight">
