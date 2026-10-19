@@ -19,6 +19,8 @@ import { useProducts, type Product } from "@/hooks/useProducts";
 import { useMovements, type Movement } from "@/hooks/useMovements";
 import { deriveStatus, formatBRL, formatQty, timeAgo, previsaoDias, formatPrevisao, estaParado, PARADO_DIAS, type StockStatus } from "@/lib/stock";
 import { useLastOutflow } from "@/hooks/useLastOutflow";
+import { useStockCounts } from "@/hooks/useStockCounts";
+import { classesABC, itensDoDia, sequencia, diaBrasil } from "@/lib/contagem";
 import { useForecast } from "@/hooks/useForecast";
 import {
   ScanIcon, DocumentIcon, BoxIcon, PlusIcon, ArrowRightIcon, ArrowUpRightIcon, InIcon, OutIcon, CheckIcon,
@@ -102,6 +104,9 @@ export default function DashboardPage() {
   /* "R$ parados" (EQZ-18, Growth e Pro): estoque sem saída há 60 dias */
   const temParados  = !!planInfo(plan)?.parados;
   const ultimaSaida = useLastOutflow(wsId, temParados);
+  /* Contagem do dia (EQZ-17, Growth e Pro, quem edita estoque) */
+  const temContagem = !!planInfo(plan)?.contagemDoDia && can(role, "canEditEstoque");
+  const { contagens } = useStockCounts(wsId, temContagem);
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar ao dashboard ── */
   const { products, loading: productsLoading } = useProducts(wsId);
@@ -432,6 +437,35 @@ export default function DashboardPage() {
               )}
             </section>
           </div>
+
+          {/* ── Contagem do dia: entrada para o ritual diário ── */}
+          {(() => {
+            if (!temContagem || productsLoading || !now || products.length === 0) return null;
+            const itens = itensDoDia(products, classesABC(products, forecast), contagens, now);
+            if (itens.length === 0) return null;
+            const hoje   = diaBrasil(now);
+            const feitos = itens.filter((p) => contagens.some((c) => c.product_id === p.id && diaBrasil(new Date(c.created_at).getTime()) === hoje)).length;
+            const seq    = sequencia(contagens, now);
+            const pronto = feitos === itens.length;
+            return (
+              <Link href="/contagem" className="flex items-center justify-between gap-3 px-5 py-4 rounded-4xl bg-surface hover:bg-[#19243a] transition-colors">
+                <span className="flex items-center gap-3 min-w-0">
+                  <span className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${pronto ? "bg-ok/15 text-ok" : "bg-accent/15 text-accent"}`}>
+                    <CheckIcon className="w-5 h-5" strokeWidth={2.4} />
+                  </span>
+                  <span className="min-w-0 flex flex-col">
+                    <span className="text-[15px] font-black">
+                      {pronto ? "Contagem de hoje feita" : `Contagem do dia: confira ${itens.length - feitos} ${itens.length - feitos === 1 ? "produto" : "produtos"}`}
+                    </span>
+                    <span className="text-[13px] font-bold text-fg-muted">
+                      {feitos} de {itens.length} conferidos{seq > 0 ? ` · ${seq} ${seq === 1 ? "dia" : "dias"} seguidos` : " · leva uns 2 minutos"}
+                    </span>
+                  </span>
+                </span>
+                <span className="text-sm font-extrabold text-fg-muted flex-shrink-0">{pronto ? "Ver" : "Contar agora"}</span>
+              </Link>
+            );
+          })()}
 
           {/* ── R$ parados (discreto): só aparece quando há algo parado ── */}
           {(() => {

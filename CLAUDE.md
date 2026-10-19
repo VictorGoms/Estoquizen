@@ -98,6 +98,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/configuracoes`       — Configurações do workspace
 - `/notificacoes`        — Notificações
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
+- `/contagem`            — Contagem do dia (Growth/Pro; owner/admin): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
 - `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
 - `/perfil`              — Perfil do usuário
 
@@ -150,6 +151,7 @@ components/
 - **`useProductLimit.ts`** — produtos cadastrados × limite do plano (aviso aos 80% e no limite)
 - **`useForecast.ts`** — saídas de 30 dias por produto (RPC `stock_forecast`); a previsão é `previsaoDias`/`consumoDiario` em `lib/stock.ts`
 - **`useLastOutflow.ts`** — última saída de cada produto (RPC `stock_last_outflow`); "parado" é `estaParado` em `lib/stock.ts` (estoque > 0, cadastro e última saída há 60+ dias). Growth e Pro
+- **`useStockCounts.ts`** — contagens dos últimos 90 dias (tabela `stock_counts`); a escolha do dia, a sequência e a confiabilidade ficam em `lib/contagem.ts`
 - **`useProducts.ts`** — lista de produtos paginada de 1000 em 1000; `mutateProducts` também invalida a contagem e a previsão
 
 ## Segurança (next.config.ts)
