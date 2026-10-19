@@ -17,7 +17,8 @@ import { can } from "@/hooks/useRole";
 import { usePlan, planInfo } from "@/hooks/usePlan";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { useMovements, type Movement } from "@/hooks/useMovements";
-import { deriveStatus, formatBRL, formatQty, timeAgo, previsaoDias, formatPrevisao, type StockStatus } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, timeAgo, previsaoDias, formatPrevisao, estaParado, PARADO_DIAS, type StockStatus } from "@/lib/stock";
+import { useLastOutflow } from "@/hooks/useLastOutflow";
 import { useForecast } from "@/hooks/useForecast";
 import {
   ScanIcon, DocumentIcon, BoxIcon, PlusIcon, ArrowRightIcon, ArrowUpRightIcon, InIcon, OutIcon, CheckIcon,
@@ -98,6 +99,9 @@ export default function DashboardPage() {
   /* Métricas por plano (EQZ-27): o Basic vai até 30 dias */
   const { plan } = usePlan();
   const periods = PERIODS.filter((p) => p.days <= (planInfo(plan)?.metricasDias ?? 90));
+  /* "R$ parados" (EQZ-18, Growth e Pro): estoque sem saída há 60 dias */
+  const temParados  = !!planInfo(plan)?.parados;
+  const ultimaSaida = useLastOutflow(wsId, temParados);
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar ao dashboard ── */
   const { products, loading: productsLoading } = useProducts(wsId);
@@ -428,6 +432,30 @@ export default function DashboardPage() {
               )}
             </section>
           </div>
+
+          {/* ── R$ parados (discreto): só aparece quando há algo parado ── */}
+          {(() => {
+            if (!temParados || productsLoading) return null;
+            const parados = products.filter((p) => estaParado(p.qty, p.created_at, ultimaSaida.get(p.id), now));
+            if (parados.length === 0) return null;
+            const valor = parados.reduce((s, p) => s + p.qty * p.price, 0);
+            return (
+              <Link href="/estoque?filtro=parados" className="flex items-center justify-between gap-3 px-5 py-4 rounded-4xl bg-surface hover:bg-[#19243a] transition-colors">
+                <span className="flex items-center gap-3 min-w-0">
+                  <span className="w-10 h-10 rounded-full bg-surface-2 text-fg-muted flex items-center justify-center flex-shrink-0">
+                    <BoxIcon className="w-5 h-5" />
+                  </span>
+                  <span className="min-w-0 flex flex-col">
+                    <span className="text-[15px] font-black">{formatBRL(valor)} parados</span>
+                    <span className="text-[13px] font-bold text-fg-muted">
+                      {parados.length} {parados.length === 1 ? "produto" : "produtos"} sem saída há {PARADO_DIAS} dias
+                    </span>
+                  </span>
+                </span>
+                <span className="text-sm font-extrabold text-fg-muted flex-shrink-0">Ver produtos</span>
+              </Link>
+            );
+          })()}
 
           {/* ── Atividade recente ── */}
           <section className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-1.5">

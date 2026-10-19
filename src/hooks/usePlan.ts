@@ -12,10 +12,10 @@ export type Plan = "basic" | "growth" | "pro";
  * src/lib/plans.ts da API, que confere a cota de notas (as métricas são aplicadas aqui).
  * notasPorMes: null = sem limite.
  */
-export const PLAN_INFO: Record<Plan, { label: string; produtos: number; notasPorMes: number | null; metricasDias: number; membros: number | null; historicoPorPessoa: boolean; proximo: Plan | null }> = {
-  basic:  { label: "Basic",  produtos: 50,   notasPorMes: 2,    metricasDias: 30,  membros: 3,    historicoPorPessoa: false, proximo: "growth" },
-  growth: { label: "Growth", produtos: 300,  notasPorMes: null, metricasDias: 90,  membros: 10,   historicoPorPessoa: false, proximo: "pro"    },
-  pro:    { label: "Pro",    produtos: 2000, notasPorMes: null, metricasDias: 365, membros: null, historicoPorPessoa: true,  proximo: null     },
+export const PLAN_INFO: Record<Plan, { label: string; produtos: number; notasPorMes: number | null; metricasDias: number; membros: number | null; historicoPorPessoa: boolean; parados: boolean; proximo: Plan | null }> = {
+  basic:  { label: "Basic",  produtos: 50,   notasPorMes: 2,    metricasDias: 30,  membros: 3,    historicoPorPessoa: false, parados: false, proximo: "growth" },
+  growth: { label: "Growth", produtos: 300,  notasPorMes: null, metricasDias: 90,  membros: 10,   historicoPorPessoa: false, parados: true,  proximo: "pro"    },
+  pro:    { label: "Pro",    produtos: 2000, notasPorMes: null, metricasDias: 365, membros: null, historicoPorPessoa: true,  parados: true,  proximo: null     },
 };
 
 export function planInfo(plan: Plan | null | undefined) {

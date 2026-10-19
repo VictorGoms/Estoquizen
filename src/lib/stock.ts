@@ -115,3 +115,16 @@ export function formatPrevisao(dias: number): string {
   const d = Math.round(dias);
   return d === 1 ? "dura ~1 dia" : `dura ~${d} dias`;
 }
+
+/*
+ * "R$ parados" (EQZ-18): produto com estoque, cadastrado há 60 dias ou mais e sem saída nesse
+ * período. Produto novo não conta, senão tudo o que acabou de chegar pareceria parado.
+ */
+export const PARADO_DIAS = 60;
+
+export function estaParado(qty: number, createdAt: string, ultimaSaida: string | undefined, now: number): boolean {
+  if (!now || qty <= 0) return false;
+  const limite = now - PARADO_DIAS * DAY_MS;
+  if (new Date(createdAt).getTime() > limite) return false;
+  return !ultimaSaida || new Date(ultimaSaida).getTime() <= limite;
+}

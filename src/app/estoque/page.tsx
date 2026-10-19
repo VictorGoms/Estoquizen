@@ -21,11 +21,13 @@ import { useRole, can } from "@/hooks/useRole";
 import { useProducts, mutateProducts, type Product } from "@/hooks/useProducts";
 import { mutateStats } from "@/hooks/useStats";
 import { mutateMovements } from "@/hooks/useMovements";
-import { deriveStatus, formatBRL, formatQty, stockLevel, previsaoDias, formatPrevisao, type StockStatus } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, stockLevel, previsaoDias, formatPrevisao, estaParado, type StockStatus } from "@/lib/stock";
 import { useForecast } from "@/hooks/useForecast";
+import { useLastOutflow } from "@/hooks/useLastOutflow";
+import { usePlan, planInfo } from "@/hooks/usePlan";
 import { PlusIcon, SearchIcon, ScanIcon, DocumentIcon, PlusMinusIcon, BoxIcon } from "@/components/ui/icons";
 
-type Filter = "todos" | StockStatus;
+type Filter = "todos" | StockStatus | "parados";
 type Sort   = "nome" | "menor" | "valor";
 
 interface Row extends Product { status: StockStatus }
@@ -129,6 +131,12 @@ export default function EstoquePage() {
   const [now, setNow] = useState(0);
   useEffect(() => { setNow(Date.now()); }, [products]);
   const previsaoDe = (p: Product) => previsaoDias(p.qty, p.created_at, forecast.get(p.id), now);
+  /* "Parados" (EQZ-18, Growth e Pro): com estoque e sem saída há 60 dias */
+  const { plan } = usePlan();
+  const temParados  = !!planInfo(plan)?.parados;
+  const ultimaSaida = useLastOutflow(wsId, temParados);
+  const parado = (p: Product) => temParados && estaParado(p.qty, p.created_at, ultimaSaida.get(p.id), now);
+  const filters = temParados ? [...FILTERS, { id: "parados" as Filter, label: "Parados", dot: "bg-fg-subtle" }] : FILTERS;
 
   useEffect(() => {
     async function load() {
@@ -140,6 +148,8 @@ export default function EstoquePage() {
       /* Busca vinda da barra superior (/estoque?busca=...) */
       const q = new URLSearchParams(window.location.search).get("busca");
       if (q) setSearch(q);
+      /* Card "R$ parados" do painel abre a lista já filtrada */
+      if (new URLSearchParams(window.location.search).get("filtro") === "parados") setFilter("parados");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -156,23 +166,25 @@ export default function EstoquePage() {
   );
 
   const counts = useMemo(() => {
-    const c = { todos: rows.length, normal: 0, baixo: 0, zerado: 0 };
-    for (const r of rows) c[r.status] += 1;
+    const c = { todos: rows.length, normal: 0, baixo: 0, zerado: 0, parados: 0 };
+    for (const r of rows) { c[r.status] += 1; if (parado(r)) c.parados += 1; }
     return c;
-  }, [rows]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, ultimaSaida, now, temParados]);
 
   const totalValue = useMemo(() => rows.reduce((s, r) => s + r.qty * r.price, 0), [rows]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = rows.filter((r) =>
-      (filter === "todos" || r.status === filter) &&
+      (filter === "todos" || (filter === "parados" ? parado(r) : r.status === filter)) &&
       (!q || r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q))
     );
     if (sort === "menor") list.sort((a, b) => a.qty / Math.max(a.min_qty ?? 0, 1) - b.qty / Math.max(b.min_qty ?? 0, 1));
     if (sort === "valor") list.sort((a, b) => b.qty * b.price - a.qty * a.price);
     return list;
-  }, [rows, search, filter, sort]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, search, filter, sort, ultimaSaida, now, temParados]);
 
   /* No computador, abre o painel já com o primeiro produto da lista */
   useEffect(() => {
@@ -314,9 +326,9 @@ export default function EstoquePage() {
 
                 {/* Celular: abas com sublinhado */}
                 <div role="group" aria-label="Filtrar por situação" className="lg:hidden flex gap-5 px-1 overflow-x-auto scrollbar-none">
-                  {FILTERS.map((f) => {
+                  {filters.map((f) => {
                     const active = filter === f.id;
-                    const n = f.id === "baixo" || f.id === "zerado" ? counts[f.id] : 0;
+                    const n = f.id === "baixo" || f.id === "zerado" || f.id === "parados" ? counts[f.id] : 0;
                     return (
                       <button
                         key={f.id}
@@ -336,7 +348,7 @@ export default function EstoquePage() {
 
                 {/* Computador: pílulas com contagem */}
                 <div role="group" aria-label="Filtrar por situação" className="hidden lg:flex gap-1 p-[5px] rounded-full bg-surface">
-                  {FILTERS.map((f) => {
+                  {filters.map((f) => {
                     const active = filter === f.id;
                     return (
                       <button

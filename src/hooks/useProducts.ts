@@ -60,5 +60,6 @@ export function useProducts(workspaceId: string | undefined) {
 export function mutateProducts(workspaceId: string) {
   mutate(["product-count", workspaceId]);
   mutate(["forecast", workspaceId]); /* a previsão muda com cada entrada/saída */
+  mutate(["last-outflow", workspaceId]);
   return mutate(["products", workspaceId]);
 }

@@ -149,6 +149,7 @@ components/
 - **`usePlan.ts`** — plano do workspace ativo e `PLAN_INFO` (produtos, notas por mês, dias de métricas, membros, próximo plano), espelho do `plans.ts` da API
 - **`useProductLimit.ts`** — produtos cadastrados × limite do plano (aviso aos 80% e no limite)
 - **`useForecast.ts`** — saídas de 30 dias por produto (RPC `stock_forecast`); a previsão é `previsaoDias`/`consumoDiario` em `lib/stock.ts`
+- **`useLastOutflow.ts`** — última saída de cada produto (RPC `stock_last_outflow`); "parado" é `estaParado` em `lib/stock.ts` (estoque > 0, cadastro e última saída há 60+ dias). Growth e Pro
 - **`useProducts.ts`** — lista de produtos paginada de 1000 em 1000; `mutateProducts` também invalida a contagem e a previsão
 
 ## Segurança (next.config.ts)
