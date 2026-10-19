@@ -85,8 +85,13 @@ export default function NotaRevisaoPage() {
       setProducts(sessionProducts.map((p) => {
         const match = (p.code ? byCode[p.code] : undefined) ?? bySourceName[normName(p.name)];
         if (!match) return { ...p, status: "novo" as const };
-        const divergente = match.unit !== p.unit || Math.abs(match.price - p.unitPrice) > 0.01;
-        return { ...p, status: divergente ? "divergente" as const : "existente" as const };
+        const outraUnidade = match.unit.toLowerCase() !== p.unit.toLowerCase();
+        const divergente   = outraUnidade || Math.abs(match.price - p.unitPrice) > 0.01;
+        return {
+          ...p,
+          status:    divergente ? "divergente" as const : "existente" as const,
+          stockUnit: outraUnidade ? match.unit : undefined,
+        };
       }));
     }).catch(() => { /* mantém status "novo" se falhar */ });
   }, []);
@@ -110,13 +115,14 @@ export default function NotaRevisaoPage() {
 
     try {
       /* Busca produtos existentes para cruzar por código ou nome */
-      const existing = await api.get<{ id: string; code: string; name: string; source_name?: string }[]>(
+      const existing = await api.get<{ id: string; code: string; name: string; source_name?: string; unit: string }[]>(
         `/products?workspace_id=${ws.id}`
       );
+      const unitById     = new Map(existing.map((p) => [p.id, p.unit]));
       const byCode       = new Map(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
       const bySourceName = new Map(existing.map((p) => [normName(p.source_name ?? p.name), p.id]));
 
-      type ImportItem = { product_id?: string; name: string; code?: string; unit: string; price: number; qty: number };
+      type ImportItem = { product_id?: string; name: string; code?: string; unit: string; price?: number; qty: number };
       const itens: ImportItem[] = [];
       /* A mesma nota pode trazer o mesmo produto novo em duas linhas: vira um produto só */
       const novosPorNome = new Map<string, ImportItem>();
@@ -127,7 +133,13 @@ export default function NotaRevisaoPage() {
         const base       = { name: p.name, code: p.code || undefined, unit: p.unit, price: p.unitPrice, qty: p.qty };
 
         if (existingId) {
-          itens.push({ ...base, product_id: existingId });
+          /* Unidade diferente (nota em "un", estoque em "kg"): a quantidade já foi conferida na
+             unidade do estoque e o preço da nota não vale para ela, então o preço não muda */
+          const stockUnit = unitById.get(existingId);
+          const outra     = stockUnit && stockUnit.toLowerCase() !== p.unit.toLowerCase();
+          itens.push(outra
+            ? { ...base, unit: stockUnit, price: undefined, product_id: existingId }
+            : { ...base, product_id: existingId });
         } else if (novosPorNome.has(key)) {
           novosPorNome.get(key)!.qty += p.qty;
         } else {

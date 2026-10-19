@@ -13,6 +13,9 @@ export interface ReviewProduct {
   qty: number;
   unitPrice: number;
   status: "novo" | "existente" | "divergente";
+  /* Unidade do produto já cadastrado, quando difere da nota (ex.: nota em "un", estoque em "kg").
+     A quantidade entra nessa unidade e o preço do produto não muda: a pessoa confere a quantidade. */
+  stockUnit?: string;
 }
 
 const STATUS_CONFIG: Record<ReviewProduct["status"], { label: string; chip: string }> = {
@@ -58,6 +61,11 @@ export default function ProductReviewCard({ product, editMode, onQtyChange, onRe
             <span>{formatBRL(product.unitPrice ?? 0)} / {product.unit}</span>
             {product.code && <span className="text-fg-subtle tabular-nums truncate">· {product.code}</span>}
           </p>
+          {product.stockUnit && (
+            <p className="text-[13px] font-bold text-low leading-snug">
+              Na nota em {product.unit}; no estoque em {product.stockUnit}. A quantidade entra em {product.stockUnit}: confira antes de confirmar.
+            </p>
+          )}
         </div>
       </div>
 
@@ -93,17 +101,19 @@ export default function ProductReviewCard({ product, editMode, onQtyChange, onRe
             >
               <PlusIcon className="w-[18px] h-[18px]" strokeWidth={2.6} />
             </button>
-            <span className="text-[13px] font-bold text-fg-muted">{product.unit}</span>
+            <span className="text-[13px] font-bold text-fg-muted">{product.stockUnit ?? product.unit}</span>
           </div>
         ) : (
           <p className="flex items-baseline gap-1.5 sm:w-28 sm:justify-end">
             <span className="text-lg font-black tabular-nums">{formatQty(product.qty)}</span>
-            <span className="text-[13px] font-bold text-fg-muted">{product.unit}</span>
+            <span className="text-[13px] font-bold text-fg-muted">{product.stockUnit ?? product.unit}</span>
           </p>
         )}
 
         <div className="flex items-center gap-1">
-          <p className="text-[15px] font-black tabular-nums sm:w-28 text-right">{formatBRL(product.qty * product.unitPrice)}</p>
+          <p className="text-[15px] font-black tabular-nums sm:w-28 text-right">
+            {product.stockUnit ? <span className="text-[13px] font-bold text-fg-muted">preço mantido</span> : formatBRL(product.qty * product.unitPrice)}
+          </p>
           {editMode && (
             <button
               type="button"

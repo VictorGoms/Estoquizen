@@ -16,6 +16,7 @@ import { supabase }     from "@/lib/supabase";
 import PlanUpsell       from "@/components/ui/PlanUpsell";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { api }          from "@/lib/api";
+import { chaveValida, codigoDoItem, gtinValido } from "@/lib/nfe";
 
 /* ─── Ícones desta tela ─── */
 const FileCodeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
@@ -108,7 +109,7 @@ export default function NotaPage() {
       chaveExtraida = raw.replace(/\D/g, "").slice(0, 44);
     }
 
-    if (chaveExtraida.length !== 44) {
+    if (chaveExtraida.length !== 44 || !chaveValida(chaveExtraida)) {
       setError("Esse QR Code não parece ser de uma NFC-e. Confira se é o QR Code do cupom fiscal.");
       return;
     }
@@ -152,7 +153,9 @@ export default function NotaPage() {
   }
 
   const chaveDigitos = chave.replace(/\s/g, "").length;
-  const podeBuscar   = chaveDigitos === 44;
+  /* O 44º dígito confere os outros: chave digitada errada nem vai à SEFAZ */
+  const chaveErrada  = chaveDigitos === 44 && !chaveValida(chave.replace(/\s/g, ""));
+  const podeBuscar   = chaveDigitos === 44 && !chaveErrada;
 
   function handleChaveChange(v: string) {
     setChave(formatarChave(v));
@@ -186,6 +189,8 @@ export default function NotaPage() {
 
         const emit  = doc.getElementsByTagName("emit")[0];
         const emitNome = emit ? (getTag(emit, "xFant") || getTag(emit, "xNome")) : "";
+        /* Raiz do CNPJ do emitente: o código interno do fornecedor ganha ela na frente */
+        const cnpjRaiz = ((emit ? getTag(emit, "CNPJ") : "") || getTag(doc.documentElement, "chNFe").slice(6, 20)).slice(0, 8);
 
         const itens = dets.map((det, i) => {
           const prod = det.getElementsByTagName("prod")[0];
@@ -193,7 +198,7 @@ export default function NotaPage() {
           return {
             id:        `xml-${i}`,
             name:      getTag(prod, "xProd"),
-            code:      ean && ean !== "SEM GTIN" ? ean : getTag(prod, "cProd"),
+            code:      gtinValido(ean) ? ean : codigoDoItem(getTag(prod, "cProd"), cnpjRaiz),
             unit:      getTag(prod, "uCom").toLowerCase() || "un",
             qty:       parseFloat(getTag(prod, "qCom"))   || 0,
             unitPrice: parseFloat(getTag(prod, "vUnCom")) || 0,
@@ -373,6 +378,9 @@ export default function NotaPage() {
                     />
                   </FormField>
 
+                  {chaveErrada && !error && (
+                    <ErrorBox>Chave inválida: confira os números. O último dígito não bate com os anteriores.</ErrorBox>
+                  )}
                   {error && <ErrorBox>{error}</ErrorBox>}
 
                   <button
