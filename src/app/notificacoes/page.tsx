@@ -95,7 +95,14 @@ export default function NotificacoesPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-6">
 
           <div className="flex flex-col gap-1">
-            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Notificações</h1>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Notificações</h1>
+              {alerts.length > 0 && (
+                <Link href="/compras" className="min-h-[44px] flex items-center px-5 rounded-full bg-accent text-ink text-sm font-black hover:brightness-110 transition-[filter]">
+                  Montar lista de compras
+                </Link>
+              )}
+            </div>
             <p className="text-sm lg:text-[15px] font-bold text-fg-muted">
               {loading ? "Carregando…" : alerts.length === 0 ? "Nenhum alerta agora" : `${alerts.length} produto${alerts.length !== 1 ? "s" : ""} precisa${alerts.length !== 1 ? "m" : ""} de atenção`}
             </p>

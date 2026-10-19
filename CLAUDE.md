@@ -97,6 +97,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/scanner`             — Leitor de código de barras (câmera)
 - `/configuracoes`       — Configurações do workspace
 - `/notificacoes`        — Notificações
+- `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
 - `/perfil`              — Perfil do usuário
 
 ## Estrutura de componentes (`src/components/`)
@@ -137,12 +138,17 @@ components/
 - **`session.ts`** — gestão de sessão em duas camadas: `sessionStorage` (fecha ao fechar o browser) + `localStorage` para inatividade (timeout: 2h); funções: `markSessionActive`, `isBrowserSessionActive`, `isActivityValid`, `touchActivity`, `clearSession`
 - **`sanitize.ts`** — sanitização de inputs: `sanitizeText`, `sanitizeEmail`, `sanitizeNumber`, `sanitizeCode`
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
+- **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
 - **`exportCsv.ts`** — `exportProductsCsv` / `exportMovementsCsv`: CSV no formato do Excel em português (`;`, vírgula decimal, BOM), paginado de 1000 em 1000; usado em `/configuracoes#exportar`
 
 ## Hooks (`src/hooks/`)
 - **`useRole.ts`** — lê role do workspace ativo do localStorage; exporta `useRole()`, `can(role, permission)` e `PERMISSIONS`
 - **`useWorkspace.ts`** — lê/grava workspace ativo no localStorage (chave `estoquizen_workspace`); exporta `getWorkspace`, `setWorkspace`, `clearWorkspace`; tipo `ActiveWorkspace { id, name, role }`
 - **`useAlertCount.ts`** — conta produtos com `qty === 0` ou `qty <= min_qty` via Supabase; atualiza a cada 60s
+- **`usePlan.ts`** — plano do workspace ativo e `PLAN_INFO` (produtos, notas por mês, dias de métricas, membros, próximo plano), espelho do `plans.ts` da API
+- **`useProductLimit.ts`** — produtos cadastrados × limite do plano (aviso aos 80% e no limite)
+- **`useForecast.ts`** — saídas de 30 dias por produto (RPC `stock_forecast`); a previsão é `previsaoDias`/`consumoDiario` em `lib/stock.ts`
+- **`useProducts.ts`** — lista de produtos paginada de 1000 em 1000; `mutateProducts` também invalida a contagem e a previsão
 
 ## Segurança (next.config.ts)
 Headers HTTP globais aplicados em todas as rotas:

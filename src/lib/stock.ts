@@ -94,11 +94,18 @@ export function timeAgo(iso: string, now: number): string {
  */
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function previsaoDias(qty: number, createdAt: string, saidas30d: number | undefined, now: number): number | null {
-  if (!now || !saidas30d || saidas30d <= 0 || qty <= 0) return null;
+/** Saída média por dia; null com menos de 7 dias de cadastro ou sem saídas. */
+export function consumoDiario(createdAt: string, saidas30d: number | undefined, now: number): number | null {
+  if (!now || !saidas30d || saidas30d <= 0) return null;
   const janela = Math.min(30, (now - new Date(createdAt).getTime()) / DAY_MS);
   if (janela < 7) return null;
-  return qty / (saidas30d / janela);
+  return saidas30d / janela;
+}
+
+export function previsaoDias(qty: number, createdAt: string, saidas30d: number | undefined, now: number): number | null {
+  if (qty <= 0) return null;
+  const porDia = consumoDiario(createdAt, saidas30d, now);
+  return porDia ? qty / porDia : null;
 }
 
 /** "acaba hoje", "dura ~1 dia", "dura ~12 dias", "dura mais de 1 ano" */

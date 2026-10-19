@@ -327,6 +327,12 @@ export default function DashboardPage() {
                       </Link>
                     </li>
                   ))}
+                  {/* EQZ-15: dos alertas para a lista de compras pronta para mandar */}
+                  <li>
+                    <Link href="/compras" className="flex items-center justify-center gap-2 min-h-[48px] rounded-full bg-accent text-ink text-sm font-black hover:brightness-110 transition-[filter]">
+                      Montar lista de compras
+                    </Link>
+                  </li>
                 </ul>
               )}
             </section>
