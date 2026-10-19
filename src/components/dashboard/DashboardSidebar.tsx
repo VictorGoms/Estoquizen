@@ -35,7 +35,7 @@ const NAV_SECTIONS = [
       { href: "/dashboard",          label: "Início",          roles: ALL,      Icon: HomeIcon },
       { href: "/estoque",            label: "Estoque",         roles: ALL,      Icon: BoxIcon },
       { href: "/scanner",            label: "Escanear",        roles: ALL,      Icon: ScanIcon },
-      { href: "/nota",               label: "Importar nota",  roles: MANAGERS, Icon: DocumentIcon },
+      { href: "/nota",               label: "Ler nota de compra", roles: MANAGERS, Icon: DocumentIcon },
       { href: "/dashboard-metricas", label: "Métricas",        roles: MANAGERS, Icon: ChartIcon },
     ],
   },

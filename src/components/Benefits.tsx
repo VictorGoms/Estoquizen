@@ -53,9 +53,9 @@ export default function Benefits() {
               <DocumentIcon className="w-7 h-7" />
             </span>
             <div className="mt-auto flex flex-col gap-2">
-              <h3 className="text-2xl lg:text-[28px] 3xl:text-[36px] font-black tracking-tight">Importe a nota da compra</h3>
+              <h3 className="text-2xl lg:text-[28px] 3xl:text-[36px] font-black tracking-tight">Leia a nota da compra</h3>
               <p className="text-base 3xl:text-lg font-bold text-inverse-muted max-w-md 3xl:max-w-xl">
-                Leia o QR code da NFC-e, cole a chave de 44 dígitos ou envie o XML. Você revisa os itens antes de eles entrarem no estoque.
+                Leia o QR code da NFC-e, cole a chave de 44 dígitos ou envie o XML. Você revisa os itens antes de eles entrarem no estoque. O Estoquizen não emite nota fiscal: ele lê as notas das suas compras.
               </p>
             </div>
           </article>

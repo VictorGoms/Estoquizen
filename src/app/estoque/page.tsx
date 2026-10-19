@@ -222,7 +222,7 @@ export default function EstoquePage() {
             <div className="hidden lg:flex items-center gap-3">
               {canNota && (
                 <Link href="/nota" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
-                  <DocumentIcon /> Importar nota
+                  <DocumentIcon /> Ler nota de compra
                 </Link>
               )}
               {canEdit && (
@@ -258,7 +258,7 @@ export default function EstoquePage() {
                       </Link>
                       {canNota && (
                         <Link href="/nota" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
-                          <DocumentIcon /> Importar compra (NFC-e)
+                          <DocumentIcon /> Ler nota de compra
                         </Link>
                       )}
                     </div>

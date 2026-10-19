@@ -50,7 +50,7 @@ export default function DashboardMock() {
             <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center"><DocumentIcon className="w-5 h-5" /></span>
             <ArrowUpRightIcon className="w-[18px] h-[18px] text-fg-subtle" strokeWidth={2.2} />
           </span>
-          <span className="text-base font-black leading-tight">Importar nota</span>
+          <span className="text-base font-black leading-tight">Ler nota de compra</span>
           <span className="text-xs font-bold text-fg-muted -mt-1.5">Chave de 44 dígitos</span>
         </div>
       </div>

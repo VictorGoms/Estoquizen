@@ -264,12 +264,12 @@ export default function DashboardPage() {
                 <ArrowUpRightIcon className="w-5 h-5 text-fg-subtle" strokeWidth={2.2} />
               </span>
               <span className="flex flex-col gap-0.5 lg:gap-1">
-                <span className="text-[17px] lg:text-[21px] font-black tracking-tight">{canNota ? "Importar nota" : "Ver estoque"}</span>
+                <span className="text-[17px] lg:text-[21px] font-black tracking-tight">{canNota ? "Ler nota de compra" : "Ver estoque"}</span>
                 <span className="text-[13px] lg:text-sm font-bold text-fg-muted">{canNota ? "Chave de 44 dígitos" : "Produtos e quantidades"}</span>
               </span>
               <span className="mt-auto border-t-2 border-dashed border-white/[0.14]" />
               <span className="flex justify-between items-center">
-                <span className="text-sm lg:text-[15px] font-black">{canNota ? "Importar compra" : "Abrir estoque"}</span>
+                <span className="text-sm lg:text-[15px] font-black">{canNota ? "Ler nota" : "Abrir estoque"}</span>
                 <span className="hidden lg:flex w-11 h-11 rounded-full bg-surface-2 items-center justify-center transition-transform duration-200 group-hover:translate-x-0.5">
                   <ArrowRightIcon />
                 </span>

@@ -247,7 +247,7 @@ export default function NotaPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5">
 
           <div className="flex flex-col gap-1">
-            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Importar compra</h1>
+            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Ler nota de compra</h1>
             <p className="text-sm lg:text-[15px] font-bold text-fg-muted">Os produtos da nota entram no estoque de uma vez, depois de você revisar.</p>
             {cota !== null && notasUsadas !== null && (
               <p className="text-[13px] font-bold text-fg-subtle">

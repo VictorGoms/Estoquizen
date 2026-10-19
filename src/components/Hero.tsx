@@ -21,7 +21,7 @@ export default function Hero() {
             </h1>
 
             <p className="text-lg sm:text-xl 3xl:text-2xl font-semibold text-fg-muted leading-relaxed max-w-xl 3xl:max-w-2xl mx-auto lg:mx-0 mb-9 3xl:mb-11">
-              Troque a planilha por um app que lê o código de barras pela câmera, importa a nota da compra e avisa quando um produto chega ao mínimo.
+              Troque a planilha por um app que lê o código de barras pela câmera, lê a nota da compra e avisa quando um produto chega ao mínimo.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">

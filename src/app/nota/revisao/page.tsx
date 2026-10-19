@@ -187,7 +187,7 @@ export default function NotaRevisaoPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5">
 
           <Link href="/nota" className="w-fit flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-sm text-fg font-extrabold hover:bg-surface-2 transition-colors">
-            <ArrowLeftIcon className="w-4 h-4" strokeWidth={2.4} /> Importar compra
+            <ArrowLeftIcon className="w-4 h-4" strokeWidth={2.4} /> Ler nota de compra
           </Link>
 
           <div className="flex flex-col gap-1">
