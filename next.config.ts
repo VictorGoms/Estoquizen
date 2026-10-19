@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
   // Permite acesso pelo IP local (teste no celular na mesma rede Wi-Fi)
   allowedDevOrigins: ["192.168.0.6"],
 
+  // Desde a 16.4 o `next dev` cria um AGENTS.md genérico; o guia do projeto é o CLAUDE.md
+  agentRules: false,
+
   // Proxy: frontend fala com o backend via rewrite (evita CORS e mixed-content)
   // Em produção, API_URL aponta para o Railway. Em dev, usa localhost.
   async rewrites() {
