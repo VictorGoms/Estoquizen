@@ -97,6 +97,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/scanner`             — Leitor de código de barras (câmera)
 - `/configuracoes`       — Configurações do workspace
 - `/notificacoes`        — Notificações
+- `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
 - `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
 - `/perfil`              — Perfil do usuário
 

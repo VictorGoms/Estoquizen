@@ -9,7 +9,7 @@ import { useRole } from "@/hooks/useRole";
 import { useUser } from "@/lib/userContext";
 import { personInitials } from "@/lib/stock";
 import {
-  HomeIcon, BoxIcon, ScanIcon, CartIcon, DocumentIcon, ChartIcon, UsersIcon, SlidersIcon, ChevronsUpDownIcon,
+  HomeIcon, BoxIcon, ScanIcon, CartIcon, ClockIcon, DocumentIcon, ChartIcon, UsersIcon, SlidersIcon, ChevronsUpDownIcon,
 } from "@/components/ui/icons";
 
 interface DashboardSidebarProps {
@@ -38,6 +38,7 @@ const NAV_SECTIONS = [
       { href: "/compras",            label: "Lista de compras", roles: ALL,     Icon: CartIcon },
       { href: "/nota",               label: "Ler nota de compra", roles: MANAGERS, Icon: DocumentIcon },
       { href: "/dashboard-metricas", label: "Métricas",        roles: MANAGERS, Icon: ChartIcon },
+      { href: "/historico",          label: "Histórico",       roles: MANAGERS, Icon: ClockIcon },
     ],
   },
   {

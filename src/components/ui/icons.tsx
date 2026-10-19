@@ -135,3 +135,7 @@ export function Spinner({ className = "w-5 h-5" }: { className?: string }) {
 export const CartIcon = (p: IconProps) => (
   <Icon {...p}><circle cx="9" cy="20" r="1.5" /><circle cx="18" cy="20" r="1.5" /><path d="M2.5 3h2.6l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.9a1.5 1.5 0 0 0 1.5-1.2L21 7H6.2" /></Icon>
 );
+
+export const ClockIcon = (p: IconProps) => (
+  <Icon {...p}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></Icon>
+);
