@@ -128,3 +128,23 @@ export function estaParado(qty: number, createdAt: string, ultimaSaida: string |
   if (new Date(createdAt).getTime() > limite) return false;
   return !ultimaSaida || new Date(ultimaSaida).getTime() <= limite;
 }
+
+/* Motivos de saída (EQZ-23). "Venda/uso" vem marcado; "Ajuste de contagem" só a contagem do dia grava. */
+export const MOTIVOS = {
+  venda:           "Venda/uso",
+  perda:           "Perda/avaria",
+  vencido:         "Vencido",
+  furto:           "Furto/sumiço",
+  uso_interno:     "Uso interno/cortesia",
+  devolucao:       "Devolução ao fornecedor",
+  ajuste_contagem: "Ajuste de contagem",
+} as const;
+export type Motivo = keyof typeof MOTIVOS;
+export const MOTIVOS_SAIDA: Motivo[] = ["venda", "perda", "vencido", "furto", "uso_interno", "devolucao"];
+
+/** Título de uma movimentação nos históricos: o motivo (com a observação, se houver) ou a observação/tipo */
+export function tituloMovimentacao(m: { delta: number; reason: string | null; motivo?: string | null }): string {
+  const label = m.motivo ? MOTIVOS[m.motivo as Motivo] : null;
+  if (label) return m.reason && m.reason !== label ? `${label} · ${m.reason}` : label;
+  return m.reason || (m.delta > 0 ? "Entrada" : "Saída");
+}

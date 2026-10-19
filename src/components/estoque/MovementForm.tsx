@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 import { sanitizeText } from "@/lib/sanitize";
-import { formatQty, parseQtyInput } from "@/lib/stock";
+import { formatQty, parseQtyInput, MOTIVOS, MOTIVOS_SAIDA, type Motivo } from "@/lib/stock";
 import { InIcon, OutIcon, MinusIcon, PlusIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 export type MovementType = "entrada" | "saida";
@@ -37,6 +37,8 @@ export default function MovementForm({
   const [innerType, setInnerType] = useState<MovementType>("entrada");
   const [qtyText, setQtyText]     = useState("1");
   const [reason, setReason]       = useState("");
+  /* Motivo da saída (EQZ-23): "Venda/uso" já marcado, para ninguém precisar fazer nada a mais */
+  const [motivo, setMotivo]       = useState<Motivo>("venda");
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
 
@@ -77,10 +79,12 @@ export default function MovementForm({
       const result = await api.post<{ qty?: number } | null>(`/products/${product.id}/adjust`, {
         delta,
         reason: sanitizeText(reason, 300) || reasonFallback?.[type] || undefined,
+        ...(isIn ? {} : { motivo }),
       });
       const newQty = result && result.qty !== undefined ? Number(result.qty) : product.qty + delta;
       setQtyText("1");
       setReason("");
+      setMotivo("venda");
       onDone?.(newQty, delta);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao registrar movimentação");
@@ -159,8 +163,32 @@ export default function MovementForm({
         </button>
       </div>
 
+      {!isIn && (
+        <div role="group" aria-label="Motivo da saída" className="flex flex-col gap-2">
+          <span className="text-[13px] font-extrabold text-fg-muted">Motivo da saída</span>
+          <div className="flex flex-wrap gap-1.5">
+            {MOTIVOS_SAIDA.map((m) => {
+              const active = motivo === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setMotivo(m)}
+                  className={`min-h-[36px] px-3.5 rounded-full text-[13px] cursor-pointer transition-colors duration-200 ${
+                    active ? "bg-inverse text-ink font-black" : "bg-ink text-fg-soft font-extrabold hover:text-fg"
+                  }`}
+                >
+                  {MOTIVOS[m]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <label className="flex flex-col gap-2 text-[13px] font-extrabold text-fg-muted">
-        Motivo (opcional)
+        Observação (opcional)
         <input
           type="text"
           name="motivo"
@@ -168,7 +196,7 @@ export default function MovementForm({
           value={reason}
           maxLength={300}
           onChange={(e) => setReason(e.target.value)}
-          placeholder={isIn ? "Ex.: compra do fornecedor" : "Ex.: venda no balcão"}
+          placeholder={isIn ? "Ex.: compra do fornecedor" : "Ex.: caixa amassada"}
           className="h-12 px-4 rounded-2xl bg-ink text-fg text-[15px] font-semibold outline-none placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-accent"
         />
       </label>

@@ -5,6 +5,8 @@ export interface Movement {
   id:         string;
   delta:      number;
   reason:     string | null;
+  /** Motivo da saída (EQZ-23); null nas entradas e nas movimentações antigas */
+  motivo:     string | null;
   created_at: string;
   created_by: string | null;
   product:    { id: string; name: string; unit: string };
@@ -14,6 +16,7 @@ interface MovementRow {
   id: string;
   delta: number | string;
   reason: string | null;
+  motivo: string | null;
   created_at: string;
   created_by: string | null;
   products: { id: string; name: string; unit: string } | { id: string; name: string; unit: string }[] | null;
@@ -24,7 +27,7 @@ const fetcher = async (workspaceId: string, days: number): Promise<Movement[]> =
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("movements")
-    .select("id, delta, reason, created_at, created_by, products!inner(id, name, unit, workspace_id)")
+    .select("id, delta, reason, motivo, created_at, created_by, products!inner(id, name, unit, workspace_id)")
     .eq("products.workspace_id", workspaceId)
     .gte("created_at", since)
     .order("created_at", { ascending: false })
@@ -38,6 +41,7 @@ const fetcher = async (workspaceId: string, days: number): Promise<Movement[]> =
       id:         m.id,
       delta:      Number(m.delta),
       reason:     m.reason,
+      motivo:     m.motivo,
       created_at: m.created_at,
       created_by: m.created_by,
       product:    { id: p?.id ?? "", name: p?.name ?? "Produto removido", unit: p?.unit ?? "" },
@@ -73,7 +77,7 @@ export function useProductMovements(productId: string | undefined, limit = 10) {
     async ([, id, n]: [string, string, number]): Promise<ProductMovement[]> => {
       const { data: rows, error: err } = await supabase
         .from("movements")
-        .select("id, delta, reason, created_at, created_by")
+        .select("id, delta, reason, motivo, created_at, created_by")
         .eq("product_id", id)
         .order("created_at", { ascending: false })
         .limit(n);

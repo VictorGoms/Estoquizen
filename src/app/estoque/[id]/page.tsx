@@ -21,7 +21,7 @@ import { mutateStats } from "@/hooks/useStats";
 import { mutateMovements, mutateProductMovements, useProductMovements } from "@/hooks/useMovements";
 import { sanitizeText, sanitizeCode } from "@/lib/sanitize";
 import { api } from "@/lib/api";
-import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo, parseQtyInput, parsePriceInput, previsaoDias, formatPrevisao } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo, parseQtyInput, parsePriceInput, previsaoDias, formatPrevisao, tituloMovimentacao } from "@/lib/stock";
 import { useForecast } from "@/hooks/useForecast";
 import {
   ArrowLeftIcon, BoxIcon, CameraIcon, PencilIcon, TrashIcon, ScanIcon, InIcon, OutIcon, CheckIcon, Spinner,
@@ -33,6 +33,7 @@ interface Product {
   code: string;
   unit: string;
   price: number;
+  cost: number | null;
   qty: number;
   min_qty: number;
   max_qty: number | null;
@@ -69,6 +70,7 @@ export default function ItemDetailPage() {
   const [editMode, setEditMode]         = useState(false);
   const [editName, setEditName]         = useState("");
   const [editPrice, setEditPrice]       = useState("");
+  const [editCost, setEditCost]         = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editMinQty, setEditMinQty]     = useState("");
@@ -106,7 +108,7 @@ export default function ItemDetailPage() {
 
       const { data, error: err } = await supabase
         .from("products")
-        .select("id, name, code, unit, price, qty, min_qty, max_qty, location, category, supplier, image_url, nota_fiscal, created_at")
+        .select("id, name, code, unit, price, cost, qty, min_qty, max_qty, location, category, supplier, image_url, nota_fiscal, created_at")
         .eq("id", id)
         .eq("workspace_id", ws.id)
         .single();
@@ -117,7 +119,7 @@ export default function ItemDetailPage() {
         return;
       }
 
-      const p = { ...data, price: Number(data.price), qty: Number(data.qty), min_qty: Number(data.min_qty ?? 0) } as Product;
+      const p = { ...data, price: Number(data.price), cost: data.cost === null ? null : Number(data.cost), qty: Number(data.qty), min_qty: Number(data.min_qty ?? 0) } as Product;
       setProduct(p);
       resetEditFields(p);
       setLoading(false);
@@ -137,6 +139,7 @@ export default function ItemDetailPage() {
   function resetEditFields(p: Product) {
     setEditName(p.name);
     setEditPrice(Number(p.price).toFixed(2).replace(".", ","));
+    setEditCost(p.cost === null ? "" : Number(p.cost).toFixed(2).replace(".", ","));
     setEditLocation(p.location ?? "");
     setEditCategory(p.category ?? "");
     setEditMinQty(String(Number(p.min_qty)).replace(".", ","));
@@ -162,7 +165,8 @@ export default function ItemDetailPage() {
     /* Aceita decimais com vírgula (antes parseInt truncava 1,5 para 1) */
     const newMinQty = editMinQty.trim() ? parseQtyInput(editMinQty) : product.min_qty;
     const newPrice  = editPrice.trim()  ? parsePriceInput(editPrice) : product.price;
-    if (Number.isNaN(newMinQty) || Number.isNaN(newPrice)) {
+    const newCost   = editCost.trim()   ? parsePriceInput(editCost)  : null;
+    if (Number.isNaN(newMinQty) || Number.isNaN(newPrice) || (newCost !== null && Number.isNaN(newCost))) {
       setSaving(false);
       setActionError("Valor inválido. Use números, com vírgula para decimais (ex.: 2,5).");
       return;
@@ -171,6 +175,7 @@ export default function ItemDetailPage() {
       await api.patch(`/products/${product.id}`, {
         name:     sanitizeText(editName, 200),
         price:    newPrice,
+        cost:     newCost,
         location: sanitizeText(editLocation, 200) || null,
         category: sanitizeText(editCategory, 60),
         min_qty:  newMinQty,
@@ -185,6 +190,7 @@ export default function ItemDetailPage() {
       ...p,
       name:     editName,
       price:    newPrice,
+      cost:     newCost,
       location: editLocation || null,
       category: editCategory.trim() || null,
       min_qty:  newMinQty,
@@ -304,6 +310,7 @@ export default function ItemDetailPage() {
 
   const info: Array<[string, string]> = [
     ["Preço unitário", formatBRL(product.price)],
+    ["Custo de compra", product.cost !== null ? formatBRL(product.cost) : "—"],
     ["Categoria",      product.category || "—"],
     ["Localização",    product.location ?? "—"],
     ["Fornecedor",     product.supplier ?? "—"],
@@ -369,6 +376,9 @@ export default function ItemDetailPage() {
                     <h1 className="text-xl font-black">Editar produto</h1>
                     <FormField label="Nome do produto" htmlFor="edit-nome" required>
                       <input id="edit-nome" type="text" required autoComplete="off" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputClass} />
+                    </FormField>
+                    <FormField label="Custo de compra (R$, opcional)" htmlFor="edit-custo">
+                      <input id="edit-custo" type="text" inputMode="decimal" autoComplete="off" placeholder="0,00" value={editCost} onChange={(e) => setEditCost(e.target.value)} className={inputClass} />
                     </FormField>
                     <div className="grid grid-cols-2 gap-3">
                       <FormField label="Preço unitário (R$)" htmlFor="edit-preco">
@@ -497,7 +507,7 @@ export default function ItemDetailPage() {
                             {isIn ? <InIcon className="w-5 h-5" strokeWidth={2.2} /> : <OutIcon className="w-5 h-5" strokeWidth={2.2} />}
                           </span>
                           <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-                            <span className="text-[15px] font-extrabold truncate">{m.reason || (isIn ? "Entrada" : "Saída")}</span>
+                            <span className="text-[15px] font-extrabold truncate">{tituloMovimentacao(m)}</span>
                             <span className="text-[13px] font-bold text-fg-muted">
                               {new Date(m.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                               {now ? ` · ${timeAgo(m.created_at, now)}` : ""}

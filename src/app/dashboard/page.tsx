@@ -17,7 +17,7 @@ import { can } from "@/hooks/useRole";
 import { usePlan, planInfo } from "@/hooks/usePlan";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { useMovements, type Movement } from "@/hooks/useMovements";
-import { deriveStatus, formatBRL, formatQty, timeAgo, previsaoDias, formatPrevisao, estaParado, PARADO_DIAS, type StockStatus } from "@/lib/stock";
+import { deriveStatus, formatBRL, formatQty, timeAgo, previsaoDias, formatPrevisao, estaParado, PARADO_DIAS, tituloMovimentacao, type StockStatus } from "@/lib/stock";
 import { useLastOutflow } from "@/hooks/useLastOutflow";
 import { useStockCounts } from "@/hooks/useStockCounts";
 import { classesABC, itensDoDia, sequencia, diaBrasil } from "@/lib/contagem";
@@ -504,7 +504,7 @@ export default function DashboardPage() {
               <ul className="flex flex-col">
                 {movements.slice(0, 5).map((m) => {
                   const isIn = m.delta > 0;
-                  const what = m.reason || (isIn ? "Entrada" : "Saída");
+                  const what = tituloMovimentacao(m);
                   return (
                     <li key={m.id} className="flex items-center gap-3.5 py-3 px-1 border-t-2 border-dashed border-white/[0.08]">
                       <span className={`w-[42px] h-[42px] rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? "bg-accent/20 text-accent" : "bg-inverse/10 text-inverse"}`}>

@@ -15,7 +15,7 @@ import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
 import { usePlan, planInfo } from "@/hooks/usePlan";
-import { formatQty, personInitials } from "@/lib/stock";
+import { formatQty, personInitials, tituloMovimentacao } from "@/lib/stock";
 import { InIcon, OutIcon } from "@/components/ui/icons";
 
 /*
@@ -35,6 +35,7 @@ interface Mov {
   id:         string;
   delta:      number;
   reason:     string | null;
+  motivo:     string | null;
   created_at: string;
   created_by: string | null;
   produto:    { id: string; name: string; unit: string };
@@ -84,7 +85,7 @@ export default function HistoricoPage() {
     const since = new Date(now - dias * 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await supabase
       .from("movements")
-      .select("id, delta, reason, created_at, created_by, products!inner(id, name, unit, workspace_id)")
+      .select("id, delta, reason, motivo, created_at, created_by, products!inner(id, name, unit, workspace_id)")
       .eq("products.workspace_id", wsId!)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -212,7 +213,7 @@ export default function HistoricoPage() {
                         </Link>
                         <span className="text-[13px] font-bold text-fg-muted truncate">
                           {nomeDe(mv.created_by)} · {new Date(mv.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                          {mv.reason ? ` · ${mv.reason}` : ""}
+                          {mv.motivo || mv.reason ? ` · ${tituloMovimentacao(mv)}` : ""}
                         </span>
                       </span>
                       <span className={`text-[15px] font-black tabular-nums flex-shrink-0 ${entrada ? "text-ok" : "text-fg"}`}>

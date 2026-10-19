@@ -73,6 +73,7 @@ function NovoItemContent() {
   const [code, setCode]         = useState(searchParams.get("code") ?? "");
   const [unit, setUnit]         = useState("un");
   const [price, setPrice]       = useState("");
+  const [cost, setCost]         = useState(""); /* custo de compra (EQZ-23), opcional */
   const [qty, setQty]           = useState("");
   const [minQty, setMinQty]     = useState("0");
   const [location, setLocation] = useState("");
@@ -153,12 +154,16 @@ function NovoItemContent() {
     });
   }
 
-  function handlePriceInput(e: React.ChangeEvent<HTMLInputElement>) {
-    const digits = e.target.value.replace(/\D/g, "");
-    if (!digits) { setPrice(""); return; }
-    const num = parseInt(digits, 10) / 100;
-    setPrice(num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  /* Máscara de dinheiro (digita 1250 → 12,50) para preço e custo */
+  function moneyMask(set: (v: string) => void) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const digits = e.target.value.replace(/\D/g, "");
+      if (!digits) { set(""); return; }
+      set((parseInt(digits, 10) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    };
   }
+  const handlePriceInput = moneyMask(setPrice);
+  const handleCostInput  = moneyMask(setCost);
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -228,6 +233,7 @@ function NovoItemContent() {
         code:      code.trim() || null,
         unit:      unit || "un",
         price:     priceNum,
+        ...(cost.trim() ? { cost: parsePriceInput(cost) } : {}),
         qty:       qtyNum,
         min_qty:   minNum,
         location:  location.trim() || undefined,
@@ -367,6 +373,9 @@ function NovoItemContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField label="Preço unitário (R$)" htmlFor="novo-preco">
                   <input id="novo-preco" type="text" inputMode="numeric" autoComplete="off" value={price} onChange={handlePriceInput} placeholder="0,00" className={inputClass} />
+                </FormField>
+                <FormField label="Custo de compra (R$, opcional)" htmlFor="novo-custo">
+                  <input id="novo-custo" type="text" inputMode="numeric" autoComplete="off" value={cost} onChange={handleCostInput} placeholder="0,00" className={inputClass} />
                 </FormField>
                 <FormField label="Localização" htmlFor="novo-local">
                   <input id="novo-local" type="text" autoComplete="off" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex.: Prateleira A3" className={inputClass} />

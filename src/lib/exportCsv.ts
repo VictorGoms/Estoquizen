@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
+import { MOTIVOS, type Motivo } from "@/lib/stock";
 
 /*
  * Exportação em CSV (SCRUM-63). Funciona também no modo somente leitura (trial expirado ou
@@ -74,7 +75,7 @@ async function fetchAll<T>(query: (from: number, to: number) => PromiseLike<{ da
 interface ProductRow {
   name: string; code: string | null; category: string | null; unit: string | null;
   qty: number | string; min_qty: number | string | null; max_qty: number | string | null;
-  price: number | string | null; location: string | null; supplier: string | null;
+  price: number | string | null; cost: number | string | null; location: string | null; supplier: string | null;
   nota_fiscal: string | null; created_at: string;
 }
 
@@ -83,7 +84,7 @@ export async function exportProductsCsv(workspaceId: string, wsName: string): Pr
   const rows = await fetchAll<ProductRow>((from, to) =>
     supabase
       .from("products")
-      .select("name, code, category, unit, qty, min_qty, max_qty, price, location, supplier, nota_fiscal, created_at")
+      .select("name, code, category, unit, qty, min_qty, max_qty, price, cost, location, supplier, nota_fiscal, created_at")
       .eq("workspace_id", workspaceId)
       .order("name")
       .range(from, to),
@@ -91,10 +92,10 @@ export async function exportProductsCsv(workspaceId: string, wsName: string): Pr
 
   download(
     fileName(wsName, "produtos"),
-    ["Nome", "Código", "Categoria", "Unidade", "Quantidade", "Estoque mínimo", "Estoque máximo", "Preço (R$)", "Local", "Fornecedor", "Nota fiscal", "Cadastrado em"],
+    ["Nome", "Código", "Categoria", "Unidade", "Quantidade", "Estoque mínimo", "Estoque máximo", "Preço (R$)", "Custo (R$)", "Local", "Fornecedor", "Nota fiscal", "Cadastrado em"],
     rows.map((p) => [
       text(p.name), code(p.code), text(p.category), text(p.unit),
-      num(p.qty, 3), num(p.min_qty, 3), num(p.max_qty, 3), num(p.price, 2, true),
+      num(p.qty, 3), num(p.min_qty, 3), num(p.max_qty, 3), num(p.price, 2, true), num(p.cost, 2, true),
       text(p.location), text(p.supplier), text(p.nota_fiscal), dateTime(p.created_at),
     ]),
   );
@@ -102,7 +103,7 @@ export async function exportProductsCsv(workspaceId: string, wsName: string): Pr
 }
 
 interface MovementRow {
-  delta: number | string; reason: string | null; created_at: string; created_by: string | null;
+  delta: number | string; reason: string | null; motivo: string | null; created_at: string; created_by: string | null;
   products: { name: string; code: string | null; unit: string | null } | { name: string; code: string | null; unit: string | null }[] | null;
 }
 
@@ -114,7 +115,7 @@ export async function exportMovementsCsv(workspaceId: string, wsName: string): P
     fetchAll<MovementRow>((from, to) =>
       supabase
         .from("movements")
-        .select("delta, reason, created_at, created_by, products!inner(name, code, unit, workspace_id)")
+        .select("delta, reason, motivo, created_at, created_by, products!inner(name, code, unit, workspace_id)")
         .eq("products.workspace_id", workspaceId)
         .order("created_at", { ascending: false })
         .range(from, to),
@@ -127,13 +128,14 @@ export async function exportMovementsCsv(workspaceId: string, wsName: string): P
 
   download(
     fileName(wsName, "movimentacoes"),
-    ["Data", "Produto", "Código", "Tipo", "Quantidade", "Unidade", "Motivo", "Feito por"],
+    ["Data", "Produto", "Código", "Tipo", "Quantidade", "Unidade", "Motivo", "Observação", "Feito por"],
     rows.map((m) => {
       const p = Array.isArray(m.products) ? m.products[0] : m.products;
       const delta = Number(m.delta);
       return [
         dateTime(m.created_at), text(p?.name), code(p?.code), delta >= 0 ? "Entrada" : "Saída",
-        num(Math.abs(delta), 3), text(p?.unit), text(m.reason), text(m.created_by ? names.get(m.created_by) : ""),
+        num(Math.abs(delta), 3), text(p?.unit), text(m.motivo ? MOTIVOS[m.motivo as Motivo] ?? m.motivo : ""), text(m.reason),
+        text(m.created_by ? names.get(m.created_by) : ""),
       ];
     }),
   );
