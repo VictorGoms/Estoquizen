@@ -18,7 +18,6 @@ import {
   askOtherTabs,
   answerOtherTabs,
   joinBrowserSession,
-  INACTIVITY_MS,
 } from "@/lib/session";
 
 const ACTIVITY_EVENTS = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"] as const;

@@ -115,7 +115,7 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
       }`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${urgent ? "bg-zero/15 text-zero" : "bg-low/15 text-low"}`}>
+        <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${urgent ? "bg-zero/15 text-zero" : "bg-low/15 text-low"}`}>
           <BellIcon className="w-5 h-5" />
         </span>
         <div className="min-w-0">
@@ -128,7 +128,7 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
         {readOnly && canExport && (
           <Link
             href="/configuracoes#exportar"
-            className="flex-shrink-0 min-h-[44px] px-4 flex items-center rounded-full text-sm font-extrabold text-fg-soft hover:bg-white/5 transition-colors"
+            className="shrink-0 min-h-[44px] px-4 flex items-center rounded-full text-sm font-extrabold text-fg-soft hover:bg-white/5 transition-colors"
           >
             Exportar dados
           </Link>
@@ -138,7 +138,7 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
             type="button"
             disabled={loading}
             onClick={btnAction}
-            className={`flex-shrink-0 min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter] hover:brightness-110 disabled:opacity-50 ${
+            className={`shrink-0 min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter] hover:brightness-110 disabled:opacity-50 ${
               urgent ? "bg-zero text-ink" : "bg-accent text-ink"
             }`}
           >

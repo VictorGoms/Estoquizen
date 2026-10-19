@@ -176,7 +176,7 @@ export default function HistoricoPage() {
                     onClick={() => setPessoa(ativo ? "todos" : id)}
                     className={`flex items-center gap-3 p-3 rounded-[22px] text-left cursor-pointer transition-colors ${ativo ? "bg-inverse text-ink" : "bg-surface hover:bg-[#19243a]"}`}
                   >
-                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0 ${ativo ? "bg-ink text-fg" : "bg-surface-2"}`}>
+                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${ativo ? "bg-ink text-fg" : "bg-surface-2"}`}>
                       {personInitials(nome)}
                     </span>
                     <span className="min-w-0 flex flex-col">
@@ -203,8 +203,8 @@ export default function HistoricoPage() {
                 {lista.map((mv) => {
                   const entrada = mv.delta > 0;
                   return (
-                    <li key={mv.id} className="flex items-center gap-3 py-3 border-t-2 border-dashed border-white/[0.06] first:border-t-0">
-                      <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${entrada ? "bg-ok/15 text-ok" : "bg-low/15 text-low"}`}>
+                    <li key={mv.id} className="flex items-center gap-3 py-3 border-t-2 border-dashed border-white/6 first:border-t-0">
+                      <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${entrada ? "bg-ok/15 text-ok" : "bg-low/15 text-low"}`}>
                         {entrada ? <InIcon className="w-4 h-4" /> : <OutIcon className="w-4 h-4" />}
                       </span>
                       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -216,7 +216,7 @@ export default function HistoricoPage() {
                           {mv.motivo || mv.reason ? ` · ${tituloMovimentacao(mv)}` : ""}
                         </span>
                       </span>
-                      <span className={`text-[15px] font-black tabular-nums flex-shrink-0 ${entrada ? "text-ok" : "text-fg"}`}>
+                      <span className={`text-[15px] font-black tabular-nums shrink-0 ${entrada ? "text-ok" : "text-fg"}`}>
                         {entrada ? "+" : "−"}{formatQty(Math.abs(mv.delta))} <span className="text-[13px] font-bold text-fg-muted">{mv.produto.unit}</span>
                       </span>
                     </li>

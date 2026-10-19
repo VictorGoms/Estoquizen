@@ -41,7 +41,7 @@ export default function BottomNav() {
             }`}
           >
             {item.primary ? (
-              <span className="w-14 h-14 -mt-[30px] rounded-full bg-accent text-ink border-[5px] border-ink flex items-center justify-center">
+              <span className="w-14 h-14 mt-[-30px] rounded-full bg-accent text-ink border-[5px] border-ink flex items-center justify-center">
                 <item.Icon className="w-6 h-6" strokeWidth={2.2} />
               </span>
             ) : active ? (

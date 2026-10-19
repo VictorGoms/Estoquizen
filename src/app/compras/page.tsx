@@ -193,11 +193,11 @@ export default function ComprasPage() {
                               type="checkbox"
                               checked={on}
                               onChange={(e) => salvar({ ...escolhas, [i.p.id]: { on: e.target.checked, qtd: qtdDe(i) } })}
-                              className="w-5 h-5 accent-[#60a5fa] flex-shrink-0 cursor-pointer"
+                              className="w-5 h-5 accent-[#60a5fa] shrink-0 cursor-pointer"
                               aria-label={`Incluir ${i.p.name} na lista`}
                             />
                             {/* No celular a foto sai para o nome caber */}
-                            <span className="hidden sm:block flex-shrink-0">
+                            <span className="hidden sm:block shrink-0">
                               <ProductAvatar name={i.p.name} imageUrl={i.p.image_url} />
                             </span>
                             <span className="flex-1 min-w-0 flex flex-col gap-1">
@@ -209,7 +209,7 @@ export default function ComprasPage() {
                               </span>
                             </span>
                           </label>
-                          <span className="flex items-center gap-1.5 flex-shrink-0 self-end sm:self-auto">
+                          <span className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                             <span className="sm:hidden text-[13px] font-bold text-fg-muted">Comprar</span>
                             <input
                               type="text"
@@ -223,7 +223,7 @@ export default function ComprasPage() {
                                 const { [i.p.id]: _, ...resto } = drafts;
                                 setDrafts(resto);
                               }}
-                              className="w-16 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                              className="w-16 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                             />
                             <span className="text-[13px] font-bold text-fg-muted w-7">{i.p.unit}</span>
                           </span>

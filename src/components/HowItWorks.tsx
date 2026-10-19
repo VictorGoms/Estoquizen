@@ -38,7 +38,7 @@ export default function HowItWorks() {
                 </span>
                 <span className="text-[40px] 3xl:text-[52px] font-black leading-none text-white/10" aria-hidden="true">0{i + 1}</span>
               </div>
-              <div className="border-t-2 border-dashed border-white/[0.12]" />
+              <div className="border-t-2 border-dashed border-white/12" />
               <div className="flex flex-col gap-1.5">
                 <h3 className="text-xl 3xl:text-[26px] font-black">
                   <span className="sr-only">Passo {i + 1}: </span>{title}

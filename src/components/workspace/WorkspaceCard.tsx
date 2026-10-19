@@ -34,7 +34,7 @@ export default function WorkspaceCard({
         selected ? "bg-inverse text-ink shadow-lift" : "bg-surface text-fg hover:bg-[#19243a]"
       }`}
     >
-      <span className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black flex-shrink-0 ${selected ? "bg-ink text-accent" : "bg-accent text-ink"}`}>
+      <span className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black shrink-0 ${selected ? "bg-ink text-accent" : "bg-accent text-ink"}`}>
         {name.charAt(0).toUpperCase()}
       </span>
 
@@ -55,7 +55,7 @@ export default function WorkspaceCard({
 
       <span
         aria-hidden="true"
-        className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${selected ? "bg-ink text-accent" : "ring-2 ring-white/15"}`}
+        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${selected ? "bg-ink text-accent" : "ring-2 ring-white/15"}`}
       >
         {selected && <CheckIcon className="w-4 h-4" strokeWidth={3} />}
       </span>

@@ -274,7 +274,7 @@ export default function ConfiguracoesPage() {
             </div>
 
             <dl className="flex flex-col">
-              <div className="flex items-center justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08] text-sm">
+              <div className="flex items-center justify-between gap-3 py-3 border-t-2 border-dashed border-white/8 text-sm">
                 <dt className="font-bold text-fg-muted">
                   {subscription?.status === "trialing" ? "Trial expira em" : scheduledCancel ? "Acesso até" : "Próxima renovação"}
                 </dt>

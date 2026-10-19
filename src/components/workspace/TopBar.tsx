@@ -43,7 +43,7 @@ export default function TopBar() {
           <Link
             href="/perfil"
             aria-label={userName ? `Perfil de ${userName}` : "Perfil"}
-            className="w-11 h-11 rounded-full overflow-hidden bg-surface-2 text-sm font-black flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform"
+            className="w-11 h-11 rounded-full overflow-hidden bg-surface-2 text-sm font-black flex items-center justify-center shrink-0 hover:scale-105 transition-transform"
           >
             {avatarUrl
               // eslint-disable-next-line @next/next/no-img-element

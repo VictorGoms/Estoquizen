@@ -98,7 +98,7 @@ export default function PlanSelectionPage() {
             <SecondaryButton
               icon={<BackIcon />}
               onClick={() => router.push("/register-company")}
-              className="sm:w-auto sm:px-7 sm:flex-shrink-0 !bg-surface-2 hover:!bg-white/10"
+              className="sm:w-auto sm:px-7 sm:shrink-0 bg-surface-2! hover:bg-white/10!"
             >
               Voltar
             </SecondaryButton>

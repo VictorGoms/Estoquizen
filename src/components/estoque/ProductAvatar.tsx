@@ -18,7 +18,7 @@ interface ProductAvatarProps {
 export default function ProductAvatar({ name, imageUrl, size = "md", tone = "surface" }: ProductAvatarProps) {
   return (
     <span
-      className={`${SIZES[size]} rounded-full overflow-hidden flex items-center justify-center font-black text-fg flex-shrink-0 ${
+      className={`${SIZES[size]} rounded-full overflow-hidden flex items-center justify-center font-black text-fg shrink-0 ${
         tone === "ink" ? "bg-ink" : "bg-surface-2"
       }`}
     >

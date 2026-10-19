@@ -293,7 +293,7 @@ export default function DashboardMetricasPage() {
                         <p className="text-sm font-bold text-fg-muted">Os mais perto de acabar primeiro</p>
                       </div>
                       {alerts.length > 0 && (
-                        <span className="flex-shrink-0 px-3 py-1 rounded-full bg-low/15 text-low text-[13px] font-black">
+                        <span className="shrink-0 px-3 py-1 rounded-full bg-low/15 text-low text-[13px] font-black">
                           {alerts.length} {alerts.length === 1 ? "item" : "itens"}
                         </span>
                       )}
@@ -301,7 +301,7 @@ export default function DashboardMetricasPage() {
 
                     {alerts.length === 0 ? (
                       <p className="flex items-center gap-3 p-4 rounded-4xl bg-surface-2 text-sm font-bold text-fg-soft">
-                        <span className="w-8 h-8 rounded-full bg-ok/15 text-ok flex items-center justify-center flex-shrink-0">
+                        <span className="w-8 h-8 rounded-full bg-ok/15 text-ok flex items-center justify-center shrink-0">
                           <CheckIcon className="w-4 h-4" strokeWidth={2.8} />
                         </span>
                         Todos os produtos estão acima do mínimo.
@@ -351,8 +351,8 @@ export default function DashboardMetricasPage() {
 
                     <ul className="flex flex-col">
                       {DIST.map((d) => (
-                        <li key={d.status} className="flex items-center gap-3 py-3 border-t-2 border-dashed border-white/[0.08] first:border-t-0 first:pt-0">
-                          <span aria-hidden="true" className={`w-3 h-3 rounded-full flex-shrink-0 ${d.bar}`} />
+                        <li key={d.status} className="flex items-center gap-3 py-3 border-t-2 border-dashed border-white/8 first:border-t-0 first:pt-0">
+                          <span aria-hidden="true" className={`w-3 h-3 rounded-full shrink-0 ${d.bar}`} />
                           <span className="flex-1 text-[15px] font-extrabold">{STATUS_LABEL[d.status]}</span>
                           <span className="text-sm font-bold text-fg-muted tabular-nums">
                             {counts[d.status]} {counts[d.status] === 1 ? "produto" : "produtos"}
@@ -411,7 +411,7 @@ export default function DashboardMetricasPage() {
                     )}
 
                     {!product ? (
-                      <p className="py-10 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/[0.08] rounded-4xl">
+                      <p className="py-10 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/8 rounded-4xl">
                         Nenhum produto selecionado
                       </p>
                     ) : filterError ? (
@@ -520,7 +520,7 @@ export default function DashboardMetricasPage() {
                           ))}
                         </dl>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t-2 border-dashed border-white/[0.08]">
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t-2 border-dashed border-white/8">
                           <p className="text-sm font-bold text-fg-muted">
                             Preço unitário {formatBRL(product.price)} · mínimo {formatQty(product.min_qty)} {product.unit}
                           </p>

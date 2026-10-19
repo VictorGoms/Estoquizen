@@ -24,7 +24,6 @@ export function useAlertCount(): number {
     fetch();
     const interval = setInterval(fetch, 60_000);
     return () => clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return count;

@@ -223,7 +223,7 @@ export default function MembrosPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <label className="flex-1 flex items-center gap-2.5 h-[52px] px-[18px] rounded-full bg-surface focus-within:ring-2 focus-within:ring-accent">
-                    <SearchIcon className="w-5 h-5 text-fg-subtle flex-shrink-0" />
+                    <SearchIcon className="w-5 h-5 text-fg-subtle shrink-0" />
                     <input
                       type="search"
                       name="busca-membro"
@@ -232,7 +232,7 @@ export default function MembrosPage() {
                       placeholder="Buscar por nome ou e-mail"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="flex-1 min-w-0 h-full bg-transparent text-fg text-[15px] font-semibold outline-none placeholder:text-fg-subtle"
+                      className="flex-1 min-w-0 h-full bg-transparent text-fg text-[15px] font-semibold outline-hidden placeholder:text-fg-subtle"
                     />
                   </label>
                   {tab === "ativos" && (
@@ -245,7 +245,7 @@ export default function MembrosPage() {
                             type="button"
                             aria-pressed={active}
                             onClick={() => setRoleFilter(f.id)}
-                            className={`flex-shrink-0 min-h-[44px] px-4 rounded-full text-sm cursor-pointer transition-colors ${
+                            className={`shrink-0 min-h-[44px] px-4 rounded-full text-sm cursor-pointer transition-colors ${
                               active ? "bg-inverse text-ink font-black" : "bg-surface text-fg-soft font-extrabold hover:text-fg"
                             }`}
                           >
@@ -265,17 +265,17 @@ export default function MembrosPage() {
                       const isPending = member.status === "pendente";
                       const avatar = member.avatarUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={member.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                        <img src={member.avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
                       ) : (
                         <span
-                          className={`w-12 h-12 rounded-full flex items-center justify-center text-[15px] font-black flex-shrink-0 ${isPending ? "bg-low/15 text-low" : "text-fg"}`}
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-[15px] font-black shrink-0 ${isPending ? "bg-low/15 text-low" : "text-fg"}`}
                           style={isPending ? undefined : { background: member.avatarColor }}
                         >
                           {isPending ? <MailIcon className="w-5 h-5" /> : member.initials}
                         </span>
                       );
                       const roleChip = (
-                        <span className="hidden sm:inline-flex flex-shrink-0 text-xs font-black px-2.5 py-1 rounded-full bg-surface-2 text-fg-soft">
+                        <span className="hidden sm:inline-flex shrink-0 text-xs font-black px-2.5 py-1 rounded-full bg-surface-2 text-fg-soft">
                           {ROLE_LABEL[member.role]}
                         </span>
                       );
@@ -292,7 +292,7 @@ export default function MembrosPage() {
                                 </span>
                               </span>
                               {roleChip}
-                              <ArrowRightIcon className="w-[18px] h-[18px] text-fg-subtle flex-shrink-0" />
+                              <ArrowRightIcon className="w-[18px] h-[18px] text-fg-subtle shrink-0" />
                             </Link>
                           </li>
                         );
@@ -307,7 +307,7 @@ export default function MembrosPage() {
                           </span>
                           {canAdd && (
                             confirmId === member.userId ? (
-                              <span className="flex items-center gap-2 flex-shrink-0">
+                              <span className="flex items-center gap-2 shrink-0">
                                 <span className="text-sm font-bold text-fg-muted">Revogar?</span>
                                 <button
                                   type="button"
@@ -329,7 +329,7 @@ export default function MembrosPage() {
                               <button
                                 type="button"
                                 onClick={() => setConfirmId(member.userId)}
-                                className="flex-shrink-0 min-h-[40px] px-4 rounded-full bg-zero/10 text-zero text-sm font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
+                                className="shrink-0 min-h-[40px] px-4 rounded-full bg-zero/10 text-zero text-sm font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
                               >
                                 Revogar convite
                               </button>

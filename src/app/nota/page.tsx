@@ -273,7 +273,7 @@ export default function NotaPage() {
                       active ? "bg-inverse text-ink" : "bg-surface text-fg hover:bg-[#19243a] disabled:hover:bg-surface"
                     } ${opt.soon ? "opacity-55" : ""}`}
                   >
-                    <span className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${active ? "bg-ink text-accent" : "bg-surface-2 text-fg-soft"}`}>
+                    <span className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${active ? "bg-ink text-accent" : "bg-surface-2 text-fg-soft"}`}>
                       <opt.Icon className="w-6 h-6" />
                     </span>
                     <span className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -281,7 +281,7 @@ export default function NotaPage() {
                       <span className={`text-[13px] font-bold leading-snug ${active ? "text-inverse-muted" : "text-fg-muted"}`}>{opt.desc}</span>
                     </span>
                     {opt.soon && (
-                      <span className="sm:absolute sm:top-4 sm:right-4 flex-shrink-0 px-2.5 py-1 rounded-full bg-surface-2 text-[11px] font-black text-fg-muted">
+                      <span className="sm:absolute sm:top-4 sm:right-4 shrink-0 px-2.5 py-1 rounded-full bg-surface-2 text-[11px] font-black text-fg-muted">
                         Em breve
                       </span>
                     )}
@@ -292,7 +292,7 @@ export default function NotaPage() {
           </fieldset>
 
           {tipo === null && (
-            <p className="py-10 px-6 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/[0.08] rounded-5xl">
+            <p className="py-10 px-6 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/8 rounded-5xl">
               Escolha o tipo de nota para começar.
             </p>
           )}
@@ -436,7 +436,7 @@ export default function NotaPage() {
               {xmlInfo && (
                 <div className="flex flex-col gap-3">
                   <div role="status" className="flex items-center gap-3.5 p-4 rounded-4xl bg-ok/10">
-                    <span className="w-10 h-10 rounded-full bg-ok text-ink flex items-center justify-center flex-shrink-0">
+                    <span className="w-10 h-10 rounded-full bg-ok text-ink flex items-center justify-center shrink-0">
                       <CheckIcon className="w-5 h-5" strokeWidth={3} />
                     </span>
                     <div className="min-w-0 flex flex-col gap-0.5">
@@ -461,7 +461,7 @@ export default function NotaPage() {
           )}
 
           <p className="flex items-start gap-2.5 px-1 text-[13px] font-bold text-fg-subtle leading-relaxed">
-            <ScanIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <ScanIcon className="w-4 h-4 mt-0.5 shrink-0" />
             Para dar entrada ou saída de um produto só, use o botão Escanear no menu.
           </p>
         </div>

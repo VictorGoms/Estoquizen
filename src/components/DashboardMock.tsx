@@ -59,7 +59,7 @@ export default function DashboardMock() {
         <p className="text-sm font-black px-1">Precisa de atenção</p>
         {ALERTS.map((a) => (
           <div key={a.name} className="flex items-center gap-3 p-2.5 rounded-[18px] bg-surface-2">
-            <span className="w-9 h-9 rounded-full bg-ink flex items-center justify-center text-xs font-black flex-shrink-0">{a.initials}</span>
+            <span className="w-9 h-9 rounded-full bg-ink flex items-center justify-center text-xs font-black shrink-0">{a.initials}</span>
             <span className="flex-1 min-w-0 flex flex-col gap-1">
               <span className="flex justify-between items-center gap-2">
                 <span className="text-[13px] font-extrabold truncate">{a.name}</span>

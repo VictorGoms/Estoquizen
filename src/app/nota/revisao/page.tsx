@@ -215,7 +215,7 @@ export default function NotaRevisaoPage() {
               ].map((s) => (
                 <div key={s.label} className="flex flex-col gap-1.5 min-w-0">
                   <dt className="flex items-center gap-1.5 text-[13px] font-extrabold text-fg-muted">
-                    <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${s.dot}`} />
+                    <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.dot}`} />
                     <span className="truncate">{s.label}</span>
                   </dt>
                   <dd className={`text-[28px] font-black leading-none tabular-nums ${s.label === "Divergências" && s.value > 0 ? "text-low" : ""}`}>{s.value}</dd>
@@ -228,7 +228,7 @@ export default function NotaRevisaoPage() {
           {/* ── Avisos ── */}
           {divergentCount > 0 && !confirmed && (
             <p className="flex items-start gap-3 p-4 rounded-4xl bg-low/10 text-sm font-bold text-fg-soft leading-relaxed">
-              <span aria-hidden="true" className="w-2.5 h-2.5 mt-1.5 rounded-full bg-low flex-shrink-0" />
+              <span aria-hidden="true" className="w-2.5 h-2.5 mt-1.5 rounded-full bg-low shrink-0" />
               <span>
                 <strong className="text-low font-black">
                   {divergentCount} {divergentCount === 1 ? "produto com divergência" : "produtos com divergência"}.
@@ -244,7 +244,7 @@ export default function NotaRevisaoPage() {
 
           {confirmed && (
             <div role="status" className="flex items-center gap-3.5 p-4 rounded-4xl bg-ok/10">
-              <span className="w-10 h-10 rounded-full bg-ok text-ink flex items-center justify-center flex-shrink-0">
+              <span className="w-10 h-10 rounded-full bg-ok text-ink flex items-center justify-center shrink-0">
                 <CheckIcon className="w-5 h-5" strokeWidth={3} />
               </span>
               <div>

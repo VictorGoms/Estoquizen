@@ -290,7 +290,7 @@ function NovoItemContent() {
                     type="button"
                     onClick={() => setScanning(true)}
                     aria-label="Ler código de barras com a câmera"
-                    className="w-12 h-12 rounded-2xl bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10 transition-colors"
+                    className="w-12 h-12 rounded-2xl bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 transition-colors"
                   >
                     <ScanIcon />
                   </button>
@@ -394,7 +394,7 @@ function NovoItemContent() {
               {imagePreview ? (
                 <div className="flex items-center gap-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imagePreview} alt="Prévia da foto" width={80} height={80} className="w-20 h-20 rounded-3xl object-cover flex-shrink-0" />
+                  <img src={imagePreview} alt="Prévia da foto" width={80} height={80} className="w-20 h-20 rounded-3xl object-cover shrink-0" />
                   <div className="flex-1 min-w-0 flex flex-col gap-2">
                     <p className="text-sm font-bold text-fg-muted truncate">{imageFile?.name}</p>
                     <div className="flex gap-2">
@@ -419,7 +419,7 @@ function NovoItemContent() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2.5 py-7 rounded-4xl border-2 border-dashed border-white/[0.12] text-fg-muted cursor-pointer hover:border-white/25 hover:text-fg transition-colors"
+                  className="w-full flex flex-col items-center justify-center gap-2.5 py-7 rounded-4xl border-2 border-dashed border-white/12 text-fg-muted cursor-pointer hover:border-white/25 hover:text-fg transition-colors"
                 >
                   <span className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
                     <ImageIcon className="w-6 h-6" />
@@ -442,7 +442,7 @@ function NovoItemContent() {
               <button
                 type="submit"
                 disabled={saving || !!productLimit?.at}
-                className="flex-[2] min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
+                className="flex-2 min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
               >
                 {saving ? <><Spinner /> Salvando…</> : "Adicionar produto"}
               </button>

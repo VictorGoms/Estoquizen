@@ -329,7 +329,7 @@ export default function ItemDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5 lg:gap-6">
 
           <nav aria-label="Trilha" className="flex items-center gap-2.5 min-w-0 text-sm font-bold text-fg-muted">
-            <Link href="/estoque" className="flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-fg font-extrabold flex-shrink-0 hover:bg-surface-2 transition-colors">
+            <Link href="/estoque" className="flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-fg font-extrabold shrink-0 hover:bg-surface-2 transition-colors">
               <ArrowLeftIcon className="w-4 h-4" strokeWidth={2.4} /> Estoque
             </Link>
             <span aria-hidden="true">/</span>
@@ -341,7 +341,7 @@ export default function ItemDetailPage() {
             <div className="contents lg:flex lg:flex-col lg:gap-6 lg:min-w-0">
 
               {/* 1 — Foto + identificação */}
-              <section className="order-1 lg:order-none bg-surface rounded-5xl p-4 lg:p-5 flex flex-col gap-5">
+              <section className="order-1 lg:order-0 bg-surface rounded-5xl p-4 lg:p-5 flex flex-col gap-5">
                 <div className="relative h-[220px] lg:h-[280px] rounded-4xl overflow-hidden bg-surface-2 flex items-center justify-center">
                   {product.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -423,7 +423,7 @@ export default function ItemDetailPage() {
                           type="button"
                           onClick={() => setEditMode(true)}
                           aria-label="Editar produto"
-                          className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10 transition-colors"
+                          className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 transition-colors"
                         >
                           <PencilIcon className="w-[18px] h-[18px]" />
                         </button>
@@ -436,7 +436,7 @@ export default function ItemDetailPage() {
                     )}
                     <dl className="flex flex-col">
                       {info.map(([label, value]) => (
-                        <div key={label} className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08] text-sm">
+                        <div key={label} className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/8 text-sm">
                           <dt className="font-bold text-fg-muted">{label}</dt>
                           <dd className="font-extrabold text-right">{value}</dd>
                         </div>
@@ -447,7 +447,7 @@ export default function ItemDetailPage() {
               </section>
 
               {/* 2 — Quantidade (card de destaque) */}
-              <section aria-label="Quantidade em estoque" className="order-2 lg:order-none bg-accent text-ink rounded-5xl p-[22px] lg:p-7 flex flex-col gap-4">
+              <section aria-label="Quantidade em estoque" className="order-2 lg:order-0 bg-accent text-ink rounded-5xl p-[22px] lg:p-7 flex flex-col gap-4">
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex flex-col gap-1.5">
                     <p className="text-sm lg:text-base font-extrabold text-ink/80">Em estoque</p>
@@ -465,7 +465,7 @@ export default function ItemDetailPage() {
                 <div aria-hidden="true" className="relative h-2.5 rounded-full bg-ink/15">
                   {level.fill > 0 && <div className="h-full rounded-full bg-ink" style={{ width: `${Math.max(level.fill * 100, 4)}%` }} />}
                   {level.minMark > 0 && (
-                    <span className="absolute -top-1 w-[3px] h-[18px] rounded bg-ink/60" style={{ left: `calc(${level.minMark * 100}% - 1.5px)` }} />
+                    <span className="absolute -top-1 w-[3px] h-[18px] rounded-sm bg-ink/60" style={{ left: `calc(${level.minMark * 100}% - 1.5px)` }} />
                   )}
                 </div>
                 <div className="border-t-2 border-dashed border-ink/20" />
@@ -486,7 +486,7 @@ export default function ItemDetailPage() {
               </section>
 
               {/* 4 — Histórico */}
-              <section className="order-4 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-1.5">
+              <section className="order-4 lg:order-0 bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-1.5">
                 <div className="flex flex-col gap-0.5 pb-2">
                   <h2 className="text-lg lg:text-xl font-black">Histórico</h2>
                   <p className="text-sm font-bold text-fg-muted">Últimas movimentações deste produto</p>
@@ -502,8 +502,8 @@ export default function ItemDetailPage() {
                     {history.map((m) => {
                       const isIn = m.delta > 0;
                       return (
-                        <li key={m.id} className="flex items-center gap-3.5 py-3 px-1 border-t-2 border-dashed border-white/[0.08]">
-                          <span className={`w-[42px] h-[42px] rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? "bg-accent/20 text-accent" : "bg-inverse/10 text-inverse"}`}>
+                        <li key={m.id} className="flex items-center gap-3.5 py-3 px-1 border-t-2 border-dashed border-white/8">
+                          <span className={`w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 ${isIn ? "bg-accent/20 text-accent" : "bg-inverse/10 text-inverse"}`}>
                             {isIn ? <InIcon className="w-5 h-5" strokeWidth={2.2} /> : <OutIcon className="w-5 h-5" strokeWidth={2.2} />}
                           </span>
                           <span className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -513,7 +513,7 @@ export default function ItemDetailPage() {
                               {now ? ` · ${timeAgo(m.created_at, now)}` : ""}
                             </span>
                           </span>
-                          <span className={`text-[15px] lg:text-base font-black flex-shrink-0 ${isIn ? "text-accent" : ""}`}>
+                          <span className={`text-[15px] lg:text-base font-black shrink-0 ${isIn ? "text-accent" : ""}`}>
                             {isIn ? "+" : "−"}{formatQty(Math.abs(m.delta))} {product.unit}
                           </span>
                         </li>
@@ -524,7 +524,7 @@ export default function ItemDetailPage() {
               </section>
 
               {/* 5 — Nota fiscal */}
-              <section className="order-5 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
+              <section className="order-5 lg:order-0 bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-lg lg:text-xl font-black">Nota fiscal</h2>
                   {canEdit && (
@@ -547,7 +547,7 @@ export default function ItemDetailPage() {
 
             <div className="contents lg:flex lg:flex-col lg:gap-6 lg:sticky lg:top-20">
               {/* 3 — Registrar movimentação */}
-              <section aria-labelledby="mov-title" className="order-3 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
+              <section aria-labelledby="mov-title" className="order-3 lg:order-0 bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-3">
                   <h2 id="mov-title" className="text-lg lg:text-xl font-black">Registrar movimentação</h2>
                 </div>
@@ -563,7 +563,7 @@ export default function ItemDetailPage() {
 
               {/* 6 — Remover */}
               {canEdit && (
-                <section className="order-6 lg:order-none bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
+                <section className="order-6 lg:order-0 bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-3">
                   <div className="flex flex-col gap-0.5">
                     <h2 className="text-base font-black">Remover produto</h2>
                     <p className="text-sm font-bold text-fg-muted">Apaga o produto e o histórico de movimentações.</p>
@@ -584,7 +584,7 @@ export default function ItemDetailPage() {
 
       {/* Confirmação de exclusão */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="delete-title">
           <button type="button" aria-label="Fechar" tabIndex={-1} onClick={() => setShowDeleteConfirm(false)} className="absolute inset-0 bg-black/60 cursor-default" />
           <div className="relative w-full max-w-sm bg-surface rounded-5xl p-6 flex flex-col gap-5 animate-fade-up">
             <div className="flex flex-col gap-2">

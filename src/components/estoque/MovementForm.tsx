@@ -139,7 +139,7 @@ export default function MovementForm({
           type="button"
           aria-label="Diminuir quantidade"
           onClick={() => step(-1)}
-          className="w-[52px] h-[52px] rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors duration-200 hover:bg-white/10"
+          className="w-[52px] h-[52px] rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer transition-colors duration-200 hover:bg-white/10"
         >
           <MinusIcon className="w-[22px] h-[22px]" strokeWidth={2.4} />
         </button>
@@ -151,13 +151,13 @@ export default function MovementForm({
           aria-label={`Quantidade (${product.unit})`}
           value={qtyText}
           onChange={(e) => { setQtyText(e.target.value); setError(""); }}
-          className="flex-1 min-w-0 h-[52px] rounded-[18px] bg-ink text-fg text-center text-2xl font-black outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex-1 min-w-0 h-[52px] rounded-[18px] bg-ink text-fg text-center text-2xl font-black outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
         />
         <button
           type="button"
           aria-label="Aumentar quantidade"
           onClick={() => step(1)}
-          className="w-[52px] h-[52px] rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer transition-colors duration-200 hover:bg-white/10"
+          className="w-[52px] h-[52px] rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer transition-colors duration-200 hover:bg-white/10"
         >
           <PlusIcon className="w-[22px] h-[22px]" strokeWidth={2.4} />
         </button>
@@ -197,7 +197,7 @@ export default function MovementForm({
           maxLength={300}
           onChange={(e) => setReason(e.target.value)}
           placeholder={isIn ? "Ex.: compra do fornecedor" : "Ex.: caixa amassada"}
-          className="h-12 px-4 rounded-2xl bg-ink text-fg text-[15px] font-semibold outline-none placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-accent"
+          className="h-12 px-4 rounded-2xl bg-ink text-fg text-[15px] font-semibold outline-hidden placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-accent"
         />
       </label>
 

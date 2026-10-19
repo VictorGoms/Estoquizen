@@ -205,7 +205,7 @@ export default function ContagemPage() {
                             autoComplete="off"
                             value={valores[p.id] ?? ""}
                             onChange={(e) => setValores({ ...valores, [p.id]: e.target.value })}
-                            className="w-24 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                            className="w-24 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                           />
                           <span className="text-[13px] font-bold text-fg-muted">{p.unit}</span>
                           <button

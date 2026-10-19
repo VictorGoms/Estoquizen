@@ -54,7 +54,7 @@ export default function PlanCard({
         </div>
         <span
           aria-hidden="true"
-          className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+          className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
             selected ? "bg-ink text-accent" : "ring-2 ring-white/15"
           }`}
         >
@@ -72,15 +72,15 @@ export default function PlanCard({
         </span>
       )}
 
-      <span className={`my-5 border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/[0.12]"}`} />
+      <span className={`my-5 border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/12"}`} />
 
       <ul className="flex flex-col gap-3 flex-1">
         {features.map((f) => (
           <li key={f.text} className="flex items-start gap-2.5">
             {f.included ? (
-              <CheckIcon className={`w-[18px] h-[18px] flex-shrink-0 mt-px ${selected ? "text-emerald-700" : "text-ok"}`} strokeWidth={2.8} />
+              <CheckIcon className={`w-[18px] h-[18px] shrink-0 mt-px ${selected ? "text-emerald-700" : "text-ok"}`} strokeWidth={2.8} />
             ) : (
-              <XIcon className={`w-[18px] h-[18px] flex-shrink-0 mt-px ${selected ? "text-inverse-muted" : "text-fg-subtle"}`} strokeWidth={2.4} />
+              <XIcon className={`w-[18px] h-[18px] shrink-0 mt-px ${selected ? "text-inverse-muted" : "text-fg-subtle"}`} strokeWidth={2.4} />
             )}
             <span className={`text-sm font-bold leading-snug ${f.included ? "" : `${muted} line-through`}`}>
               {f.text}

@@ -123,7 +123,7 @@ export default function ScannerPage() {
           <Link
             href="/dashboard"
             aria-label="Voltar ao início"
-            className="w-12 h-12 rounded-full bg-surface text-fg flex items-center justify-center flex-shrink-0 hover:bg-surface-2 transition-colors"
+            className="w-12 h-12 rounded-full bg-surface text-fg flex items-center justify-center shrink-0 hover:bg-surface-2 transition-colors"
           >
             <ArrowLeftIcon className="w-[22px] h-[22px]" strokeWidth={2.2} />
           </Link>
@@ -169,14 +169,14 @@ export default function ScannerPage() {
 
         {step !== "scanning" && scannedCode && (
           <div className="flex items-center gap-3 p-2 pl-4 rounded-full bg-surface">
-            <ScanIcon className="w-5 h-5 text-accent flex-shrink-0" />
+            <ScanIcon className="w-5 h-5 text-accent shrink-0" />
             <span className="flex-1 min-w-0 text-sm font-extrabold text-fg tracking-wide truncate">
               <span className="sr-only">Código lido: </span>{scannedCode}
             </span>
             <button
               type="button"
               onClick={scanAgain}
-              className="min-h-[44px] px-4 rounded-full bg-surface-2 text-sm font-extrabold flex-shrink-0 cursor-pointer hover:bg-white/10"
+              className="min-h-[44px] px-4 rounded-full bg-surface-2 text-sm font-extrabold shrink-0 cursor-pointer hover:bg-white/10"
             >
               Escanear outro
             </button>

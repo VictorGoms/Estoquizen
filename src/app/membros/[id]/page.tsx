@@ -200,7 +200,7 @@ export default function MemberDetailPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-5 lg:gap-6">
 
           <nav aria-label="Trilha" className="flex items-center gap-2.5 min-w-0 text-sm font-bold text-fg-muted">
-            <Link href="/membros" className="flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-fg font-extrabold flex-shrink-0 hover:bg-surface-2 transition-colors">
+            <Link href="/membros" className="flex items-center gap-2 min-h-[40px] pl-3 pr-4 rounded-full bg-surface text-fg font-extrabold shrink-0 hover:bg-surface-2 transition-colors">
               <ArrowLeftIcon className="w-4 h-4" strokeWidth={2.4} /> Membros
             </Link>
             <span aria-hidden="true">/</span>
@@ -221,7 +221,7 @@ export default function MemberDetailPage() {
                   </span>
                 )}
                 <div className="min-w-0">
-                  <h1 className="text-xl font-black break-words">{member.name}</h1>
+                  <h1 className="text-xl font-black wrap-break-word">{member.name}</h1>
                   <p className="text-sm font-bold text-fg-muted break-all">{member.email}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap justify-center">
@@ -232,7 +232,7 @@ export default function MemberDetailPage() {
                   </span>
                 </div>
                 <dl className="w-full flex flex-col text-sm">
-                  <div className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08]">
+                  <div className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/8">
                     <dt className="font-bold text-fg-muted">Membro desde</dt>
                     <dd className="font-extrabold">{member.joinedAt}</dd>
                   </div>

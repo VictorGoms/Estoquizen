@@ -126,7 +126,7 @@ export default function RegisterCompanyPage() {
             <ul className="hidden md:flex flex-col gap-3">
               {BENEFITS.map((b) => (
                 <li key={b.text} className="flex items-center gap-3 rounded-3xl bg-surface p-3">
-                  <span className="w-10 h-10 rounded-full bg-surface-2 text-accent flex items-center justify-center flex-shrink-0">{b.icon}</span>
+                  <span className="w-10 h-10 rounded-full bg-surface-2 text-accent flex items-center justify-center shrink-0">{b.icon}</span>
                   <span className="text-sm font-bold text-fg-soft">{b.text}</span>
                 </li>
               ))}
@@ -170,7 +170,7 @@ export default function RegisterCompanyPage() {
                   type="button"
                   icon={<BackIcon />}
                   onClick={() => router.push("/select-workspace")}
-                  className="sm:w-auto sm:px-7 sm:flex-shrink-0 !bg-surface-2 hover:!bg-white/10"
+                  className="sm:w-auto sm:px-7 sm:shrink-0 bg-surface-2! hover:bg-white/10!"
                 >
                   Voltar
                 </SecondaryButton>

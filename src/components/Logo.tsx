@@ -8,7 +8,7 @@ export default function Logo({ size = 32 }: { size?: number }) {
       viewBox="0 0 256 256"
       role="img"
       aria-label="Estoquizen"
-      className="flex-shrink-0"
+      className="shrink-0"
     >
       <path fill="#1E3A8A" d="M131 128.72A6 6 0 0 1 125 128.72L67.33 95.42A6 6 0 0 1 67.33 85.03L125 51.73A6 6 0 0 1 131 51.73L188.67 85.03A6 6 0 0 1 188.67 95.42Z" />
       <path fill="#EEF3FB" fillRule="evenodd" d="M123 209.26A8 8 0 0 1 111 216.19L55.33 184.04A14 14 0 0 1 48.33 171.92L48.33 109.86A8 8 0 0 1 60.33 102.93L119 136.8A8 8 0 0 1 123 143.73Z" />

@@ -66,7 +66,7 @@ export default function Faq() {
               <details key={q} className="group bg-surface-2 rounded-4xl">
                 <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer min-h-[60px] px-5 lg:px-6 py-4 flex items-center justify-between gap-4 rounded-4xl text-[17px] 3xl:text-xl font-black focus-visible:ring-2 focus-visible:ring-accent">
                   {q}
-                  <ChevronDownIcon className="w-5 h-5 flex-shrink-0 text-fg-muted transition-transform duration-200 group-open:rotate-180" strokeWidth={2.4} />
+                  <ChevronDownIcon className="w-5 h-5 shrink-0 text-fg-muted transition-transform duration-200 group-open:rotate-180" strokeWidth={2.4} />
                 </summary>
                 <p className="px-5 lg:px-6 pb-5 -mt-1 text-[15px] 3xl:text-[17px] font-semibold text-fg-muted leading-relaxed">{a}</p>
               </details>

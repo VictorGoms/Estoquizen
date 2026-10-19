@@ -181,7 +181,7 @@ export default function PerfilPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={imgUploading}
               aria-label="Alterar foto de perfil"
-              className="relative w-20 h-20 rounded-full flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
+              className="relative w-20 h-20 rounded-full shrink-0 cursor-pointer disabled:cursor-not-allowed"
             >
               <span className="w-full h-full rounded-full overflow-hidden bg-ink text-fg flex items-center justify-center text-2xl font-black">
                 {profile?.avatar_url
@@ -233,7 +233,7 @@ export default function PerfilPage() {
               href="/configuracoes"
               className="lg:hidden flex items-center gap-3 min-h-[64px] px-4 rounded-4xl bg-surface text-fg hover:bg-surface-2 transition-colors"
             >
-              <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center flex-shrink-0">
+              <span className="w-10 h-10 rounded-full bg-surface-2 flex items-center justify-center shrink-0">
                 <SlidersIcon />
               </span>
               <span className="flex-1 min-w-0">

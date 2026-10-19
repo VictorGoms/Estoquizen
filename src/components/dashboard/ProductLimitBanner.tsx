@@ -36,7 +36,7 @@ export default function ProductLimitBanner({ workspaceId }: { workspaceId: strin
       }`}
     >
       <div className="flex items-center gap-3 min-w-0">
-        <span className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${limit.at ? "bg-zero/15 text-zero" : "bg-low/15 text-low"}`}>
+        <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${limit.at ? "bg-zero/15 text-zero" : "bg-low/15 text-low"}`}>
           <BoxIcon className="w-5 h-5" />
         </span>
         <div className="min-w-0">
@@ -48,7 +48,7 @@ export default function ProductLimitBanner({ workspaceId }: { workspaceId: strin
       {limit.nextLabel && (canUpgrade ? (
         <Link
           href="/configuracoes"
-          className={`flex-shrink-0 min-h-[44px] px-5 flex items-center rounded-full text-sm font-black transition-[filter] hover:brightness-110 ${
+          className={`shrink-0 min-h-[44px] px-5 flex items-center rounded-full text-sm font-black transition-[filter] hover:brightness-110 ${
             limit.at ? "bg-zero text-ink" : "bg-accent text-ink"
           }`}
         >

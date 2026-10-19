@@ -146,7 +146,7 @@ export default function NovoMembroPage() {
                         </span>
                         <span
                           aria-hidden="true"
-                          className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${active ? "bg-ink text-accent" : "ring-2 ring-white/15"}`}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${active ? "bg-ink text-accent" : "ring-2 ring-white/15"}`}
                         >
                           {active && <CheckIcon className="w-4 h-4" strokeWidth={3} />}
                         </span>

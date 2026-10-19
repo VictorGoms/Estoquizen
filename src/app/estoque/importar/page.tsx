@@ -284,7 +284,7 @@ export default function ImportarPlanilhaPage() {
                             id={id}
                             value={mapa[campo] ?? ""}
                             onChange={(e) => trocarColuna(campo, e.target.value)}
-                            className={`w-full h-12 px-3 rounded-2xl bg-ink text-[15px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer ${mapa[campo] === null ? "text-fg-subtle" : "text-fg"}`}
+                            className={`w-full h-12 px-3 rounded-2xl bg-ink text-[15px] font-semibold outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer ${mapa[campo] === null ? "text-fg-subtle" : "text-fg"}`}
                           >
                             <option value="">{campo === "name" ? "Escolha a coluna" : "Não importar"}</option>
                             {planilha.cabecalho.map((h, i) => (
@@ -349,8 +349,8 @@ export default function ImportarPlanilhaPage() {
                         {visiveis.map((l) => {
                           const chip = l.situacao === "ok" && !entram.has(l.numero) ? FORA_DO_LIMITE : SITUACAO[l.situacao];
                           return (
-                            <li key={l.numero} className="flex items-start gap-3 py-2.5 border-t-2 border-dashed border-white/[0.06] first:border-t-0">
-                              <span className="w-10 flex-shrink-0 pt-0.5 text-[12px] font-extrabold text-fg-subtle tabular-nums">L{l.numero}</span>
+                            <li key={l.numero} className="flex items-start gap-3 py-2.5 border-t-2 border-dashed border-white/6 first:border-t-0">
+                              <span className="w-10 shrink-0 pt-0.5 text-[12px] font-extrabold text-fg-subtle tabular-nums">L{l.numero}</span>
                               <span className="flex-1 min-w-0 flex flex-col gap-0.5">
                                 <span className={`text-[15px] font-extrabold truncate ${l.nome ? "" : "text-fg-subtle italic"}`}>{l.nome || "Sem nome"}</span>
                                 {l.item && (
@@ -364,7 +364,7 @@ export default function ImportarPlanilhaPage() {
                                   <span className="text-[13px] font-bold text-zero">{l.erros.join("; ")}</span>
                                 )}
                               </span>
-                              <span className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[12px] font-black ${chip.cls}`}>
+                              <span className={`shrink-0 px-2.5 py-1 rounded-full text-[12px] font-black ${chip.cls}`}>
                                 {chip.label}
                               </span>
                             </li>
@@ -396,7 +396,7 @@ export default function ImportarPlanilhaPage() {
                     type="button"
                     onClick={importar}
                     disabled={enviando || vaoEntrar.length === 0}
-                    className="flex-[2] min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
+                    className="flex-2 min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-50"
                   >
                     {enviando
                       ? <><Spinner /> Importando…</>

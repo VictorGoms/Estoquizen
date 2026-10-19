@@ -41,7 +41,7 @@ export default function ProductPanel({ product, previsao = null, canEdit, onMove
         <Link
           href={`/estoque/${product.id}`}
           aria-label="Editar produto"
-          className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 hover:bg-white/10 transition-colors"
+          className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 hover:bg-white/10 transition-colors"
         >
           <PencilIcon className="w-[18px] h-[18px]" />
         </Link>
@@ -75,7 +75,7 @@ export default function ProductPanel({ product, previsao = null, canEdit, onMove
 
       <div className="flex flex-col">
         {info.map(([label, value]) => (
-          <div key={label} className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/[0.08] text-sm">
+          <div key={label} className="flex justify-between gap-3 py-3 border-t-2 border-dashed border-white/8 text-sm">
             <span className="font-bold text-fg-muted">{label}</span>
             <span className="font-extrabold text-right">{value}</span>
           </div>

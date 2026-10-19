@@ -17,7 +17,7 @@ export default function StepIndicator({ currentStep, steps }: StepIndicatorProps
           <li key={step.label} className="flex items-center" aria-current={active ? "step" : undefined}>
             <span className="flex items-center gap-2">
               <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[13px] font-black transition-colors ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[13px] font-black transition-colors ${
                   done ? "bg-ok text-ink" : active ? "bg-accent text-ink" : "bg-surface-2 text-fg-subtle"
                 }`}
               >

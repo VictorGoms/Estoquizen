@@ -334,7 +334,7 @@ export default function BarcodeScanner({
           placeholder="Digite o código de barras"
           value={manualCode}
           onChange={(e) => setManualCode(e.target.value)}
-          className="w-full h-14 px-4 rounded-full bg-ink text-center font-mono text-base text-fg placeholder:text-fg-subtle outline-none tracking-widest focus-visible:ring-2 focus-visible:ring-accent"
+          className="w-full h-14 px-4 rounded-full bg-ink text-center font-mono text-base text-fg placeholder:text-fg-subtle outline-hidden tracking-widest focus-visible:ring-2 focus-visible:ring-accent"
           autoFocus
         />
         <button
@@ -377,12 +377,12 @@ export default function BarcodeScanner({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-ink">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-4 flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 py-4 shrink-0">
         <button
           type="button"
           onClick={handleClose}
           aria-label="Fechar câmera"
-          className="w-12 h-12 rounded-full bg-surface text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-surface-2 transition-colors duration-200"
+          className="w-12 h-12 rounded-full bg-surface text-fg flex items-center justify-center shrink-0 cursor-pointer hover:bg-surface-2 transition-colors duration-200"
         >
           <XIcon />
         </button>

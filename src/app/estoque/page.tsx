@@ -69,9 +69,9 @@ function ProductCard({ p, selected, previsao, onOpen, onMove }: {
         type="button"
         onClick={onOpen}
         aria-current={selected ? "true" : undefined}
-        className="text-left flex flex-col gap-0.5 cursor-pointer after:content-[''] after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent"
+        className="text-left flex flex-col gap-0.5 cursor-pointer after:content-[''] after:absolute after:inset-0 after:rounded-[inherit] focus-visible:outline-hidden focus-visible:after:ring-2 focus-visible:after:ring-accent"
       >
-        <span className="text-[15px] lg:text-base font-extrabold leading-tight line-clamp-2">{p.name}</span>
+        <span className="text-[15px] lg:text-base font-extrabold leading-tight lg:leading-6 line-clamp-2">{p.name}</span>
         <span className={`text-xs lg:text-[13px] font-bold truncate ${muted}`}>{p.location || p.code}</span>
         {previsao !== null && previsao <= 7 && (
           <span className={`text-xs lg:text-[13px] font-extrabold ${selected ? "text-ink" : previsao < 1 ? "text-zero" : "text-low"}`}>
@@ -80,7 +80,7 @@ function ProductCard({ p, selected, previsao, onOpen, onMove }: {
         )}
       </button>
 
-      <span className={`mt-auto border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/[0.12]"}`} />
+      <span className={`mt-auto border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/12"}`} />
 
       <div className="flex justify-between items-center gap-2">
         <span className="min-w-0 truncate">
@@ -92,7 +92,7 @@ function ProductCard({ p, selected, previsao, onOpen, onMove }: {
             type="button"
             onClick={onMove}
             aria-label={`Registrar entrada ou saída: ${p.name}`}
-            className="lg:hidden relative z-10 w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10"
+            className="lg:hidden relative z-10 w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
           >
             <PlusMinusIcon className="w-5 h-5" strokeWidth={2.2} />
           </button>
@@ -311,7 +311,7 @@ export default function EstoquePage() {
             <>
               <div className="flex flex-col lg:flex-row lg:items-center gap-3.5 lg:gap-3">
                 <div className="flex-1 flex items-center gap-2.5 h-14 lg:h-[52px] pl-[18px] pr-1.5 rounded-full bg-surface focus-within:ring-2 focus-within:ring-accent">
-                  <SearchIcon className="w-5 h-5 text-fg-subtle flex-shrink-0" />
+                  <SearchIcon className="w-5 h-5 text-fg-subtle shrink-0" />
                   <input
                     type="search"
                     name="busca"
@@ -321,13 +321,13 @@ export default function EstoquePage() {
                     placeholder="Buscar produto ou código"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="flex-1 min-w-0 h-full bg-transparent text-fg text-[15px] font-semibold outline-none placeholder:text-fg-subtle"
+                    className="flex-1 min-w-0 h-full bg-transparent text-fg text-[15px] font-semibold outline-hidden placeholder:text-fg-subtle"
                   />
                   <button
                     type="button"
                     aria-label="Buscar pelo código de barras"
                     onClick={() => setScanning(true)}
-                    className="lg:hidden w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10"
+                    className="lg:hidden w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
                   >
                     <ScanIcon />
                   </button>
@@ -383,7 +383,7 @@ export default function EstoquePage() {
                   aria-label="Ordenar por"
                   value={sort}
                   onChange={(e) => setSort(e.target.value as Sort)}
-                  className="hidden lg:block h-[52px] px-[18px] rounded-full bg-surface text-fg text-sm font-extrabold cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="hidden lg:block h-[52px] px-[18px] rounded-full bg-surface text-fg text-sm font-extrabold cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <option value="nome">Nome (A–Z)</option>
                   <option value="menor">Menor estoque</option>
@@ -407,7 +407,7 @@ export default function EstoquePage() {
                     ))}
                   </ul>
                   {selected && (
-                    <div className="hidden lg:block w-[360px] xl:w-[380px] flex-shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-none rounded-5xl">
+                    <div className="hidden lg:block w-[360px] xl:w-[380px] shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-none rounded-5xl">
                       <ProductPanel
                         product={selected}
                         previsao={previsaoDe(selected)}
@@ -467,7 +467,7 @@ export default function EstoquePage() {
         />
       )}
 
-      <div aria-live="polite" className="fixed left-1/2 -translate-x-1/2 bottom-[104px] lg:bottom-8 z-[70] pointer-events-none">
+      <div aria-live="polite" className="fixed left-1/2 -translate-x-1/2 bottom-[104px] lg:bottom-8 z-70 pointer-events-none">
         {toast && (
           <p className="px-5 py-3 rounded-full bg-inverse text-ink text-sm font-black shadow-lift whitespace-nowrap">{toast}</p>
         )}

@@ -1,8 +1,9 @@
 # Estoquizen — Frontend (Web)
 
 ## Stack
-- Framework: Next.js 16 (App Router, `"use client"` onde necessário)
-- Estilo: TailwindCSS v3 (config customizado em `tailwind.config.ts`)
+- Framework: Next.js 16 (App Router, `"use client"` onde necessário) + React 19 (o `react-is` do Recharts é forçado na mesma versão pelo `overrides` do package.json)
+- Lint: `npm run lint` (ESLint 9, `eslint.config.mjs` com as regras do Next 16). `react-hooks/set-state-in-effect` fica como aviso, porque ler `Date.now()`/`localStorage`/`window` num `useEffect` é o padrão do projeto (ver "Regras críticas de React")
+- Estilo: TailwindCSS v4. O tema fica no bloco `@theme` de `src/app/globals.css` (não existe mais `tailwind.config.ts`); lá também ficam os padrões do v3 mantidos de propósito (cor de borda e de placeholder, cursor dos botões, altura de linha fixa dos `text-*`)
 - Linguagem: TypeScript strict
 - Auth / DB: Supabase (`@supabase/supabase-js`)
 - Scanner: `@zxing/browser` + `@zxing/library`
@@ -37,7 +38,7 @@ permitindo que o celular (HTTPS) alcance o Fastify (HTTP) sem mixed-content erro
 - BottomNav: flutuante, abaixo de `lg` (`lg:hidden`); páginas com ela usam `pb-28 lg:pb-16`. Itens: Início · Estoque · Escanear (central) · Métricas · Equipe. Configurações fica no Perfil (celular) e no menu lateral.
 - Estoque no computador: lista + painel de detalhe (`ProductPanel`) lado a lado; no celular, toque abre `/estoque/[id]` e o botão ± abre `MovementSheet`.
 
-## Identidade visual — tema "Noite Azul" (tailwind.config.ts)
+## Identidade visual — tema "Noite Azul" (`@theme` em globals.css)
 - Prévia e guia visual aprovados em 2026-10-16 (canvas de design fora do repositório)
 - Tokens: `bg-ink` (#0b1220, fundo) · `bg-panel` (menu lateral) · `bg-surface` / `bg-surface-2` (cards / elementos internos) · `text-fg`, `text-fg-soft`, `text-fg-muted`, `text-fg-subtle`
 - Destaque: `bg-accent` (#60a5fa = `brand-400`) com texto `text-ink` — card de resumo, botão principal, item ativo de segmentado

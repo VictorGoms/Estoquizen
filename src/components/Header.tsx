@@ -27,7 +27,7 @@ export default function Header() {
       <div className="lp-container">
       <div
         className={`rounded-[28px] transition-colors duration-300 ${
-          scrolled || menuOpen ? "bg-panel/95 shadow-lift backdrop-blur" : "bg-transparent"
+          scrolled || menuOpen ? "bg-panel/95 shadow-lift backdrop-blur-sm" : "bg-transparent"
         }`}
       >
         <div className="flex items-center justify-between h-16 3xl:h-[76px] pl-3 pr-2 sm:pl-4">

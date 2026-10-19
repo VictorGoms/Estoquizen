@@ -91,7 +91,7 @@ export default function ProductReviewCard({ product, editMode, onQtyChange, onRe
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commitDraft}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }}
-              className="w-16 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="w-16 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             />
             <button
               type="button"

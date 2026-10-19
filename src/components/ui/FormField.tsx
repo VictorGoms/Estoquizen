@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 /** Classe padrão dos campos de texto do tema "Noite Azul" (sobre cards bg-surface). */
 export const inputClass =
-  "w-full h-12 px-4 rounded-2xl bg-ink text-fg text-[15px] font-semibold outline-none placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60";
+  "w-full h-12 px-4 rounded-2xl bg-ink text-fg text-[15px] font-semibold outline-hidden placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-60";
 
 interface FormFieldProps {
   label: string;

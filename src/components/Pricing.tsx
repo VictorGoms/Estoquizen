@@ -18,7 +18,7 @@ export default function Pricing() {
           <h2 className="text-[32px] sm:text-[44px] 2xl:text-[52px] 3xl:text-[60px] font-black leading-[1.05] tracking-[-0.03em] text-balance">
             Planos simples, sem fidelidade
           </h2>
-          <p className="mt-4 text-lg 3xl:text-xl font-semibold text-fg-muted leading-relaxed">
+          <p className="mt-4 text-lg 3xl:text-xl font-semibold text-fg-muted leading-relaxed 3xl:leading-7">
             Cobrança mensal no cartão de crédito. Comece pelo Growth com 14 dias grátis.
           </p>
         </div>
@@ -46,15 +46,15 @@ export default function Pricing() {
                 )}
               </div>
 
-              <span className="my-5 border-t-2 border-dashed border-white/[0.12]" />
+              <span className="my-5 border-t-2 border-dashed border-white/12" />
 
               <ul className="flex flex-col gap-3 flex-1 mb-6">
                 {p.features.map((f) => (
                   <li key={f.text} className="flex items-start gap-2.5">
                     {f.included ? (
-                      <CheckIcon className="w-[18px] h-[18px] flex-shrink-0 mt-px text-ok" strokeWidth={2.8} />
+                      <CheckIcon className="w-[18px] h-[18px] shrink-0 mt-px text-ok" strokeWidth={2.8} />
                     ) : (
-                      <XIcon className="w-[18px] h-[18px] flex-shrink-0 mt-px text-fg-subtle" strokeWidth={2.4} />
+                      <XIcon className="w-[18px] h-[18px] shrink-0 mt-px text-fg-subtle" strokeWidth={2.4} />
                     )}
                     <span className={`text-[15px] 3xl:text-base font-bold leading-snug ${f.included ? "" : "text-fg-muted line-through"}`}>
                       <span className="sr-only">{f.included ? "Inclui: " : "Não inclui: "}</span>
@@ -79,7 +79,7 @@ export default function Pricing() {
         <ul className="mt-8 flex flex-col sm:flex-row flex-wrap gap-x-7 gap-y-3 justify-center">
           {GARANTIAS.map((g) => (
             <li key={g} className="flex items-center gap-2 text-[15px] 3xl:text-base font-bold text-fg-soft">
-              <CheckIcon className="w-[18px] h-[18px] text-ok flex-shrink-0" strokeWidth={2.8} />
+              <CheckIcon className="w-[18px] h-[18px] text-ok shrink-0" strokeWidth={2.8} />
               {g}
             </li>
           ))}

@@ -53,7 +53,7 @@ export default function DashboardTopBar({ workspaceName: workspaceNameProp = "",
             <span className="block text-[11px] font-extrabold text-fg-subtle leading-none mb-0.5">Workspace</span>
             <span className="flex items-center gap-1 text-[15px] font-black leading-tight">
               <span className="truncate max-w-[170px] sm:max-w-[260px] group-hover:text-accent transition-colors">{wsName}</span>
-              <ChevronDownIcon className="w-4 h-4 text-fg-subtle flex-shrink-0" />
+              <ChevronDownIcon className="w-4 h-4 text-fg-subtle shrink-0" />
             </span>
           </span>
         </button>
@@ -61,7 +61,7 @@ export default function DashboardTopBar({ workspaceName: workspaceNameProp = "",
         {/* Computador: busca rápida (leva para o Estoque) */}
         {pathname !== "/estoque" ? (
           <form onSubmit={handleSearch} role="search" className="hidden lg:flex items-center gap-2.5 h-11 w-[340px] max-w-full px-4 rounded-full bg-surface text-fg-subtle focus-within:ring-2 focus-within:ring-accent">
-            <SearchIcon className="w-[18px] h-[18px] flex-shrink-0" />
+            <SearchIcon className="w-[18px] h-[18px] shrink-0" />
             <input
               type="search"
               name="busca"
@@ -71,7 +71,7 @@ export default function DashboardTopBar({ workspaceName: workspaceNameProp = "",
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Buscar produto ou código"
               placeholder="Buscar produto ou código"
-              className="flex-1 min-w-0 bg-transparent text-fg text-sm font-semibold outline-none placeholder:text-fg-subtle"
+              className="flex-1 min-w-0 bg-transparent text-fg text-sm font-semibold outline-hidden placeholder:text-fg-subtle"
             />
           </form>
         ) : (
@@ -94,7 +94,7 @@ export default function DashboardTopBar({ workspaceName: workspaceNameProp = "",
           <Link
             href="/perfil"
             aria-label={`Conta de ${userName}`}
-            className="w-11 h-11 rounded-full overflow-hidden bg-surface-2 text-sm font-black flex items-center justify-center flex-shrink-0 transition-transform duration-200 hover:scale-105"
+            className="w-11 h-11 rounded-full overflow-hidden bg-surface-2 text-sm font-black flex items-center justify-center shrink-0 transition-transform duration-200 hover:scale-105"
           >
             {avatarUrl
               // eslint-disable-next-line @next/next/no-img-element

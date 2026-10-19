@@ -91,14 +91,14 @@ export default function DashboardSidebar({
           aria-label={`Trocar workspace: ${wsName}`}
           className="w-full flex items-center gap-3 p-2.5 rounded-[20px] bg-surface-2 text-left cursor-pointer transition-colors duration-200 hover:bg-white/10"
         >
-          <span className="w-10 h-10 rounded-[14px] bg-accent text-ink text-[17px] font-black flex items-center justify-center flex-shrink-0">
+          <span className="w-10 h-10 rounded-[14px] bg-accent text-ink text-[17px] font-black flex items-center justify-center shrink-0">
             {wsName.charAt(0).toUpperCase()}
           </span>
           <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-            <span className="text-sm font-extrabold leading-tight line-clamp-2 break-words">{wsName}</span>
+            <span className="text-sm font-extrabold leading-tight line-clamp-2 wrap-break-word">{wsName}</span>
             <span className="text-xs font-bold text-fg-muted">{ROLE_LABEL[role]}</span>
           </span>
-          <ChevronsUpDownIcon className="w-[18px] h-[18px] text-fg-subtle flex-shrink-0" />
+          <ChevronsUpDownIcon className="w-[18px] h-[18px] text-fg-subtle shrink-0" />
         </button>
 
         <nav aria-label="Navegação principal" className="flex-1 min-h-0 overflow-y-auto scrollbar-none flex flex-col gap-[18px]">
@@ -118,7 +118,7 @@ export default function DashboardSidebar({
                       active ? "bg-inverse text-ink font-extrabold" : "text-fg-muted font-bold hover:bg-white/5 hover:text-fg"
                     }`}
                   >
-                    <item.Icon className="w-5 h-5 flex-shrink-0" strokeWidth={active ? 2.2 : 2} />
+                    <item.Icon className="w-5 h-5 shrink-0" strokeWidth={active ? 2.2 : 2} />
                     <span className="flex-1 truncate">{item.label}</span>
                   </Link>
                 );
@@ -132,7 +132,7 @@ export default function DashboardSidebar({
           aria-label={`Perfil de ${userName}`}
           className="flex items-center gap-3 p-2.5 rounded-[20px] transition-colors duration-200 hover:bg-white/5"
         >
-          <span className="w-10 h-10 rounded-full overflow-hidden bg-surface-2 text-sm font-black flex items-center justify-center flex-shrink-0">
+          <span className="w-10 h-10 rounded-full overflow-hidden bg-surface-2 text-sm font-black flex items-center justify-center shrink-0">
             {avatarUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />

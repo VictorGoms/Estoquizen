@@ -41,7 +41,7 @@ export default function MovementSheet({ product, onClose, onDone }: MovementShee
   if (!product) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="movement-sheet-title">
+    <div className="fixed inset-0 z-60 flex items-end justify-center overscroll-contain" role="dialog" aria-modal="true" aria-labelledby="movement-sheet-title">
       <button
         type="button"
         aria-label="Fechar"
@@ -62,7 +62,7 @@ export default function MovementSheet({ product, onClose, onDone }: MovementShee
             type="button"
             aria-label="Fechar"
             onClick={onClose}
-            className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-white/10"
+            className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
           >
             <XIcon />
           </button>

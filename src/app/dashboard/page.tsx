@@ -309,7 +309,7 @@ export default function DashboardPage() {
                 </div>
               ) : summary.alerts.length === 0 ? (
                 <p className="flex items-center gap-3 p-4 rounded-[22px] bg-surface-2 text-sm font-bold text-fg-muted">
-                  <CheckIcon className="w-5 h-5 text-ok flex-shrink-0" strokeWidth={2.6} />
+                  <CheckIcon className="w-5 h-5 text-ok shrink-0" strokeWidth={2.6} />
                   Tudo em ordem: nenhum produto abaixo do mínimo.
                 </p>
               ) : (
@@ -450,7 +450,7 @@ export default function DashboardPage() {
             return (
               <Link href="/contagem" className="flex items-center justify-between gap-3 px-5 py-4 rounded-4xl bg-surface hover:bg-[#19243a] transition-colors">
                 <span className="flex items-center gap-3 min-w-0">
-                  <span className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${pronto ? "bg-ok/15 text-ok" : "bg-accent/15 text-accent"}`}>
+                  <span className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${pronto ? "bg-ok/15 text-ok" : "bg-accent/15 text-accent"}`}>
                     <CheckIcon className="w-5 h-5" strokeWidth={2.4} />
                   </span>
                   <span className="min-w-0 flex flex-col">
@@ -462,7 +462,7 @@ export default function DashboardPage() {
                     </span>
                   </span>
                 </span>
-                <span className="text-sm font-extrabold text-fg-muted flex-shrink-0">{pronto ? "Ver" : "Contar agora"}</span>
+                <span className="text-sm font-extrabold text-fg-muted shrink-0">{pronto ? "Ver" : "Contar agora"}</span>
               </Link>
             );
           })()}
@@ -476,7 +476,7 @@ export default function DashboardPage() {
             return (
               <Link href="/estoque?filtro=parados" className="flex items-center justify-between gap-3 px-5 py-4 rounded-4xl bg-surface hover:bg-[#19243a] transition-colors">
                 <span className="flex items-center gap-3 min-w-0">
-                  <span className="w-10 h-10 rounded-full bg-surface-2 text-fg-muted flex items-center justify-center flex-shrink-0">
+                  <span className="w-10 h-10 rounded-full bg-surface-2 text-fg-muted flex items-center justify-center shrink-0">
                     <BoxIcon className="w-5 h-5" />
                   </span>
                   <span className="min-w-0 flex flex-col">
@@ -486,7 +486,7 @@ export default function DashboardPage() {
                     </span>
                   </span>
                 </span>
-                <span className="text-sm font-extrabold text-fg-muted flex-shrink-0">Ver produtos</span>
+                <span className="text-sm font-extrabold text-fg-muted shrink-0">Ver produtos</span>
               </Link>
             );
           })()}
@@ -506,8 +506,8 @@ export default function DashboardPage() {
                   const isIn = m.delta > 0;
                   const what = tituloMovimentacao(m);
                   return (
-                    <li key={m.id} className="flex items-center gap-3.5 py-3 px-1 border-t-2 border-dashed border-white/[0.08]">
-                      <span className={`w-[42px] h-[42px] rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? "bg-accent/20 text-accent" : "bg-inverse/10 text-inverse"}`}>
+                    <li key={m.id} className="flex items-center gap-3.5 py-3 px-1 border-t-2 border-dashed border-white/8">
+                      <span className={`w-[42px] h-[42px] rounded-full flex items-center justify-center shrink-0 ${isIn ? "bg-accent/20 text-accent" : "bg-inverse/10 text-inverse"}`}>
                         {isIn ? <InIcon className="w-5 h-5" strokeWidth={2.2} /> : <OutIcon className="w-5 h-5" strokeWidth={2.2} />}
                       </span>
                       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -520,7 +520,7 @@ export default function DashboardPage() {
                           {what}{m.created_by && m.created_by === userId ? " · você" : ""}
                         </span>
                       </span>
-                      <span className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-4 flex-shrink-0">
+                      <span className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-4 shrink-0">
                         <span className={`text-[15px] lg:text-base font-black ${isIn ? "text-accent" : ""}`}>
                           {isIn ? "+" : "−"}{formatQty(Math.abs(m.delta))} {m.product.unit}
                         </span>

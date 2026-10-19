@@ -166,7 +166,7 @@ export default function SelectWorkspacePage() {
                             <p className="text-[15px] font-black truncate">{row.workspaces.name}</p>
                             <p className="text-[13px] font-bold text-fg-muted">Convite como {ROLE_PT[row.role] ?? row.role}</p>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <button
                               type="button"
                               disabled={busy}
@@ -237,7 +237,7 @@ export default function SelectWorkspacePage() {
         </LayoutContainer>
       </main>
 
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pt-4 pb-[calc(20px+env(safe-area-inset-bottom))] bg-ink/95 backdrop-blur border-t border-white/[0.06]">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 px-4 pt-4 pb-[calc(20px+env(safe-area-inset-bottom))] bg-ink/95 backdrop-blur-sm border-t border-white/6">
         <div className="flex flex-col gap-2.5 max-w-lg mx-auto">
           <PrimaryButton onClick={handleContinue} loading={saving} disabled={!selectedId}>
             Continuar <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />

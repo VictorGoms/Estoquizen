@@ -20,7 +20,7 @@ export default function Hero() {
               Controle seu estoque <span className="text-accent">de forma simples</span> e inteligente
             </h1>
 
-            <p className="text-lg sm:text-xl 3xl:text-2xl font-semibold text-fg-muted leading-relaxed max-w-xl 3xl:max-w-2xl mx-auto lg:mx-0 mb-9 3xl:mb-11">
+            <p className="text-lg sm:text-xl 3xl:text-2xl font-semibold text-fg-muted leading-relaxed sm:leading-7 3xl:leading-8 max-w-xl 3xl:max-w-2xl mx-auto lg:mx-0 mb-9 3xl:mb-11">
               Troque a planilha por um app que lê o código de barras pela câmera, lê a nota da compra e avisa quando um produto chega ao mínimo.
             </p>
 
@@ -42,7 +42,7 @@ export default function Hero() {
             <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-8 justify-center lg:justify-start">
               {TRUST.map((item) => (
                 <li key={item} className="flex items-center gap-1.5 text-sm 3xl:text-base font-bold text-fg-muted">
-                  <CheckIcon className="w-4 h-4 text-ok flex-shrink-0" strokeWidth={2.8} />
+                  <CheckIcon className="w-4 h-4 text-ok shrink-0" strokeWidth={2.8} />
                   {item}
                 </li>
               ))}
@@ -50,7 +50,7 @@ export default function Hero() {
           </div>
 
           {/* zoom: o mock cresce inteiro (fontes e espaços) nas telas grandes */}
-          <div className="w-full 2xl:[zoom:1.12] 3xl:[zoom:1.4]">
+          <div className="w-full 2xl:zoom-[1.12] 3xl:zoom-[1.4]">
             <DashboardMock />
           </div>
         </div>

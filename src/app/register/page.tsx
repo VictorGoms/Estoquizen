@@ -133,7 +133,7 @@ export default function RegisterPage() {
         {/* Terms checkbox */}
         <div className="flex flex-col gap-1">
           <label className="flex items-start gap-3 cursor-pointer">
-            <span className="relative flex-shrink-0">
+            <span className="relative shrink-0">
               <input
                 type="checkbox"
                 className="peer sr-only"

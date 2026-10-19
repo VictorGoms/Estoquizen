@@ -28,7 +28,7 @@ export default function LevelBar({ fill, status, minMark, thick = false, onLight
       )}
       {minMark !== undefined && minMark > 0 && (
         <span
-          className="absolute -top-1 w-[3px] h-[18px] rounded bg-inverse"
+          className="absolute -top-1 w-[3px] h-[18px] rounded-sm bg-inverse"
           style={{ left: `calc(${minMark * 100}% - 1.5px)` }}
         />
       )}
