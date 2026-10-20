@@ -327,7 +327,7 @@ export default function DashboardPage() {
                   {summary.alerts.slice(0, 4).map(({ product: p, status }) => (
                     <li key={p.id}>
                       <Link href={`/estoque/${p.id}`} className="flex items-center gap-3.5 p-3 pr-3.5 rounded-[22px] bg-surface-2 hover:bg-white/10 transition-colors">
-                        <ProductAvatar name={p.name} imageUrl={p.image_url} tone="ink" />
+                        <ProductAvatar name={p.name} imageUrl={p.image_url} icon={p.icon} tone="ink" />
                         <span className="flex-1 min-w-0 flex flex-col gap-1.5">
                           <span className="flex justify-between items-center gap-2">
                             <span className="text-[15px] font-extrabold truncate">{p.name}</span>

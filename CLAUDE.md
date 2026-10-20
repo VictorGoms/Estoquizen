@@ -103,6 +103,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
 - `/contagem`            — Contagem do dia (Growth/Pro; owner/admin): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
 - `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
+- `/licencas`            — Licenças (pública): aviso MIT dos ícones Fluent Emoji e crédito do Open Food Facts (CC BY-SA)
 - `/perfil`              — Perfil do usuário; "E-mail de acesso" troca o e-mail (`updateUser({ email })`, link de confirmação volta em `/perfil?email=confirmado`; conta só do Google não troca)
 
 ## Estrutura de componentes (`src/components/`)
@@ -127,6 +128,8 @@ components/
 
   estoque/
     StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
+    IconPicker.tsx — escolha do ícone do produto (automático, só iniciais ou um dos 80), na tela do produto
+    # ProductAvatar (EQZ-30): foto (da pessoa ou da embalagem do Open Food Facts, mostrada inteira em fundo branco) → ícone escolhido (`products.icon`) → ícone pelo nome → iniciais. Passe `icon={p.icon}` onde houver o produto
 
   nota/
     ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
@@ -148,6 +151,7 @@ components/
 - **`sanitize.ts`** — sanitização de inputs: `sanitizeText`, `sanitizeEmail`, `sanitizeNumber`, `sanitizeCode`
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
+- **`iconeProduto.ts`** — EQZ-30: 80 ícones Fluent Emoji 3D em `public/icones/produtos/<chave>.webp`, dicionário de sinônimos do comércio e `iconeDoNome` (expressões → palavras fortes → genéricas, com plural); `iconeDoProduto(nome, icon)` respeita a escolha manual (`"nenhum"` = só iniciais). Ícone novo: arquivo WebP 128 px + entrada em `ICONES` e nos sinônimos
 - **`planos.ts`** — `PLANOS`: preços e recursos de cada plano, usados na escolha de plano e nos preços da landing (um lugar só). Preços da EQZ-11 (24,90 / 39,90 / 59,90) desde 2026-10-20
 - **`planilha.ts`** — importação de planilha (EQZ-14): `lerArquivo` (CSV `;`/`,`/tab com UTF-8 ou Windows-1252, ou .xlsx), `adivinharColunas`, `validar` (número em formato brasileiro, código em notação científica, já cadastrado, repetido) e `baixarModelo`
 - **`exportCsv.ts`** — `exportProductsCsv` / `exportMovementsCsv`: CSV no formato do Excel em português (`;`, vírgula decimal, BOM), paginado de 1000 em 1000; usado em `/configuracoes#exportar`

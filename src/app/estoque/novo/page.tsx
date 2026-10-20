@@ -14,13 +14,16 @@ import { getWorkspace } from "@/hooks/useWorkspace";
 import { mutateProducts } from "@/hooks/useProducts";
 import { useProductLimit } from "@/hooks/useProductLimit";
 import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
+import ProductAvatar from "@/components/estoque/ProductAvatar";
 import { api } from "@/lib/api";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 const UNITS = ["un", "kg", "g", "L", "ml", "cx", "pct"];
 
-async function lookupBarcode(ean: string): Promise<string | null> {
+/* Nome e foto da embalagem pelo código de barras no Open Food Facts (foto: licença CC BY-SA,
+   crédito em /licencas) */
+async function lookupBarcode(ean: string): Promise<{ nome: string | null; foto: string | null } | null> {
   if (ean.length < 8) return null;
   try {
     const res  = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`);
@@ -37,7 +40,10 @@ async function lookupBarcode(ean: string): Promise<string | null> {
       ""
     ).trim();
 
-    return nome || null;
+    const foto = [p.image_front_url, p.image_url, p.image_front_small_url]
+      .find((u): u is string => typeof u === "string" && /^https:\/\/images\.openfoodfacts\.(org|net)\//.test(u)) ?? null;
+
+    return nome || foto ? { nome: nome || null, foto } : null;
   } catch {
     return null;
   }
@@ -82,6 +88,9 @@ function NovoItemContent() {
   const [imageFile, setImageFile]       = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /* Foto da embalagem achada pelo código de barras (EQZ-30); vale se a pessoa não enviar outra */
+  const [fotoEmbalagem, setFotoEmbalagem]       = useState<string | null>(null);
+  const [usarFotoEmbalagem, setUsarFotoEmbalagem] = useState(true);
 
   /* Lookup automático quando página carrega com ?code= (vindo do scanner) */
   useEffect(() => {
@@ -89,7 +98,8 @@ function NovoItemContent() {
     if (!initialCode || name) return;
     setLookingUp(true);
     lookupBarcode(initialCode).then((found) => {
-      if (found) { setName(found); setAutoFilled(true); }
+      if (found?.nome) { setName(found.nome); setAutoFilled(true); }
+      setFotoEmbalagem(found?.foto ?? null);
       setLookingUp(false);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,7 +114,8 @@ function NovoItemContent() {
       setLookingUp(true);
       setAutoFilled(false);
       lookupBarcode(digits).then((found) => {
-        if (found && !name) { setName(found); setAutoFilled(true); }
+        if (found?.nome && !name) { setName(found.nome); setAutoFilled(true); }
+        setFotoEmbalagem(found?.foto ?? null);
         setLookingUp(false);
       });
     }, 700);
@@ -225,6 +236,8 @@ function NovoItemContent() {
             .getPublicUrl(path);
           imageUrl = urlData.publicUrl;
         }
+      } else if (fotoEmbalagem && usarFotoEmbalagem) {
+        imageUrl = fotoEmbalagem;
       }
 
       await api.post("/products", {
@@ -416,16 +429,40 @@ function NovoItemContent() {
                   </div>
                 </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2.5 py-7 rounded-4xl border-2 border-dashed border-white/12 text-fg-muted cursor-pointer hover:border-white/25 hover:text-fg transition-colors"
-                >
-                  <span className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
-                    <ImageIcon className="w-6 h-6" />
-                  </span>
-                  <span className="text-sm font-extrabold">Toque para adicionar uma foto</span>
-                </button>
+                <>
+                  {fotoEmbalagem && (
+                    <label className="flex items-center gap-4 p-3 rounded-4xl bg-surface-2 cursor-pointer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={fotoEmbalagem} alt="Foto da embalagem" width={72} height={72} className="w-[72px] h-[72px] rounded-3xl object-contain bg-white p-1 shrink-0" />
+                      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                        <span className="text-sm font-extrabold">Usar a foto da embalagem</span>
+                        <span className="text-[13px] font-bold text-fg-muted">Achada pelo código de barras no Open Food Facts</span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={usarFotoEmbalagem}
+                        onChange={(e) => setUsarFotoEmbalagem(e.target.checked)}
+                        className="w-5 h-5 accent-accent shrink-0"
+                      />
+                    </label>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex flex-col items-center justify-center gap-2.5 py-7 rounded-4xl border-2 border-dashed border-white/12 text-fg-muted cursor-pointer hover:border-white/25 hover:text-fg transition-colors"
+                  >
+                    <span className="w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6" />
+                    </span>
+                    <span className="text-sm font-extrabold">{fotoEmbalagem ? "Ou tire uma foto sua" : "Toque para adicionar uma foto"}</span>
+                  </button>
+                  {!(fotoEmbalagem && usarFotoEmbalagem) && name.trim().length >= 2 && (
+                    <p className="flex items-center gap-3 text-[13px] font-bold text-fg-muted">
+                      <ProductAvatar name={name} size="sm" />
+                      Sem foto, o produto aparece assim na lista.
+                    </p>
+                  )}
+                </>
               )}
             </Section>
 

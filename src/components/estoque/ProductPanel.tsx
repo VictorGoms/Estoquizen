@@ -33,7 +33,7 @@ export default function ProductPanel({ product, previsao = null, canEdit, onMove
   return (
     <aside aria-label="Detalhes do produto" className="bg-surface rounded-5xl p-6 flex flex-col gap-[18px]">
       <div className="flex items-center gap-3.5">
-        <ProductAvatar name={product.name} imageUrl={product.image_url} size="lg" />
+        <ProductAvatar name={product.name} imageUrl={product.image_url} icon={product.icon} size="lg" />
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <h2 className="text-[21px] font-black leading-tight">{product.name}</h2>
           <span className="text-[13px] font-bold text-fg-muted tracking-wide truncate">{product.code}</span>

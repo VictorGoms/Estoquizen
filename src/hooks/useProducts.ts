@@ -15,6 +15,8 @@ export interface Product {
   location:     string | null;
   supplier:     string | null;
   image_url:    string | null;
+  /** Ícone escolhido à mão (EQZ-30); null = automático pelo nome */
+  icon:         string | null;
   nota_fiscal:  string | null;
   created_at:   string;
   updated_at:   string;
@@ -30,7 +32,7 @@ const fetcher = async (workspaceId: string): Promise<Product[]> => {
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from("products")
-      .select("id, workspace_id, name, source_name, code, unit, price, qty, min_qty, max_qty, location, supplier, image_url, nota_fiscal, created_at, updated_at")
+      .select("id, workspace_id, name, source_name, code, unit, price, qty, min_qty, max_qty, location, supplier, image_url, icon, nota_fiscal, created_at, updated_at")
       .eq("workspace_id", workspaceId)
       .order("name")
       .order("id")

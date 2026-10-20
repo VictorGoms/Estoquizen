@@ -23,6 +23,7 @@ interface AlertProduct {
   unit: string;
   location: string | null;
   image_url: string | null;
+  icon: string | null;
   created_at: string;
 }
 
@@ -30,7 +31,7 @@ function AlertRow({ p, status, previsao }: { p: AlertProduct; status: StockStatu
   return (
     <li>
       <Link href={`/estoque/${p.id}`} className="flex items-center gap-3.5 p-3 pr-4 rounded-[22px] bg-surface hover:bg-[#19243a] transition-colors">
-        <ProductAvatar name={p.name} imageUrl={p.image_url} />
+        <ProductAvatar name={p.name} imageUrl={p.image_url} icon={p.icon} />
         <span className="flex-1 min-w-0 flex flex-col gap-1.5">
           <span className="flex justify-between items-center gap-2">
             <span className="text-[15px] font-extrabold truncate">{p.name}</span>
@@ -73,7 +74,7 @@ export default function NotificacoesPage() {
 
       const { data } = await supabase
         .from("products")
-        .select("id, name, qty, min_qty, unit, location, image_url, created_at")
+        .select("id, name, qty, min_qty, unit, location, image_url, icon, created_at")
         .eq("workspace_id", ws.id);
 
       const rows = (data ?? []).map((p) => ({ ...p, qty: Number(p.qty), min_qty: Number(p.min_qty ?? 0) }));

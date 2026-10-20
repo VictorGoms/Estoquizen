@@ -60,7 +60,7 @@ function ProductCard({ p, selected, previsao, onOpen, onMove }: {
       }`}
     >
       <div className="flex justify-between items-start gap-2">
-        <ProductAvatar name={p.name} imageUrl={p.image_url} tone={selected ? "ink" : "surface"} />
+        <ProductAvatar name={p.name} imageUrl={p.image_url} icon={p.icon} tone={selected ? "ink" : "surface"} />
         <StatusChip status={p.status} onLight={selected} size="sm" />
       </div>
 

@@ -170,7 +170,7 @@ export default function ContagemPage() {
                   return (
                     <li key={p.id} className="bg-surface rounded-[22px] p-3.5 flex flex-col gap-3">
                       <div className="flex items-center gap-3">
-                        <ProductAvatar name={p.name} imageUrl={p.image_url} />
+                        <ProductAvatar name={p.name} imageUrl={p.image_url} icon={p.icon} />
                         <div className="flex-1 min-w-0 flex flex-col">
                           <Link href={`/estoque/${p.id}`} className="text-[15px] font-extrabold leading-tight line-clamp-2 hover:underline underline-offset-2">{p.name}</Link>
                           <span className="text-[13px] font-bold text-fg-muted truncate">{p.location || p.code}</span>

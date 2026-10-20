@@ -198,7 +198,7 @@ export default function ComprasPage() {
                             />
                             {/* No celular a foto sai para o nome caber */}
                             <span className="hidden sm:block shrink-0">
-                              <ProductAvatar name={i.p.name} imageUrl={i.p.image_url} />
+                              <ProductAvatar name={i.p.name} imageUrl={i.p.image_url} icon={i.p.icon} />
                             </span>
                             <span className="flex-1 min-w-0 flex flex-col gap-1">
                               <span className="text-[15px] font-extrabold leading-tight line-clamp-2">{i.p.name}</span>

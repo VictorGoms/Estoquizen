@@ -28,6 +28,7 @@ interface FoundProduct {
   min_qty: number;
   location: string | null;
   image_url: string | null;
+  icon: string | null;
 }
 
 const REASON_FALLBACK: Record<MovementType, string> = {
@@ -72,7 +73,7 @@ export default function ScannerPage() {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, code, qty, unit, min_qty, location, image_url")
+      .select("id, name, code, qty, unit, min_qty, location, image_url, icon")
       .eq("workspace_id", ws.id)
       .ilike("code", trimmed)
       .maybeSingle();
@@ -186,7 +187,7 @@ export default function ScannerPage() {
         {step === "confirm" && product && (
           <section aria-label="Confirmar movimentação" className="bg-surface rounded-[30px] p-[18px] flex flex-col gap-3.5">
             <div className="flex items-center gap-3">
-              <ProductAvatar name={product.name} imageUrl={product.image_url} />
+              <ProductAvatar name={product.name} imageUrl={product.image_url} icon={product.icon} />
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                 <p className="text-[17px] font-black truncate">{product.name}</p>
                 <p className="text-[13px] font-bold text-fg-muted truncate">{product.location || product.code}</p>

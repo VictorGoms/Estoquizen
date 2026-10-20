@@ -31,6 +31,7 @@ interface Product {
   min_qty: number;
   unit: string;
   image_url: string | null;
+  icon: string | null;
 }
 
 interface DayPoint {
@@ -126,7 +127,7 @@ export default function DashboardMetricasPage() {
 
       const { data, error: err } = await supabase
         .from("products")
-        .select("id, name, qty, price, min_qty, unit, image_url")
+        .select("id, name, qty, price, min_qty, unit, image_url, icon")
         .eq("workspace_id", ws.id)
         .order("name");
 
@@ -312,7 +313,7 @@ export default function DashboardMetricasPage() {
                           {alerts.slice(0, 6).map(({ p, status }) => (
                             <li key={p.id}>
                               <Link href={`/estoque/${p.id}`} className="flex items-center gap-3.5 p-3 pr-3.5 rounded-[22px] bg-surface-2 hover:bg-white/10 transition-colors">
-                                <ProductAvatar name={p.name} imageUrl={p.image_url} tone="ink" />
+                                <ProductAvatar name={p.name} imageUrl={p.image_url} icon={p.icon} tone="ink" />
                                 <span className="flex-1 min-w-0 flex flex-col gap-1.5">
                                   <span className="flex justify-between items-center gap-2">
                                     <span className="text-[15px] font-extrabold truncate">{p.name}</span>
@@ -426,7 +427,7 @@ export default function DashboardMetricasPage() {
                     ) : (
                       <div className="flex flex-col gap-5">
                         <div className="flex items-center gap-3.5">
-                          <ProductAvatar name={product.name} imageUrl={product.image_url} />
+                          <ProductAvatar name={product.name} imageUrl={product.image_url} icon={product.icon} />
                           <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                             <p className="text-lg font-black truncate">{product.name}</p>
                             <p className="text-[13px] font-bold text-fg-muted">{period.label}</p>

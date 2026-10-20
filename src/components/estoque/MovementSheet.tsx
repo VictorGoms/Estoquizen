@@ -8,6 +8,7 @@ import { XIcon } from "@/components/ui/icons";
 interface SheetProduct extends MovementProduct {
   name: string;
   image_url: string | null;
+  icon?: string | null;
 }
 
 interface MovementSheetProps {
@@ -52,7 +53,7 @@ export default function MovementSheet({ product, onClose, onDone }: MovementShee
       <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto overscroll-contain bg-surface rounded-t-5xl px-5 pt-3 pb-[calc(20px+env(safe-area-inset-bottom))] flex flex-col gap-4 animate-fade-up">
         <span aria-hidden="true" className="mx-auto w-10 h-1.5 rounded-full bg-white/15" />
         <div className="flex items-center gap-3">
-          <ProductAvatar name={product.name} imageUrl={product.image_url} />
+          <ProductAvatar name={product.name} imageUrl={product.image_url} icon={product.icon} />
           <div className="flex-1 min-w-0">
             <h2 id="movement-sheet-title" className="text-[17px] font-black truncate">{product.name}</h2>
             <p className="text-[13px] font-bold text-fg-muted">Registrar entrada ou saída</p>

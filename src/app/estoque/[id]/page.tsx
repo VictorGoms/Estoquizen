@@ -12,6 +12,9 @@ import BarcodeScanner from "@/components/ui/BarcodeScanner";
 import FormField, { inputClass } from "@/components/ui/FormField";
 import StatusChip from "@/components/estoque/StatusChip";
 import MovementForm from "@/components/estoque/MovementForm";
+import IconPicker from "@/components/estoque/IconPicker";
+import { iconeDoProduto, urlIcone, ehFotoDeEmbalagem } from "@/lib/iconeProduto";
+import { productInitials } from "@/lib/stock";
 import { supabase } from "@/lib/supabase";
 import { dbErrorPt } from "@/lib/dbMessages";
 import { getWorkspace } from "@/hooks/useWorkspace";
@@ -41,6 +44,7 @@ interface Product {
   category: string | null;
   supplier: string | null;
   image_url:   string | null;
+  icon:        string | null;
   nota_fiscal: string | null;
   created_at:  string;
 }
@@ -79,6 +83,9 @@ export default function ItemDetailPage() {
 
   /* ── image upload ── */
   const [imgUploading, setImgUploading] = useState(false);
+  /* Escolha do ícone (EQZ-30) */
+  const [iconeAberto, setIconeAberto]   = useState(false);
+  const [iconeSalvando, setIconeSalvando] = useState(false);
 
   /* ── delete ── */
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -108,7 +115,7 @@ export default function ItemDetailPage() {
 
       const { data, error: err } = await supabase
         .from("products")
-        .select("id, name, code, unit, price, cost, qty, min_qty, max_qty, location, category, supplier, image_url, nota_fiscal, created_at")
+        .select("id, name, code, unit, price, cost, qty, min_qty, max_qty, location, category, supplier, image_url, icon, nota_fiscal, created_at")
         .eq("id", id)
         .eq("workspace_id", ws.id)
         .single();
@@ -261,6 +268,24 @@ export default function ItemDetailPage() {
     }
   }
 
+  /* Ícone escolhido à mão (null = automático pelo nome; "nenhum" = só iniciais) ou remover a foto */
+  async function salvarImagem(campos: { icon?: string | null; image_url?: null }) {
+    if (!product) return;
+    setIconeSalvando(true);
+    setActionError("");
+    try {
+      await api.patch(`/products/${product.id}`, campos);
+      setProduct((p) => p ? { ...p, ...campos } : p);
+      const ws = getWorkspace();
+      if (ws) mutateProducts(ws.id);
+      if ("icon" in campos) setIconeAberto(false);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Não foi possível salvar o ícone.");
+    } finally {
+      setIconeSalvando(false);
+    }
+  }
+
   async function handleNfDetect(scannedCode: string) {
     if (!product) return;
     setNfScanning(false);
@@ -345,22 +370,41 @@ export default function ItemDetailPage() {
                 <div className="relative h-[220px] lg:h-[280px] rounded-4xl overflow-hidden bg-surface-2 flex items-center justify-center">
                   {product.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="w-20 h-20 rounded-full bg-ink text-fg-muted flex items-center justify-center">
-                      <BoxIcon className="w-9 h-9" strokeWidth={1.6} />
-                    </span>
-                  )}
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className={ehFotoDeEmbalagem(product.image_url) ? "w-full h-full object-contain bg-white p-4" : "w-full h-full object-cover"}
+                    />
+                  ) : (() => {
+                    const icone = iconeDoProduto(product.name, product.icon);
+                    return (
+                      <span className="w-28 h-28 rounded-full bg-ink flex items-center justify-center text-3xl font-black text-fg">
+                        {icone
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={urlIcone(icone)} alt="" className="w-[66%] h-[66%]" />
+                          : product.icon === "nenhum" ? productInitials(product.name) : <BoxIcon className="w-10 h-10 text-fg-muted" strokeWidth={1.6} />}
+                      </span>
+                    );
+                  })()}
                   {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={imgUploading}
-                      className="absolute bottom-3.5 right-3.5 flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-ink/85 text-fg text-sm font-extrabold cursor-pointer hover:bg-ink transition-colors disabled:cursor-not-allowed"
-                    >
-                      {imgUploading ? <Spinner className="w-[18px] h-[18px]" /> : <CameraIcon className="w-[18px] h-[18px]" />}
-                      {imgUploading ? "Enviando…" : product.image_url ? "Trocar foto" : "Adicionar foto"}
-                    </button>
+                    <div className="absolute bottom-3.5 right-3.5 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIconeAberto(true)}
+                        className="flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-ink/85 text-fg text-sm font-extrabold cursor-pointer hover:bg-ink transition-colors"
+                      >
+                        Ícone
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={imgUploading}
+                        className="flex items-center gap-2 min-h-[44px] px-4 rounded-full bg-ink/85 text-fg text-sm font-extrabold cursor-pointer hover:bg-ink transition-colors disabled:cursor-not-allowed"
+                      >
+                        {imgUploading ? <Spinner className="w-[18px] h-[18px]" /> : <CameraIcon className="w-[18px] h-[18px]" />}
+                        {imgUploading ? "Enviando…" : product.image_url ? "Trocar foto" : "Adicionar foto"}
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -626,6 +670,18 @@ export default function ItemDetailPage() {
           subtitle="Aponte para o código de barras da NF-e"
           onDetect={handleNfDetect}
           onClose={() => setNfScanning(false)}
+        />
+      )}
+
+      {iconeAberto && product && (
+        <IconPicker
+          nome={product.name}
+          atual={product.icon}
+          temFoto={!!product.image_url}
+          salvando={iconeSalvando}
+          onEscolher={(valor) => salvarImagem({ icon: valor })}
+          onRemoverFoto={() => salvarImagem({ image_url: null })}
+          onFechar={() => setIconeAberto(false)}
         />
       )}
 
