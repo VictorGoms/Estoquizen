@@ -11,6 +11,8 @@ interface WorkspaceCardProps {
   role: string;
   description?: string;
   memberCount?: number;
+  /* Ex.: "Cancelado": workspace bloqueado pela assinatura (abre a tela de bloqueio) */
+  aviso?: string;
   selected: boolean;
   onSelect: () => void;
 }
@@ -20,6 +22,7 @@ export default function WorkspaceCard({
   role,
   description,
   memberCount,
+  aviso,
   selected,
   onSelect,
 }: WorkspaceCardProps) {
@@ -44,6 +47,11 @@ export default function WorkspaceCard({
           <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${selected ? "bg-ink/10" : "bg-surface-2 text-fg-soft"}`}>
             {ROLE_LABEL[role] ?? role}
           </span>
+          {aviso && (
+            <span className={`text-xs font-black px-2.5 py-0.5 rounded-full ${selected ? "bg-zero/20 text-ink" : "bg-zero/15 text-zero"}`}>
+              {aviso}
+            </span>
+          )}
         </span>
         {description && <span className={`text-sm font-bold truncate ${muted}`}>{description}</span>}
         {memberCount !== undefined && (

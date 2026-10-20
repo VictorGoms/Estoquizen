@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import SessionGuard from "@/components/SessionGuard";
+import WorkspaceGate from "@/components/WorkspaceGate";
 import { UserProvider } from "@/lib/userContext";
 
 const PUBLIC_PATHS = ["/", "/login", "/register", "/register-company", "/plan-selection", "/auth/callback", "/forgot-password", "/reset-password", "/convite-invalido", "/set-password", "/aceitar-convite"];
@@ -13,7 +14,9 @@ export default function SessionGuardWrapper({ children }: { children: React.Reac
   if (isPublic) return <>{children}</>;
   return (
     <UserProvider>
-      <SessionGuard>{children}</SessionGuard>
+      <SessionGuard>
+        <WorkspaceGate>{children}</WorkspaceGate>
+      </SessionGuard>
     </UserProvider>
   );
 }

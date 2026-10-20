@@ -116,12 +116,14 @@ components/
   # Sessão
   SessionGuard.tsx          — verifica sessão + inatividade, redireciona para /login
   SessionGuardWrapper.tsx   — wrapper client para usar SessionGuard no layout.tsx
+  WorkspaceGate.tsx         — workspace com assinatura encerrada (trial_expired, canceled, deleted): as páginas internas viram a tela de bloqueio; ficam abertas /select-workspace, /perfil e /configuracoes
 
   auth/
     AuthLayout.tsx / Divider.tsx / InputField.tsx / PasswordField.tsx / PrimaryButton.tsx / SocialButton.tsx
 
   dashboard/
     DashboardSidebar.tsx / DashboardTopBar.tsx / BottomNav.tsx / TrialBanner.tsx
+    AssinaturaBloqueada.tsx — tela de workspace bloqueado: motivo, até quando os dados ficam (expired_at + 30 dias), assinar de novo (escolha do plano, só owner) e exportar (owner/admin)
 
   estoque/
     StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
@@ -159,6 +161,7 @@ components/
 - **`useForecast.ts`** — saídas de 30 dias por produto (RPC `stock_forecast`); a previsão é `previsaoDias`/`consumoDiario` em `lib/stock.ts`
 - **`useLastOutflow.ts`** — última saída de cada produto (RPC `stock_last_outflow`); "parado" é `estaParado` em `lib/stock.ts` (estoque > 0, cadastro e última saída há 60+ dias). Growth e Pro
 - **`useStockCounts.ts`** — contagens dos últimos 90 dias (tabela `stock_counts`); a escolha do dia, a sequência e a confiabilidade ficam em `lib/contagem.ts`
+- **`useSubscription.ts`** — assinatura do workspace pela API (`/billing/subscription`, a tabela não é lida direto); `estaBloqueada` (mesma regra do `workspace_is_writable`), `guardadoAte` (fim + 30 dias, prazo do job de limpeza)
 - **`useProducts.ts`** — lista de produtos paginada de 1000 em 1000; `mutateProducts` também invalida a contagem e a previsão
 
 ## Segurança (next.config.ts)

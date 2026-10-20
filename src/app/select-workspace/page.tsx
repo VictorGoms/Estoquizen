@@ -11,6 +11,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import { setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
+import { estaBloqueada, type Subscription } from "@/hooks/useSubscription";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
 const PlusIcon = () => (
@@ -54,6 +55,8 @@ export default function SelectWorkspacePage() {
   const [selectedId, setSelectedId]   = useState<string | null>(null);
   const [accepting, setAccepting]     = useState<string | null>(null);
   const [checkoutStatus, setCheckoutStatus] = useState<"success" | "canceled" | null>(null);
+  /* Selo dos workspaces bloqueados pela assinatura (a tabela subscriptions só é lida pela API) */
+  const [avisos, setAvisos] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -90,6 +93,25 @@ export default function SelectWorkspacePage() {
   }
 
   useEffect(() => { load(); }, [router]);
+
+  useEffect(() => {
+    const ids = workspaces.map((w) => w.workspaces?.id).filter((id): id is string => !!id);
+    if (ids.length === 0) return;
+    let vivo = true;
+    Promise.all(ids.map((id) =>
+      api.get<Subscription>(`/billing/subscription?workspace_id=${id}`).then((s) => [id, s] as const).catch(() => null),
+    )).then((rows) => {
+      if (!vivo) return;
+      const a: Record<string, string> = {};
+      for (const r of rows) {
+        if (!r || !estaBloqueada(r[1])) continue;
+        const s = r[1];
+        a[r[0]] = s.status === "canceled" ? "Cancelado" : s.status === "deleted" ? "Em exclusão" : s.trial_ends_at ? "Teste encerrado" : "Pagamento pendente";
+      }
+      setAvisos(a);
+    });
+    return () => { vivo = false; };
+  }, [workspaces]);
 
   async function handleAccept(row: PendingRow) {
     if (!row.workspaces) return;
@@ -207,6 +229,7 @@ export default function SelectWorkspacePage() {
                           name={w.workspaces.name}
                           role={role}
                           description={w.workspaces.description ?? ""}
+                          aviso={avisos[w.workspaces.id]}
                           selected={selectedId === w.workspaces.id}
                           onSelect={() => setSelectedId((p) => p === w.workspaces!.id ? null : w.workspaces!.id)}
                         />

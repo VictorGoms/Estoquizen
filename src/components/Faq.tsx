@@ -31,7 +31,7 @@ const PERGUNTAS = [
   },
   {
     q: "Como funciona o teste grátis?",
-    a: "O plano Growth tem 14 dias grátis, sem cartão. No fim do teste, você escolhe um plano para continuar. Se não escolher, nada é cobrado e o estoque fica disponível só para consulta e exportação.",
+    a: "O plano Growth tem 14 dias grátis, sem cartão. No fim do teste, você escolhe um plano para continuar. Se não escolher, nada é cobrado: o workspace fica bloqueado, mas você ainda exporta os dados em planilha por 30 dias.",
   },
   {
     q: "Tem fidelidade ou multa para cancelar?",
@@ -39,7 +39,7 @@ const PERGUNTAS = [
   },
   {
     q: "Se eu cancelar, levo meus dados?",
-    a: "Sim. Você exporta produtos e movimentações em planilha quando quiser, inclusive depois de cancelar. Os dados ficam guardados por 30 dias depois do fim da assinatura, e ninguém é excluído sem aviso por e-mail antes.",
+    a: "Sim. Você exporta produtos e movimentações em planilha quando quiser, inclusive depois de cancelar. Depois do fim da assinatura o workspace fica bloqueado, mas os dados ficam guardados por 30 dias para exportar ou assinar de novo, e ninguém é excluído sem aviso por e-mail antes.",
   },
 ];
 
