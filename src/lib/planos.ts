@@ -1,8 +1,8 @@
 /*
  * Planos à venda: o que aparece na escolha de plano (/plan-selection) e nos preços da landing.
  * Os limites seguem o PLAN_INFO (usePlan.ts) e a tabela fechada pelo João em 2026-10-17 (EQZ-27).
- * Os preços são os que o Stripe cobra hoje: os novos (Basic R$ 24,90, Growth R$ 39,90) entram com
- * a EQZ-11, junto com os preços novos no Stripe. Mudou aqui? Mude no Stripe também.
+ * Preços da EQZ-11 (Basic R$ 24,90, Growth R$ 39,90, Pro R$ 59,90), os mesmos dos preços do Stripe
+ * (STRIPE_PRICE_* no Railway) desde 2026-10-20. Mudou aqui? Mude no Stripe também.
  */
 
 export type PlanoId = "basic" | "growth" | "pro";
@@ -33,7 +33,7 @@ export const PLANOS: PlanoVenda[] = [
   {
     id: "basic",
     name: "Basic",
-    price: "R$ 19,90",
+    price: "R$ 24,90",
     priceNote: "/mês",
     description: "Para começar sem complicação",
     highlighted: false,
@@ -46,7 +46,7 @@ export const PLANOS: PlanoVenda[] = [
   {
     id: "growth",
     name: "Growth",
-    price: "R$ 29,90",
+    price: "R$ 39,90",
     priceNote: "/mês",
     description: "Para negócios em crescimento",
     highlighted: true,
