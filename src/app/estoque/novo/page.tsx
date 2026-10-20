@@ -19,7 +19,8 @@ import { api } from "@/lib/api";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
-const UNITS = ["un", "kg", "g", "L", "ml", "cx", "pct"];
+/* Lista única de unidades (decisão de 2026-10-17); só os botões, sem digitar */
+const UNITS = ["un", "kg", "g", "L", "ml", "cx", "pct", "peça", "par", "fardo", "saco", "garrafa", "m"];
 
 /* Nome e foto da embalagem pelo código de barras no Open Food Facts (foto: licença CC BY-SA,
    crédito em /licencas) */
@@ -349,37 +350,27 @@ function NovoItemContent() {
                   <input id="novo-minimo" type="text" inputMode="decimal" autoComplete="off" value={minQty} onChange={(e) => setMinQty(e.target.value)} placeholder="0" className={inputClass} />
                 </FormField>
               </div>
-              <FormField label="Unidade" htmlFor="novo-unidade">
-                <div className="flex flex-col gap-2.5">
-                  <div role="group" aria-label="Unidades comuns" className="flex flex-wrap gap-2">
-                    {UNITS.map((u) => {
-                      const active = unit === u;
-                      return (
-                        <button
-                          key={u}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => setUnit(u)}
-                          className={`min-h-[40px] min-w-[52px] px-3.5 rounded-full text-sm cursor-pointer transition-colors ${
-                            active ? "bg-inverse text-ink font-black" : "bg-surface-2 text-fg-soft font-extrabold hover:text-fg"
-                          }`}
-                        >
-                          {u}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <input
-                    id="novo-unidade"
-                    type="text"
-                    autoComplete="off"
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    placeholder="Outra unidade (ex.: fardo)"
-                    className={inputClass}
-                  />
+              <div className="flex flex-col gap-2 min-w-0">
+                <span id="novo-unidade" className="text-[13px] font-extrabold text-fg-muted">Unidade</span>
+                <div role="group" aria-labelledby="novo-unidade" className="flex flex-wrap gap-2">
+                  {UNITS.map((u) => {
+                    const active = unit === u;
+                    return (
+                      <button
+                        key={u}
+                        type="button"
+                        aria-pressed={active}
+                        onClick={() => setUnit(u)}
+                        className={`min-h-[40px] min-w-[52px] px-3.5 rounded-full text-sm cursor-pointer transition-colors ${
+                          active ? "bg-inverse text-ink font-black" : "bg-surface-2 text-fg-soft font-extrabold hover:text-fg"
+                        }`}
+                      >
+                        {u}
+                      </button>
+                    );
+                  })}
                 </div>
-              </FormField>
+              </div>
             </Section>
 
             <Section title="Valores e localização">
