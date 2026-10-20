@@ -2,6 +2,7 @@
 
 ## Stack
 - Framework: Next.js 16 (App Router, `"use client"` onde necessário) + React 19 (o `react-is` do Recharts é forçado na mesma versão pelo `overrides` do package.json)
+- Testes: `npm test` (Vitest, `src/lib/*.test.ts`: estoque, planilha, nota, ícones, ramos). A CI do GitHub (`.github/workflows/ci.yml`) roda tipos, lint e testes em cada push; o build continua na Vercel. Mexeu numa regra de `src/lib`? Atualize ou crie o teste
 - Lint: `npm run lint` (ESLint 9, `eslint.config.mjs` com as regras do Next 16). `react-hooks/set-state-in-effect` fica como aviso, porque ler `Date.now()`/`localStorage`/`window` num `useEffect` é o padrão do projeto (ver "Regras críticas de React")
 - Estilo: TailwindCSS v4. O tema fica no bloco `@theme` de `src/app/globals.css` (não existe mais `tailwind.config.ts`); lá também ficam os padrões do v3 mantidos de propósito (cor de borda e de placeholder, cursor dos botões, altura de linha fixa dos `text-*`)
 - Linguagem: TypeScript strict

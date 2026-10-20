@@ -20,12 +20,10 @@ import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
 import ProductAvatar from "@/components/estoque/ProductAvatar";
 import { api } from "@/lib/api";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
-import { ordenarUnidades } from "@/lib/segmentos";
+import { ordenarUnidades, UNIDADES as UNITS } from "@/lib/segmentos";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
-/* Lista única de unidades (decisão de 2026-10-17); só os botões, sem digitar. O ramo do workspace
-   (EQZ-13) só muda a ordem dos atalhos */
-const UNITS = ["un", "kg", "g", "L", "ml", "cx", "pct", "peça", "par", "fardo", "saco", "garrafa", "m"];
+/* A lista única de unidades fica em lib/segmentos.ts; o ramo do workspace (EQZ-13) só muda a ordem */
 
 /* Nome e foto da embalagem pelo código de barras no Open Food Facts (foto: licença CC BY-SA,
    crédito em /licencas) */

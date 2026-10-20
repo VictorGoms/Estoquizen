@@ -7,6 +7,9 @@
  * Os nomes dos itens batem com o dicionário de ícones (iconeProduto.ts), então já aparecem com ícone.
  */
 
+/** Lista única de unidades (decisão de 2026-10-17); o cadastro mostra só estes botões, sem digitar */
+export const UNIDADES = ["un", "kg", "g", "L", "ml", "cx", "pct", "peça", "par", "fardo", "saco", "garrafa", "m"];
+
 export type Segmento = "mercearia" | "bar" | "buffet" | "roupas" | "pet" | "oficina" | "outro";
 
 export interface ItemModelo {
