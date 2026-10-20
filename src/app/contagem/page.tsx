@@ -100,7 +100,7 @@ export default function ContagemPage() {
   }
 
   if (role === null || planLoading) return <PageLoader />;
-  if (!can(role, "canEditEstoque")) return <AccessDenied />;
+  if (!can(role, "canMovimentar")) return <AccessDenied />;
   if (plan && !liberado) {
     return (
       <PlanUpsell

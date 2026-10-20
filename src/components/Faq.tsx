@@ -15,7 +15,7 @@ const PERGUNTAS = [
   },
   {
     q: "Meu funcionário consegue usar?",
-    a: "Sim. Convide por e-mail e cada pessoa entra com a própria conta. Quem você deixa como administrador registra entradas e saídas, lê notas e cuida dos produtos; quem fica como membro só consulta o estoque. Cada movimentação guarda quem fez.",
+    a: "Sim. Convide por e-mail e cada pessoa entra com a própria conta. Quem fica como membro registra entradas, saídas e a contagem do dia, sem mexer no cadastro dos produtos; quem você deixa como administrador também cadastra produtos, lê notas e cuida da equipe. Cada movimentação guarda quem fez.",
   },
   {
     q: "O Estoquizen emite nota fiscal?",

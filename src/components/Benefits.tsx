@@ -35,7 +35,7 @@ const SMALL = [
   {
     Icon: UsersIcon,
     title: "Equipe com permissões",
-    text: "Convide por e-mail e escolha quem administra e quem só consulta o estoque.",
+    text: "Convide por e-mail: o administrador cuida dos produtos e o funcionário registra entradas e saídas.",
   },
   {
     Icon: LayersIcon,

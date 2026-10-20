@@ -27,12 +27,12 @@ const ROLES: Array<{ id: Role; label: string; description: string }> = [
   {
     id: "admin",
     label: "Administrador",
-    description: "Cuida do estoque, das notas fiscais, das métricas e da equipe.",
+    description: "Cadastra produtos, lê notas fiscais, vê as métricas e cuida da equipe.",
   },
   {
     id: "member",
     label: "Membro",
-    description: "Consulta o estoque e as métricas, sem editar.",
+    description: "Registra entradas, saídas e a contagem do dia, sem cadastrar ou editar produtos.",
   },
 ];
 

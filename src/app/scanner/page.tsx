@@ -39,7 +39,9 @@ const REASON_FALLBACK: Record<MovementType, string> = {
 export default function ScannerPage() {
   const router  = useRouter();
   const role    = useRole();
+  /* Entrada e saída: todos os papéis (SCRUM-62). Cadastrar o código novo: só dono e admin */
   const canEdit = can(role, "canEditEstoque");
+  const canMove = can(role, "canMovimentar");
 
   const [step, setStep]               = useState<Step>("scanning");
   const [mode, setMode]               = useState<MovementType>("entrada");
@@ -152,12 +154,6 @@ export default function ScannerPage() {
           })}
         </div>
 
-        {role !== null && !canEdit && (
-          <p className="text-sm font-bold text-fg-muted bg-surface rounded-3xl p-4">
-            Seu papel neste workspace é de leitura: dá para consultar produtos pelo código, mas entradas e saídas ficam com donos e administradores.
-          </p>
-        )}
-
         {step === "scanning" && (
           looking ? (
             <div className="h-[260px] rounded-5xl bg-surface flex items-center justify-center gap-3 text-fg-muted font-bold">
@@ -194,7 +190,7 @@ export default function ScannerPage() {
               </div>
               <StatusChip status={deriveStatus(product.qty, product.min_qty)} />
             </div>
-            {canEdit ? (
+            {canMove ? (
               <MovementForm
                 key={product.id}
                 product={product}
@@ -267,6 +263,9 @@ export default function ScannerPage() {
                 >
                   Cadastrar produto com este código
                 </Link>
+              )}
+              {role !== null && !canEdit && !errorMsg && (
+                <p className="text-[13px] font-bold text-fg-muted">Peça a um dono ou administrador para cadastrar este produto.</p>
               )}
             </div>
           </section>

@@ -34,8 +34,8 @@ interface MemberData {
 
 const ROLE_CONFIG: Record<Role, { label: string; desc: string }> = {
   owner:  { label: "Proprietário",  desc: "Acesso total: membros, plano e configurações." },
-  admin:  { label: "Administrador", desc: "Estoque, notas fiscais, métricas e equipe." },
-  member: { label: "Membro",        desc: "Consulta o estoque e as métricas, sem editar." },
+  admin:  { label: "Administrador", desc: "Produtos, notas fiscais, métricas e equipe." },
+  member: { label: "Membro",        desc: "Entradas, saídas e contagem do dia, sem editar produtos." },
 };
 
 const STATUS_OPTIONS: Array<{ id: Status; label: string; dot: string }> = [

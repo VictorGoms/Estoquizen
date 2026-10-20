@@ -11,6 +11,9 @@ import FormField, { inputClass } from "@/components/ui/FormField";
 import { supabase } from "@/lib/supabase";
 import { sanitizeCode } from "@/lib/sanitize";
 import { getWorkspace } from "@/hooks/useWorkspace";
+import { useRole, can } from "@/hooks/useRole";
+import AccessDenied from "@/components/ui/AccessDenied";
+import PageLoader from "@/components/ui/PageLoader";
 import { mutateProducts } from "@/hooks/useProducts";
 import { useProductLimit } from "@/hooks/useProductLimit";
 import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
@@ -64,6 +67,7 @@ function Section({ title, aside, children }: { title: string; aside?: string; ch
 
 function NovoItemContent() {
   const router       = useRouter();
+  const role         = useRole();
   const searchParams = useSearchParams();
   const [wsName, setWsName]     = useState("");
   const [wsId, setWsId]         = useState<string | null>(null);
@@ -263,6 +267,10 @@ function NovoItemContent() {
       setSaving(false);
     }
   }
+
+  /* Cadastrar produto é de dono e admin (SCRUM-62); a API e o banco também recusam */
+  if (role === null) return <PageLoader />;
+  if (!can(role, "canEditEstoque")) return <AccessDenied />;
 
   return (
     <div className="min-h-screen bg-ink">

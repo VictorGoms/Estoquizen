@@ -5,7 +5,8 @@ import { getWorkspace, type WorkspaceRole } from "./useWorkspace";
 
 export type { WorkspaceRole };
 
-/** Permissões por role */
+/** Permissões por role. canMovimentar (entrada, saída e contagem do dia) é de todos desde o
+ *  SCRUM-62; canEditEstoque é cadastrar, editar, excluir e importar produto. */
 export const PERMISSIONS = {
   owner: {
     canAccessNota:          true,
@@ -13,6 +14,7 @@ export const PERMISSIONS = {
     canGerenciarAssinatura: true,
     canExcluirWorkspace:    true,
     canEditEstoque:         true,
+    canMovimentar:          true,
     canAddMembro:           true,
     canEditMembro:          true,
     canEditOwnerRole:       true,
@@ -23,6 +25,7 @@ export const PERMISSIONS = {
     canGerenciarAssinatura: false,
     canExcluirWorkspace:    false,
     canEditEstoque:         true,
+    canMovimentar:          true,
     canAddMembro:           true,
     canEditMembro:          true,
     canEditOwnerRole:       false,
@@ -33,6 +36,7 @@ export const PERMISSIONS = {
     canGerenciarAssinatura: false,
     canExcluirWorkspace:    false,
     canEditEstoque:         false,
+    canMovimentar:          true,
     canAddMembro:           false,
     canEditMembro:          false,
     canEditOwnerRole:       false,

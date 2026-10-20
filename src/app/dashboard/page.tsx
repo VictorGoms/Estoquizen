@@ -105,8 +105,8 @@ export default function DashboardPage() {
   /* "R$ parados" (EQZ-18, Growth e Pro): estoque sem saída há 60 dias */
   const temParados  = !!planInfo(plan)?.parados;
   const ultimaSaida = useLastOutflow(wsId, temParados);
-  /* Contagem do dia (EQZ-17, Growth e Pro, quem edita estoque) */
-  const temContagem = !!planInfo(plan)?.contagemDoDia && can(role, "canEditEstoque");
+  /* Contagem do dia (EQZ-17, Growth e Pro; qualquer papel desde o SCRUM-62) */
+  const temContagem = !!planInfo(plan)?.contagemDoDia && can(role, "canMovimentar");
   const { contagens } = useStockCounts(wsId, temContagem);
 
   /* ── Cache SWR: dados aparecem instantâneo ao voltar ao dashboard ── */

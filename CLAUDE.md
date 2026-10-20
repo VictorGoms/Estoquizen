@@ -74,9 +74,12 @@ Apenas 3: `owner`, `admin`, `member`
 | canGerenciarAssinatura  | ✓     | ✗     | ✗      |
 | canExcluirWorkspace     | ✓     | ✗     | ✗      |
 | canEditEstoque          | ✓     | ✓     | ✗      |
+| canMovimentar           | ✓     | ✓     | ✓      |
 | canAddMembro            | ✓     | ✓     | ✗      |
 | canEditMembro           | ✓     | ✓     | ✗      |
 | canEditOwnerRole        | ✓     | ✗     | ✗      |
+
+`canMovimentar` (SCRUM-62, 2026-10-20): entrada, saída (scanner, botão ±, painel e tela do produto) e contagem do dia, para todos os papéis. `canEditEstoque` é cadastrar, editar, excluir e importar produto (planilha e nota): a API e as policies do banco também recusam o membro.
 
 ## Navegação implementada
 - `/`                    — Landing page
@@ -90,7 +93,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/dashboard-metricas`  — Métricas
 - `/estoque`             — Lista de produtos
 - `/estoque/[id]`        — Detalhe do produto (com histórico)
-- `/estoque/novo`        — Cadastro de produto
+- `/estoque/novo`        — Cadastro de produto (owner/admin)
 - `/estoque/importar`    — Importar planilha (owner/admin): CSV ou Excel (.xlsx), colunas adivinhadas pelo cabeçalho e trocáveis, prévia com erro por linha, pula o que já existe (código ou, sem código, nome) e corta no limite do plano
 - `/nota`                — Input de NF-e
 - `/nota/revisao`        — Revisão da NF-e
@@ -101,7 +104,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/configuracoes`       — Configurações do workspace
 - `/notificacoes`        — Notificações
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
-- `/contagem`            — Contagem do dia (Growth/Pro; owner/admin): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
+- `/contagem`            — Contagem do dia (Growth/Pro; todos os papéis desde o SCRUM-62): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
 - `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
 - `/licencas`            — Licenças (pública): aviso MIT dos ícones Fluent Emoji e crédito do Open Food Facts (CC BY-SA)
 - `/perfil`              — Perfil do usuário; "E-mail de acesso" troca o e-mail (`updateUser({ email })`, link de confirmação volta em `/perfil?email=confirmado`; conta só do Google não troca)

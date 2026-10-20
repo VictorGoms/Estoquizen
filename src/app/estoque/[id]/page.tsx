@@ -56,6 +56,7 @@ export default function ItemDetailPage() {
 
   const wsRole  = useRole();
   const canEdit = can(wsRole, "canEditEstoque");
+  const canMove = can(wsRole, "canMovimentar");
 
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const cancelDelRef  = useRef<HTMLButtonElement>(null);
@@ -595,13 +596,7 @@ export default function ItemDetailPage() {
                 <div className="flex items-center justify-between gap-3">
                   <h2 id="mov-title" className="text-lg lg:text-xl font-black">Registrar movimentação</h2>
                 </div>
-                {canEdit ? (
-                  <MovementForm key={product.id} product={product} onDone={handleMoved} />
-                ) : (
-                  <p className="text-sm font-bold text-fg-muted bg-surface-2 rounded-2xl p-4">
-                    Seu papel neste workspace é de leitura: entradas e saídas ficam com donos e administradores.
-                  </p>
-                )}
+                {canMove && <MovementForm key={product.id} product={product} onDone={handleMoved} />}
                 <p aria-live="polite" className="text-sm font-extrabold text-ok empty:hidden">{movMsg}</p>
               </section>
 

@@ -13,12 +13,15 @@ interface ProductPanelProps {
   product: Product;
   /** Dias até acabar pela média de saídas (EQZ-16); null sem histórico suficiente */
   previsao?: number | null;
+  /** Cadastro do produto (dono e admin) */
   canEdit: boolean;
+  /** Entrada e saída (todos os papéis) */
+  canMove: boolean;
   onMoved: (newQty: number, delta: number) => void;
 }
 
 /** Painel lateral do estoque no computador: detalhes do produto selecionado + entrada/saída. */
-export default function ProductPanel({ product, previsao = null, canEdit, onMoved }: ProductPanelProps) {
+export default function ProductPanel({ product, previsao = null, canEdit, canMove, onMoved }: ProductPanelProps) {
   const status = deriveStatus(product.qty, product.min_qty ?? 0);
   const level  = stockLevel(product.qty, product.min_qty ?? 0, product.max_qty);
 
@@ -38,13 +41,15 @@ export default function ProductPanel({ product, previsao = null, canEdit, onMove
           <h2 className="text-[21px] font-black leading-tight">{product.name}</h2>
           <span className="text-[13px] font-bold text-fg-muted tracking-wide truncate">{product.code}</span>
         </div>
-        <Link
-          href={`/estoque/${product.id}`}
-          aria-label="Editar produto"
-          className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 hover:bg-white/10 transition-colors"
-        >
-          <PencilIcon className="w-[18px] h-[18px]" />
-        </Link>
+        {canEdit && (
+          <Link
+            href={`/estoque/${product.id}`}
+            aria-label="Editar produto"
+            className="w-11 h-11 rounded-full bg-surface-2 text-fg flex items-center justify-center shrink-0 hover:bg-white/10 transition-colors"
+          >
+            <PencilIcon className="w-[18px] h-[18px]" />
+          </Link>
+        )}
       </div>
 
       <div className="bg-surface-2 rounded-3xl p-[18px] flex flex-col gap-3">
@@ -65,13 +70,7 @@ export default function ProductPanel({ product, previsao = null, canEdit, onMove
         </div>
       </div>
 
-      {canEdit ? (
-        <MovementForm key={product.id} product={product} onDone={onMoved} />
-      ) : (
-        <p className="text-sm font-bold text-fg-muted bg-surface-2 rounded-2xl p-4">
-          Seu papel neste workspace é de leitura: entradas e saídas ficam com donos e administradores.
-        </p>
-      )}
+      {canMove && <MovementForm key={product.id} product={product} onDone={onMoved} />}
 
       <div className="flex flex-col">
         {info.map(([label, value]) => (
@@ -86,7 +85,7 @@ export default function ProductPanel({ product, previsao = null, canEdit, onMove
         href={`/estoque/${product.id}`}
         className="flex items-center justify-center gap-2 min-h-[48px] rounded-full bg-surface-2 text-fg text-[15px] font-extrabold hover:bg-white/10 transition-colors"
       >
-        Ver histórico e editar
+        {canEdit ? "Ver histórico e editar" : "Ver histórico"}
         <ArrowRightIcon className="w-[18px] h-[18px]" />
       </Link>
     </aside>

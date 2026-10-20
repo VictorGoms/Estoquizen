@@ -111,6 +111,7 @@ export default function EstoquePage() {
   const router  = useRouter();
   const role    = useRole();
   const canEdit = can(role, "canEditEstoque");
+  const canMove = can(role, "canMovimentar");
   const canNota = can(role, "canAccessNota");
 
   const [search, setSearch]         = useState("");
@@ -401,7 +402,7 @@ export default function EstoquePage() {
                           selected={p.id === selectedId}
                           previsao={previsaoDe(p)}
                           onOpen={() => openProduct(p.id)}
-                          onMove={canEdit ? () => setSheetId(p.id) : undefined}
+                          onMove={canMove ? () => setSheetId(p.id) : undefined}
                         />
                       </li>
                     ))}
@@ -412,6 +413,7 @@ export default function EstoquePage() {
                         product={selected}
                         previsao={previsaoDe(selected)}
                         canEdit={canEdit}
+                        canMove={canMove}
                         onMoved={(newQty, delta) => applyMovement(selected, newQty, delta)}
                       />
                     </div>
