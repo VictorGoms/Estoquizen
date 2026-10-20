@@ -14,6 +14,8 @@ import { exportProductsCsv, exportMovementsCsv } from "@/lib/exportCsv";
 import AccessDenied from "@/components/ui/AccessDenied";
 import FormField, { inputClass } from "@/components/ui/FormField";
 import { CheckIcon, Spinner } from "@/components/ui/icons";
+import { PLAN_INFO } from "@/hooks/usePlan";
+import { PLANOS } from "@/lib/planos";
 
 /* ─── Icons ─── */
 const ExternalIcon = () => (
@@ -30,6 +32,24 @@ const PLAN_CONFIG: Record<Plan, { label: string; limit: string; color: string; b
   growth: { label: "Growth", limit: "até 300 produtos",   color: "#93C5FD", bg: "rgba(37,99,235,0.12)",   border: "rgba(59,130,246,0.25)" },
   pro:    { label: "Pro",    limit: "até 2000 produtos",  color: "#FCD34D", bg: "rgba(217,119,6,0.12)",   border: "rgba(245,158,11,0.25)" },
 };
+
+const ORDEM: Plan[] = ["basic", "growth", "pro"];
+const fmt = (n: number) => n.toLocaleString("pt-BR");
+const periodo = (dias: number) => (dias >= 365 ? "12 meses" : dias >= 90 ? "3 meses" : `${dias} dias`);
+
+/** O que muda ao descer de plano: limites menores e recursos que deixam de existir. */
+function perdas(de: Plan, para: Plan): string[] {
+  const a = PLAN_INFO[de], b = PLAN_INFO[para];
+  const l: string[] = [];
+  if (b.produtos < a.produtos) l.push(`Até ${fmt(b.produtos)} produtos (hoje: até ${fmt(a.produtos)})`);
+  if (b.membros !== null && (a.membros === null || b.membros < a.membros)) l.push(`Equipe de até ${b.membros} pessoas`);
+  if (b.notasPorMes !== null && a.notasPorMes === null) l.push(`Ler nota de compra: ${b.notasPorMes} por mês`);
+  if (b.metricasDias < a.metricasDias) l.push(`Métricas só dos últimos ${periodo(b.metricasDias)}`);
+  if (a.contagemDoDia && !b.contagemDoDia) l.push("Sem a contagem do dia");
+  if (a.parados && !b.parados) l.push("Sem o dinheiro parado em estoque");
+  if (a.historicoPorPessoa && !b.historicoPorPessoa) l.push("Sem o histórico por funcionário");
+  return l;
+}
 
 interface Workspace {
   id: string;
@@ -60,6 +80,8 @@ export default function ConfiguracoesPage() {
   const [userName, setUserName] = useState("");
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [productCount, setProductCount] = useState(0);
+  /* Ativos + convites pendentes, como a API conta. null se não deu para ler */
+  const [memberCount, setMemberCount]   = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [editName, setEditName] = useState("");
@@ -70,6 +92,9 @@ export default function ConfiguracoesPage() {
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [upgradingTo, setUpgradingTo]   = useState<Plan | null>(null);
+  const [planError, setPlanError]       = useState("");
+  /* Descer de plano pede confirmação na tela (subir já mostra o valor no Stripe) */
+  const [confirmando, setConfirmando]   = useState<Plan | null>(null);
   const [portalLoading, setPortalLoading] = useState<"manage" | "cancel" | null>(null);
   const [portalError, setPortalError]     = useState("");
 
@@ -94,10 +119,12 @@ export default function ConfiguracoesPage() {
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
       }
 
-      const [wsResult, countResult, subResult] = await Promise.all([
+      const [wsResult, countResult, subResult, membersResult] = await Promise.all([
         supabase.from("workspaces").select("id, name, description, plan").eq("id", ws.id).single(),
         supabase.from("products").select("*", { count: "exact", head: true }).eq("workspace_id", ws.id),
         api.get<Subscription | null>(`/billing/subscription?workspace_id=${ws.id}`).catch(() => null),
+        supabase.from("workspace_members").select("user_id", { count: "exact", head: true })
+          .eq("workspace_id", ws.id).in("status", ["ativo", "pendente"]),
       ]);
 
       if (wsResult.data) {
@@ -108,22 +135,26 @@ export default function ConfiguracoesPage() {
         setEditDesc(w.description ?? "");
       }
       setProductCount(countResult.count ?? 0);
+      setMemberCount(membersResult.error ? null : membersResult.count ?? 0);
       if (subResult) setSubscription(subResult);
       setLoading(false);
     }
     load();
   }, [router]);
 
+  /* Quem já paga recebe da API a tela de confirmação do portal (valor proporcional); os outros, o checkout */
   async function handleUpgrade(plan: Plan) {
     if (!workspace) return;
     setUpgradingTo(plan);
+    setPlanError("");
     try {
       const { url } = await api.post<{ url: string }>("/billing/checkout", {
         workspace_id: workspace.id,
         plan,
       });
-      window.location.href = url;
-    } catch {
+      window.location.assign(url);
+    } catch (err) {
+      setPlanError(err instanceof Error ? err.message : "Não foi possível trocar de plano. Tente novamente.");
       setUpgradingTo(null);
     }
   }
@@ -251,16 +282,6 @@ export default function ConfiguracoesPage() {
                   <span className="text-sm font-bold text-fg-muted">{plan.limit}</span>
                 </p>
               </div>
-              {workspace?.plan !== "pro" && can(wsRole, "canGerenciarAssinatura") && (
-                <button
-                  type="button"
-                  onClick={() => handleUpgrade(workspace?.plan === "basic" ? "growth" : "pro")}
-                  disabled={!!upgradingTo}
-                  className="min-h-[44px] px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-60"
-                >
-                  {upgradingTo ? "Aguarde…" : workspace?.plan === "basic" ? "Mudar para Growth" : "Mudar para Pro"}
-                </button>
-              )}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -293,6 +314,95 @@ export default function ConfiguracoesPage() {
                 Cancelamento agendado. O acesso completo continua até o fim do ciclo pago e os dados ficam guardados.
                 Para desfazer, use &quot;Gerenciar assinatura e pagamento&quot;.
               </p>
+            )}
+
+            {/* ── Trocar de plano: qualquer um, para cima ou para baixo. Descer só se o uso couber
+                   (a API confere também) e depois de ver o que muda ── */}
+            {can(wsRole, "canGerenciarAssinatura") && workspace && (
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-sm font-extrabold text-fg-muted">Trocar de plano</h3>
+                {ORDEM.filter((p) => p !== workspace.plan).map((p) => {
+                  const venda  = PLANOS.find((x) => x.id === p)!;
+                  const info   = PLAN_INFO[p];
+                  const descer = ORDEM.indexOf(p) < ORDEM.indexOf(workspace.plan);
+                  const aberto = confirmando === p;
+                  const bloqueios = [
+                    productCount > info.produtos
+                      && `Você tem ${fmt(productCount)} produtos e o ${info.label} vai até ${fmt(info.produtos)}: remova ${fmt(productCount - info.produtos)} antes de mudar.`,
+                    info.membros !== null && memberCount !== null && memberCount > info.membros
+                      && `A equipe tem ${memberCount} pessoas (com convites pendentes) e o ${info.label} vai até ${info.membros}: remova ${memberCount - info.membros} antes de mudar.`,
+                  ].filter(Boolean) as string[];
+
+                  return (
+                    <div key={p} className="bg-surface-2 rounded-4xl p-4 flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <p className="flex items-baseline gap-2">
+                            <span className="text-lg font-black">{info.label}</span>
+                            <span className="text-sm font-extrabold text-fg-muted">{venda.price}{venda.priceNote}</span>
+                          </p>
+                          <p className="text-[13px] font-bold text-fg-muted">
+                            Até {fmt(info.produtos)} produtos · {info.membros === null ? "equipe sem limite" : `equipe de até ${info.membros}`}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => (descer ? setConfirmando(aberto ? null : p) : handleUpgrade(p))}
+                          disabled={!!upgradingTo}
+                          aria-expanded={descer ? aberto : undefined}
+                          className={`min-h-[44px] px-5 rounded-full text-sm font-black cursor-pointer transition-[filter,background-color] disabled:opacity-60 ${
+                            descer ? "bg-ink hover:bg-panel" : "bg-accent text-ink hover:brightness-110"
+                          }`}
+                        >
+                          {upgradingTo === p ? "Aguarde…" : `Mudar para ${info.label}`}
+                        </button>
+                      </div>
+
+                      {descer && aberto && (
+                        <div className="flex flex-col gap-3 pt-3 border-t-2 border-dashed border-white/8">
+                          <div className="flex flex-col gap-1.5">
+                            <p className="text-sm font-extrabold">O que muda no {info.label}:</p>
+                            <ul className="flex flex-col gap-1">
+                              {perdas(workspace.plan, p).map((t) => (
+                                <li key={t} className="text-sm font-bold text-fg-muted">• {t}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          {bloqueios.length > 0 ? (
+                            <p role="alert" className="text-sm font-bold text-zero">{bloqueios.join(" ")}</p>
+                          ) : (
+                            <>
+                              {paying && (
+                                <p className="text-[13px] font-bold text-fg-subtle">
+                                  A mudança vale na hora. O valor não usado do plano atual vira crédito na próxima fatura.
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpgrade(p)}
+                                  disabled={!!upgradingTo}
+                                  className="min-h-[44px] px-5 rounded-full bg-inverse text-ink text-sm font-black cursor-pointer hover:brightness-95 transition-[filter] disabled:opacity-60"
+                                >
+                                  {upgradingTo === p ? "Aguarde…" : `Confirmar: mudar para ${info.label}`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmando(null)}
+                                  className="min-h-[44px] px-5 rounded-full text-sm font-extrabold text-fg-muted cursor-pointer hover:bg-white/5 hover:text-fg transition-colors"
+                                >
+                                  Voltar
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {planError && <p role="alert" className="text-sm font-bold text-zero">{planError}</p>}
+              </div>
             )}
 
             {!can(wsRole, "canGerenciarAssinatura") ? (
