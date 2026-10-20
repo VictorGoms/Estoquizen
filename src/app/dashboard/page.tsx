@@ -22,6 +22,7 @@ import { useLastOutflow } from "@/hooks/useLastOutflow";
 import { useStockCounts } from "@/hooks/useStockCounts";
 import { classesABC, itensDoDia, sequencia, diaBrasil } from "@/lib/contagem";
 import { useForecast } from "@/hooks/useForecast";
+import { useMemberNames } from "@/hooks/useMemberNames";
 import {
   ScanIcon, DocumentIcon, BoxIcon, PlusIcon, ArrowRightIcon, ArrowUpRightIcon, InIcon, OutIcon, CheckIcon,
 } from "@/components/ui/icons";
@@ -112,6 +113,15 @@ export default function DashboardPage() {
   const { products, loading: productsLoading } = useProducts(wsId);
   const forecast = useForecast(wsId);
   const { movements, loading: movLoading }     = useMovements(wsId, period);
+  /* Quem fez cada movimentação: "você" ou o primeiro nome da pessoa */
+  const nomes = useMemberNames(wsId);
+  const autor = (id: string | null) => {
+    if (!id) return "";
+    if (id === userId) return " · você";
+    if (!nomes) return "";
+    const nome = nomes.get(id);
+    return nome ? ` · ${nome.split(" ")[0]}` : " · ex-membro";
+  };
 
   useEffect(() => {
     const d = new Date();
@@ -517,7 +527,7 @@ export default function DashboardPage() {
                           <span className="text-[15px] font-extrabold truncate">{m.product.name}</span>
                         )}
                         <span className="text-[13px] font-bold text-fg-muted truncate">
-                          {what}{m.created_by && m.created_by === userId ? " · você" : ""}
+                          {what}{autor(m.created_by)}
                         </span>
                       </span>
                       <span className="flex flex-col sm:flex-row items-end sm:items-center gap-0.5 sm:gap-4 shrink-0">
