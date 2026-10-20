@@ -16,6 +16,7 @@ import FormField, { inputClass } from "@/components/ui/FormField";
 import { CheckIcon, Spinner } from "@/components/ui/icons";
 import { PLAN_INFO } from "@/hooks/usePlan";
 import { PLANOS } from "@/lib/planos";
+import Cancelamento from "@/components/configuracoes/Cancelamento";
 
 /* ─── Icons ─── */
 const ExternalIcon = () => (
@@ -68,6 +69,10 @@ interface Subscription {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   cancel_at_period_end: boolean;
+  /* Pausa da cobrança (EQZ-07): calculados pela API */
+  paused_until?: string | null;
+  pausada?: boolean;
+  pausa_disponivel?: boolean;
 }
 
 export default function ConfiguracoesPage() {
@@ -97,6 +102,8 @@ export default function ConfiguracoesPage() {
   const [confirmando, setConfirmando]   = useState<Plan | null>(null);
   const [portalLoading, setPortalLoading] = useState<"manage" | "cancel" | null>(null);
   const [portalError, setPortalError]     = useState("");
+  /* EQZ-07: a pergunta e a oferta antes do cancelamento do Stripe */
+  const [cancelando, setCancelando]       = useState(false);
 
   const [exporting, setExporting]   = useState<"produtos" | "movimentacoes" | null>(null);
   const [exportMsg, setExportMsg]   = useState("");
@@ -311,9 +318,16 @@ export default function ConfiguracoesPage() {
 
             {(justCanceled || scheduledCancel) && (
               <p role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 text-sm font-bold text-low leading-relaxed">
-                Cancelamento agendado. O acesso completo continua até o fim do ciclo pago; depois, o workspace fica só para
-                consulta e exportação por 30 dias e então é excluído.
+                Cancelamento agendado. O acesso completo continua até o fim do ciclo pago; depois, o workspace fica bloqueado
+                e os dados ficam guardados por 30 dias (dá para exportar) antes de serem excluídos.
                 Para desfazer, use &quot;Gerenciar assinatura e pagamento&quot;.
+              </p>
+            )}
+
+            {subscription?.pausada && !scheduledCancel && (
+              <p role="status" className="px-5 py-3.5 rounded-4xl bg-ok/10 text-sm font-bold text-ok leading-relaxed">
+                Cobrança pausada até {formatDate(subscription.paused_until)}. A mensalidade desse período não é cobrada e o
+                acesso continua normal. Depois a cobrança volta sozinha.
               </p>
             )}
 
@@ -335,7 +349,7 @@ export default function ConfiguracoesPage() {
                   ].filter(Boolean) as string[];
 
                   return (
-                    <div key={p} className="bg-surface-2 rounded-4xl p-4 flex flex-col gap-3">
+                    <div key={p} id={`plano-${p}`} className="bg-surface-2 rounded-4xl p-4 flex flex-col gap-3 scroll-mt-24">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex flex-col gap-0.5 min-w-0">
                           <p className="flex items-baseline gap-2">
@@ -421,19 +435,39 @@ export default function ConfiguracoesPage() {
                   <span>{portalLoading === "manage" ? "Abrindo…" : "Gerenciar assinatura e pagamento"}</span>
                   <ExternalIcon />
                 </button>
-                {canCancel && (
+                {canCancel && !cancelando && (
                   <button
                     type="button"
-                    onClick={() => handlePortal("cancel")}
+                    onClick={() => setCancelando(true)}
                     disabled={!!portalLoading}
                     className="w-full min-h-[52px] flex items-center justify-between gap-3 px-5 rounded-full text-[15px] font-extrabold text-fg-muted cursor-pointer hover:bg-surface-2 hover:text-fg transition-colors disabled:opacity-60"
                   >
                     <span className="text-left">
-                      {portalLoading === "cancel" ? "Abrindo…" : "Cancelar assinatura"}
+                      Cancelar assinatura
                       <span className="block text-[13px] font-bold text-fg-subtle">Vale no fim do ciclo pago. Depois disso, os dados ficam guardados por 30 dias.</span>
                     </span>
-                    <ExternalIcon />
                   </button>
+                )}
+                {canCancel && cancelando && workspace && (
+                  <Cancelamento
+                    workspaceId={workspace.id}
+                    plan={workspace.plan}
+                    productCount={productCount}
+                    memberCount={memberCount}
+                    proximaCobranca={subscription?.current_period_end ?? null}
+                    pausaDisponivel={!!subscription?.pausa_disponivel}
+                    onCancelar={() => handlePortal("cancel")}
+                    onDescer={(alvo) => {
+                      setCancelando(false);
+                      setConfirmando(alvo);
+                      requestAnimationFrame(() => document.getElementById(`plano-${alvo}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+                    }}
+                    onPausado={(pausedUntil) => {
+                      setCancelando(false);
+                      setSubscription((s) => (s ? { ...s, paused_until: pausedUntil, pausada: true, pausa_disponivel: false } : s));
+                    }}
+                    onFechar={() => setCancelando(false)}
+                  />
                 )}
                 {portalError && <p role="alert" className="text-sm font-bold text-zero">{portalError}</p>}
               </div>

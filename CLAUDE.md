@@ -137,6 +137,9 @@ components/
   nota/
     ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
 
+  configuracoes/
+    Cancelamento.tsx — EQZ-07: antes do cancelamento do Stripe, 1 pergunta e uma oferta (descer para o plano mais barato que caiba ou pausar a cobrança 1 mês); grava em /billing/cancel-feedback
+
   onboarding/
     OnboardingShell.tsx / PlanCard.tsx / StepIndicator.tsx
 
