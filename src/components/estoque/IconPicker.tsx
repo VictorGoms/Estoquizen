@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { productInitials } from "@/lib/stock";
-import { ICONES, SEM_ICONE, iconeDoNome, iconesPorGrupo, urlIcone } from "@/lib/iconeProduto";
+import { ICONES, SEM_ICONE, iconeDoNome, iconesPorGrupo, buscarIcones, urlIcone } from "@/lib/iconeProduto";
 import { XIcon, Spinner } from "@/components/ui/icons";
 
 interface IconPickerProps {
@@ -19,10 +19,12 @@ interface IconPickerProps {
 
 const GRUPOS = iconesPorGrupo();
 
-/** Escolha do ícone do produto (EQZ-30): automático pelo nome, só iniciais ou um dos 80 ícones. */
+/** Escolha do ícone do produto (EQZ-30): automático pelo nome, só iniciais ou um dos 231 ícones, com busca. */
 export default function IconPicker({ nome, atual, temFoto, salvando, onEscolher, onRemoverFoto, onFechar }: IconPickerProps) {
   const fecharRef = useRef<HTMLButtonElement>(null);
   const auto      = iconeDoNome(nome);
+  const [busca, setBusca] = useState("");
+  const achados   = buscarIcones(busca);
 
   useEffect(() => {
     fecharRef.current?.focus();
@@ -93,7 +95,20 @@ export default function IconPicker({ nome, atual, temFoto, salvando, onEscolher,
           </button>
         </div>
 
-        {GRUPOS.map(({ grupo, chaves }) => (
+        <input
+          type="search"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar ícone (ex.: queijo, ração, caneta)"
+          aria-label="Buscar ícone"
+          className="w-full min-h-[48px] px-5 rounded-full bg-surface-2 text-[15px] font-bold text-fg placeholder:text-fg-subtle outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        />
+
+        {busca.trim() && achados.length === 0 && (
+          <p className="text-sm font-bold text-fg-muted">Nenhum ícone com esse nome. Tente outra palavra.</p>
+        )}
+
+        {(busca.trim() ? (achados.length ? [{ grupo: "Resultado da busca", chaves: achados }] : []) : GRUPOS).map(({ grupo, chaves }) => (
           <section key={grupo} aria-label={grupo} className="flex flex-col gap-2">
             <h3 className="text-[12px] font-extrabold uppercase tracking-wider text-fg-subtle">{grupo}</h3>
             <div className="grid grid-cols-6 sm:grid-cols-7 gap-2">

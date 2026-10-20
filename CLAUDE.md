@@ -132,7 +132,7 @@ components/
 
   estoque/
     StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
-    IconPicker.tsx — escolha do ícone do produto (automático, só iniciais ou um dos 80), na tela do produto
+    IconPicker.tsx — escolha do ícone do produto (automático, só iniciais ou um dos 231, com busca), na tela do produto
     # ProductAvatar (EQZ-30): foto (da pessoa ou da embalagem do Open Food Facts, mostrada inteira em fundo branco) → ícone escolhido (`products.icon`) → ícone pelo nome → iniciais. Passe `icon={p.icon}` onde houver o produto
 
   nota/
@@ -158,7 +158,7 @@ components/
 - **`sanitize.ts`** — sanitização de inputs: `sanitizeText`, `sanitizeEmail`, `sanitizeNumber`, `sanitizeCode`
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
-- **`iconeProduto.ts`** — EQZ-30: 80 ícones Fluent Emoji 3D em `public/icones/produtos/<chave>.webp`, dicionário de sinônimos do comércio e `iconeDoNome` (expressões → palavras fortes → genéricas, com plural); `iconeDoProduto(nome, icon)` respeita a escolha manual (`"nenhum"` = só iniciais). Ícone novo: arquivo WebP 128 px + entrada em `ICONES` e nos sinônimos
+- **`iconeProduto.ts`** — EQZ-30: 231 ícones Fluent Emoji 3D em `public/icones/produtos/<chave>.webp` (14 grupos; eram 80 até 2026-10-20), dicionário de sinônimos do comércio, palavras do Unicode CLDR em português escolhidas à mão e `iconeDoNome` (expressões → palavras fortes → CLDR → genéricas, com plural); `iconeDoProduto(nome, icon)` respeita a escolha manual (`"nenhum"` = só iniciais); `buscarIcones` alimenta a busca do seletor. Ícone novo: PNG 3D do Fluent convertido para WebP 128 px + entrada em `ICONES` e nos sinônimos (a chave precisa casar com o CHECK `^[a-z]{2,20}$` de `products.icon`). Antes de mexer no dicionário, rodar uma lista de nomes nas versões antiga e nova e comparar
 - **`segmentos.ts`** — EQZ-13: os 7 ramos (`workspaces.segment`), com atalhos de unidade (`ordenarUnidades`: só muda a ordem da lista única), termo (insumos × produtos), dica de rotina e a lista pronta. Os nomes dos itens batem com o dicionário de ícones. Ramo também em Configurações
 - **`planos.ts`** — `PLANOS`: preços e recursos de cada plano, usados na escolha de plano e nos preços da landing (um lugar só). Preços da EQZ-11 (24,90 / 39,90 / 59,90) desde 2026-10-20
 - **`planilha.ts`** — importação de planilha (EQZ-14): `lerArquivo` (CSV `;`/`,`/tab com UTF-8 ou Windows-1252, ou .xlsx), `adivinharColunas`, `validar` (número em formato brasileiro, código em notação científica, já cadastrado, repetido) e `baixarModelo`
