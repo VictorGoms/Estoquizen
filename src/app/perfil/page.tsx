@@ -15,6 +15,7 @@ import { useRole, can } from "@/hooks/useRole";
 import { clearSession } from "@/lib/session";
 import { SlidersIcon, ArrowRightIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 import FormField, { inputClass } from "@/components/ui/FormField";
+import { sanitizeEmail } from "@/lib/sanitize";
 
 const LogOutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -72,6 +73,13 @@ export default function PerfilPage() {
   const [imgUploading, setImgUploading] = useState(false);
   const [imgError, setImgError]     = useState("");
 
+  /* Troca do e-mail de acesso: o Supabase manda o link de confirmação e só troca depois dele */
+  const [provedores, setProvedores]       = useState<string[]>([]);
+  const [novoEmail, setNovoEmail]         = useState("");
+  const [emailEnviando, setEmailEnviando] = useState(false);
+  const [emailMsg, setEmailMsg]           = useState("");
+  const [emailErro, setEmailErro]         = useState("");
+
   useEffect(() => {
     async function load() {
       const ws = getWorkspace();
@@ -79,6 +87,17 @@ export default function PerfilPage() {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
+      setProvedores((user.app_metadata?.providers as string[] | undefined) ?? []);
+
+      /* Volta do link de confirmação da troca de e-mail. Com a troca segura do Supabase, o
+         primeiro link (de um dos dois e-mails) volta com uma mensagem e falta o outro */
+      const hash = new URLSearchParams(window.location.hash.slice(1));
+      if (hash.get("message")) {
+        setEmailMsg("Link confirmado. Falta abrir o link que foi para o outro e-mail; depois disso o e-mail de acesso muda.");
+      } else if (new URLSearchParams(window.location.search).get("email") === "confirmado") {
+        setEmailMsg(`E-mail de acesso trocado para ${user.email}.`);
+        setUserProfile({ userEmail: user.email ?? "" });
+      }
 
       const { data } = await supabase
         .from("profiles")
@@ -89,7 +108,7 @@ export default function PerfilPage() {
       const p: Profile = {
         id:         user.id,
         name:       data?.name       ?? user.email?.split("@")[0] ?? "",
-        email:      data?.email      ?? user.email ?? "",
+        email:      user.email       ?? data?.email ?? "",
         phone:      data?.phone      ?? "",
         avatar_url: data?.avatar_url ?? null,
       };
@@ -100,6 +119,34 @@ export default function PerfilPage() {
     }
     load();
   }, [router]);
+
+  async function trocarEmail(e: React.FormEvent) {
+    e.preventDefault();
+    const email = sanitizeEmail(novoEmail);
+    setEmailErro("");
+    setEmailMsg("");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailErro("Digite um e-mail válido."); return; }
+    if (email === profile?.email?.toLowerCase()) { setEmailErro("Esse já é o seu e-mail de acesso."); return; }
+
+    setEmailEnviando(true);
+    const { error: err } = await supabase.auth.updateUser(
+      { email },
+      { emailRedirectTo: `${window.location.origin}/perfil?email=confirmado` },
+    );
+    setEmailEnviando(false);
+    if (err) {
+      const code = (err as { code?: string }).code;
+      setEmailErro(
+        code === "email_exists" ? "Este e-mail já é usado por outra conta."
+        : code === "over_email_send_rate_limit" ? "Aguarde um minuto e tente de novo."
+        : code === "email_address_invalid" ? "Digite um e-mail válido."
+        : "Não foi possível trocar o e-mail agora. Tente de novo.",
+      );
+      return;
+    }
+    setNovoEmail("");
+    setEmailMsg(`Enviamos o link de confirmação para ${email}. Abra o link (e o que chegar no e-mail atual, se chegar) para concluir.`);
+  }
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -208,7 +255,7 @@ export default function PerfilPage() {
             <FormField label="Nome" htmlFor="perfil-nome">
               <input id="perfil-nome" type="text" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
             </FormField>
-            <FormField label="E-mail" htmlFor="perfil-email" hint={<p className="text-[13px] font-bold text-fg-subtle">O e-mail é o login e não pode ser alterado aqui.</p>}>
+            <FormField label="E-mail" htmlFor="perfil-email" hint={<p className="text-[13px] font-bold text-fg-subtle">É o seu login. Para trocar, use &quot;E-mail de acesso&quot;, logo abaixo.</p>}>
               <input id="perfil-email" type="email" value={profile?.email ?? ""} disabled className={inputClass} />
             </FormField>
             <FormField label="Telefone" htmlFor="perfil-telefone">
@@ -226,6 +273,47 @@ export default function PerfilPage() {
               {saving ? "Salvando…" : saved ? "Salvo!" : "Salvar alterações"}
             </button>
           </form>
+
+          {/* ── E-mail de acesso ── */}
+          <section aria-labelledby="perfil-acesso" className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 id="perfil-acesso" className="text-lg font-black">E-mail de acesso</h2>
+              <p className="text-sm font-bold text-fg-muted">Hoje: <span className="text-fg">{profile?.email}</span></p>
+            </div>
+            {provedores.length > 0 && !provedores.includes("email") ? (
+              <p className="px-5 py-3.5 rounded-4xl bg-surface-2 text-sm font-bold text-fg-muted">
+                Sua conta entra pelo Google: o e-mail de acesso é o da sua conta Google.
+              </p>
+            ) : (
+              <form onSubmit={trocarEmail} className="flex flex-col gap-3" noValidate>
+                <FormField label="Novo e-mail" htmlFor="perfil-novo-email">
+                  <input
+                    id="perfil-novo-email"
+                    type="email"
+                    autoComplete="email"
+                    value={novoEmail}
+                    onChange={(e) => setNovoEmail(e.target.value)}
+                    placeholder="nome@empresa.com.br"
+                    className={inputClass}
+                  />
+                </FormField>
+                <p className="text-[13px] font-bold text-fg-subtle">
+                  Enviamos um link de confirmação. Por segurança, também pode chegar um link no e-mail atual: confirme nos dois.
+                  Até lá, você continua entrando com o e-mail de hoje.
+                </p>
+                {emailErro && <p role="alert" className="text-sm font-bold text-zero">{emailErro}</p>}
+                <button
+                  type="submit"
+                  disabled={emailEnviando}
+                  className="min-h-[52px] flex items-center justify-center gap-2 rounded-full bg-surface-2 text-[15px] font-black cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  {emailEnviando && <Spinner className="w-[18px] h-[18px]" />}
+                  {emailEnviando ? "Enviando…" : "Trocar e-mail"}
+                </button>
+              </form>
+            )}
+            {emailMsg && <p role="status" className="px-5 py-3.5 rounded-4xl bg-ok/10 text-sm font-bold text-ok">{emailMsg}</p>}
+          </section>
 
           {/* Configurações do workspace — no celular o atalho fica aqui (saiu do menu inferior) */}
           {can(role, "canAccessConfiguracoes") && (

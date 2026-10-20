@@ -103,7 +103,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
 - `/contagem`            — Contagem do dia (Growth/Pro; owner/admin): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
 - `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
-- `/perfil`              — Perfil do usuário
+- `/perfil`              — Perfil do usuário; "E-mail de acesso" troca o e-mail (`updateUser({ email })`, link de confirmação volta em `/perfil?email=confirmado`; conta só do Google não troca)
 
 ## Estrutura de componentes (`src/components/`)
 ```
