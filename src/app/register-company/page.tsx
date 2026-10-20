@@ -9,6 +9,7 @@ import SecondaryButton from "@/components/workspace/SecondaryButton";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { supabase } from "@/lib/supabase";
 import { sanitizeText } from "@/lib/sanitize";
+import { SEGMENTOS, type Segmento } from "@/lib/segmentos";
 
 const BENEFITS = [
   {
@@ -58,6 +59,10 @@ export default function RegisterCompanyPage() {
   /* Endereço saiu: era pedido e descartado. O telefone agora vai para o perfil. */
   const [values, setValues] = useState({ name: "", cpf: "", phone: "" });
   const [cpfError, setCpfError] = useState("");
+  /* "Qual é o seu negócio?" (EQZ-13): ordena as unidades e oferece a lista pronta do ramo */
+  const [segmento, setSegmento] = useState<Segmento | null>(null);
+  const [outro, setOutro]       = useState("");
+  const [segError, setSegError] = useState("");
 
   function formatCpf(raw: string): string {
     const digits = raw.replace(/\D/g, "").slice(0, 11);
@@ -97,8 +102,15 @@ export default function RegisterCompanyPage() {
       setCpfError("CPF inválido");
       return;
     }
+    if (!segmento) {
+      setSegError("Escolha o tipo do seu negócio.");
+      return;
+    }
     sessionStorage.setItem("pendingWorkspaceName", values.name.trim());
     sessionStorage.setItem("pendingCpf", values.cpf.replace(/\D/g, ""));
+    sessionStorage.setItem("pendingSegment", segmento);
+    if (segmento === "outro" && outro.trim()) sessionStorage.setItem("pendingSegmentOther", sanitizeText(outro, 60));
+    else sessionStorage.removeItem("pendingSegmentOther");
     setLoading(true);
 
     const phone = sanitizeText(values.phone, 20);
@@ -145,6 +157,41 @@ export default function RegisterCompanyPage() {
                 value={values.name}
                 onChange={handleChange("name")}
               />
+              <fieldset className="flex flex-col gap-2.5">
+                <legend className="text-sm font-extrabold text-fg-soft mb-2.5">Qual é o seu negócio?</legend>
+                <div role="radiogroup" aria-describedby={segError ? "segmento-erro" : undefined} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {SEGMENTOS.map((s) => {
+                    const ativo = segmento === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={ativo}
+                        onClick={() => { setSegmento(s.id); setSegError(""); }}
+                        className={`min-h-[56px] px-4 py-2 rounded-3xl text-left flex flex-col justify-center cursor-pointer transition-colors ${
+                          ativo ? "bg-inverse text-ink" : "bg-surface-2 hover:bg-white/10"
+                        }`}
+                      >
+                        <span className="text-sm font-black">{s.label}</span>
+                        <span className={`text-[12px] font-bold ${ativo ? "text-inverse-muted" : "text-fg-muted"}`}>{s.exemplo}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {segmento === "outro" && (
+                  <InputField
+                    label="Qual é o seu negócio?"
+                    id="segmento-outro"
+                    type="text"
+                    placeholder="Ex.: papelaria, farmácia, distribuidora"
+                    maxLength={60}
+                    value={outro}
+                    onChange={(e) => setOutro(e.target.value)}
+                  />
+                )}
+                {segError && <p id="segmento-erro" role="alert" className="text-sm font-bold text-zero">{segError}</p>}
+              </fieldset>
               <InputField
                 label="CPF"
                 id="cpf"

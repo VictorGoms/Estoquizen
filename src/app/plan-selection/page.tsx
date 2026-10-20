@@ -31,9 +31,16 @@ export default function PlanSelectionPage() {
     try {
       const cpf = sessionStorage.getItem("pendingCpf") ?? "";
       const body: Record<string, string> = { name, plan: selectedPlan, cpf };
+      /* EQZ-13: o ramo escolhido no passo 1 */
+      const segment      = sessionStorage.getItem("pendingSegment");
+      const segmentOther = sessionStorage.getItem("pendingSegmentOther");
+      if (segment) body.segment = segment;
+      if (segment === "outro" && segmentOther) body.segment_other = segmentOther;
 
       const ws = await api.post<{ id: string }>("/workspaces", body);
       sessionStorage.removeItem("pendingWorkspaceName");
+      sessionStorage.removeItem("pendingSegment");
+      sessionStorage.removeItem("pendingSegmentOther");
 
       if (selectedPlan !== "growth") {
         /* basic e pro não têm trial — redireciona direto para o checkout */

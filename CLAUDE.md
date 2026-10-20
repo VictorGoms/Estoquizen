@@ -87,13 +87,14 @@ Apenas 3: `owner`, `admin`, `member`
 - `/register`            — Cadastro
 - `/auth/callback`       — Callback OAuth do Supabase
 - `/select-workspace`    — Seleção de workspace
-- `/register-company`    — Onboarding empresa
+- `/register-company`    — Onboarding empresa, com "Qual é o seu negócio?" (EQZ-13; obrigatório, "Outro" com texto) guardado no sessionStorage e mandado no `POST /workspaces` pela escolha de plano
 - `/plan-selection`      — Escolha de plano
 - `/dashboard`           — Home do workspace
 - `/dashboard-metricas`  — Métricas
 - `/estoque`             — Lista de produtos
 - `/estoque/[id]`        — Detalhe do produto (com histórico)
 - `/estoque/novo`        — Cadastro de produto (owner/admin)
+- `/estoque/modelo`      — Lista pronta do ramo (EQZ-13, owner/admin): os itens comuns do segmento com mínimo sugerido e quantidade 0, pela mesma rota da planilha; pula nome que já existe. Quem não tem ramo escolhe ali (e fica gravado). Atalhos no estoque vazio e no menu "+"
 - `/estoque/importar`    — Importar planilha (owner/admin): CSV ou Excel (.xlsx), colunas adivinhadas pelo cabeçalho e trocáveis, prévia com erro por linha, pula o que já existe (código ou, sem código, nome) e corta no limite do plano
 - `/nota`                — Input de NF-e
 - `/nota/revisao`        — Revisão da NF-e
@@ -158,6 +159,7 @@ components/
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
 - **`iconeProduto.ts`** — EQZ-30: 80 ícones Fluent Emoji 3D em `public/icones/produtos/<chave>.webp`, dicionário de sinônimos do comércio e `iconeDoNome` (expressões → palavras fortes → genéricas, com plural); `iconeDoProduto(nome, icon)` respeita a escolha manual (`"nenhum"` = só iniciais). Ícone novo: arquivo WebP 128 px + entrada em `ICONES` e nos sinônimos
+- **`segmentos.ts`** — EQZ-13: os 7 ramos (`workspaces.segment`), com atalhos de unidade (`ordenarUnidades`: só muda a ordem da lista única), termo (insumos × produtos), dica de rotina e a lista pronta. Os nomes dos itens batem com o dicionário de ícones. Ramo também em Configurações
 - **`planos.ts`** — `PLANOS`: preços e recursos de cada plano, usados na escolha de plano e nos preços da landing (um lugar só). Preços da EQZ-11 (24,90 / 39,90 / 59,90) desde 2026-10-20
 - **`planilha.ts`** — importação de planilha (EQZ-14): `lerArquivo` (CSV `;`/`,`/tab com UTF-8 ou Windows-1252, ou .xlsx), `adivinharColunas`, `validar` (número em formato brasileiro, código em notação científica, já cadastrado, repetido) e `baixarModelo`
 - **`exportCsv.ts`** — `exportProductsCsv` / `exportMovementsCsv`: CSV no formato do Excel em português (`;`, vírgula decimal, BOM), paginado de 1000 em 1000; usado em `/configuracoes#exportar`

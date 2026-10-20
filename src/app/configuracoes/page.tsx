@@ -17,6 +17,7 @@ import { CheckIcon, Spinner } from "@/components/ui/icons";
 import { PLAN_INFO } from "@/hooks/usePlan";
 import { PLANOS } from "@/lib/planos";
 import Cancelamento from "@/components/configuracoes/Cancelamento";
+import { SEGMENTOS, type Segmento } from "@/lib/segmentos";
 
 /* ─── Icons ─── */
 const ExternalIcon = () => (
@@ -57,6 +58,8 @@ interface Workspace {
   name: string;
   description: string | null;
   plan: Plan;
+  segment: Segmento | null;
+  segment_other: string | null;
 }
 
 /* ─── Passos da exclusão do workspace ─── */
@@ -91,6 +94,9 @@ export default function ConfiguracoesPage() {
 
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  /* Ramo do negócio (EQZ-13) */
+  const [editSeg, setEditSeg]   = useState<Segmento | null>(null);
+  const [editSegOutro, setEditSegOutro] = useState("");
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
   const [error, setError]       = useState("");
@@ -127,7 +133,7 @@ export default function ConfiguracoesPage() {
       }
 
       const [wsResult, countResult, subResult, membersResult] = await Promise.all([
-        supabase.from("workspaces").select("id, name, description, plan").eq("id", ws.id).single(),
+        supabase.from("workspaces").select("id, name, description, plan, segment, segment_other").eq("id", ws.id).single(),
         supabase.from("products").select("*", { count: "exact", head: true }).eq("workspace_id", ws.id),
         api.get<Subscription | null>(`/billing/subscription?workspace_id=${ws.id}`).catch(() => null),
         supabase.from("workspace_members").select("user_id", { count: "exact", head: true })
@@ -140,6 +146,8 @@ export default function ConfiguracoesPage() {
         setWsName(w.name);
         setEditName(w.name);
         setEditDesc(w.description ?? "");
+        setEditSeg(w.segment);
+        setEditSegOutro(w.segment_other ?? "");
       }
       setProductCount(countResult.count ?? 0);
       setMemberCount(membersResult.error ? null : membersResult.count ?? 0);
@@ -215,7 +223,12 @@ export default function ConfiguracoesPage() {
 
     /* Pela API: ela checa a assinatura (somente leitura) e o banco não aceita mais escrita direta */
     try {
-      await api.patch(`/workspaces/${workspace.id}`, { name: editName.trim(), description: editDesc.trim() || null });
+      await api.patch(`/workspaces/${workspace.id}`, {
+        name: editName.trim(),
+        description: editDesc.trim() || null,
+        segment: editSeg,
+        segment_other: editSeg === "outro" ? editSegOutro.trim() || null : null,
+      });
     } catch (err) {
       setSaving(false);
       setError(err instanceof Error ? err.message : "Não foi possível salvar.");
@@ -223,7 +236,7 @@ export default function ConfiguracoesPage() {
     }
     setSaving(false);
 
-    setWorkspace((w) => w ? { ...w, name: editName.trim(), description: editDesc.trim() || null } : w);
+    setWorkspace((w) => w ? { ...w, name: editName.trim(), description: editDesc.trim() || null, segment: editSeg } : w);
     setWsName(editName.trim());
 
     const stored = getWorkspace();
@@ -495,6 +508,40 @@ export default function ConfiguracoesPage() {
                 className={`${inputClass} h-auto py-3 resize-none`}
               />
             </FormField>
+            <fieldset className="flex flex-col gap-2">
+              <legend className="text-sm font-extrabold text-fg-muted mb-2">Ramo do negócio</legend>
+              <div role="radiogroup" className="flex flex-wrap gap-2">
+                {SEGMENTOS.map((s) => {
+                  const ativo = editSeg === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={ativo}
+                      onClick={() => setEditSeg(s.id)}
+                      className={`min-h-[44px] px-4 rounded-full text-sm font-extrabold cursor-pointer transition-colors ${
+                        ativo ? "bg-inverse text-ink" : "bg-surface-2 text-fg-soft hover:text-fg"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {editSeg === "outro" && (
+                <input
+                  aria-label="Qual é o seu negócio?"
+                  type="text"
+                  maxLength={60}
+                  value={editSegOutro}
+                  onChange={(e) => setEditSegOutro(e.target.value)}
+                  placeholder="Ex.: papelaria, farmácia, distribuidora"
+                  className={inputClass}
+                />
+              )}
+              <p className="text-[13px] font-bold text-fg-subtle">Muda a ordem das unidades no cadastro e a lista pronta de produtos.</p>
+            </fieldset>
             {error && <p role="alert" className="text-sm font-bold text-zero">{error}</p>}
             <button
               type="submit"

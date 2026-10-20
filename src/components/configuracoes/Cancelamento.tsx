@@ -138,7 +138,7 @@ export default function Cancelamento(props: CancelamentoProps) {
             onChange={(e) => setDetalhe(e.target.value.slice(0, 500))}
             rows={3}
             maxLength={500}
-            className={`${inputClass} resize-none py-3`}
+            className={`${inputClass} h-auto py-3 resize-none`}
           />
         </label>
       )}

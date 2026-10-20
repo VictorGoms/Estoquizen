@@ -295,6 +295,9 @@ export default function EstoquePage() {
                       <Link href="/estoque/importar" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
                         <UploadIcon /> Importar planilha
                       </Link>
+                      <Link href="/estoque/modelo" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                        <BoxIcon /> Lista pronta do ramo
+                      </Link>
                     </div>
                   </>
                 )}
@@ -431,9 +434,14 @@ export default function EstoquePage() {
                     </p>
                   </div>
                   {rows.length === 0 && canEdit && (
-                    <Link href="/estoque/importar" className="min-h-[44px] px-5 flex items-center gap-2 rounded-full bg-surface-2 text-sm font-extrabold hover:bg-white/10">
-                      <UploadIcon className="w-4 h-4" /> Já tem uma planilha? Importe
-                    </Link>
+                    <div className="flex flex-wrap justify-center gap-2.5">
+                      <Link href="/estoque/modelo" className="min-h-[44px] px-5 flex items-center gap-2 rounded-full bg-accent text-ink text-sm font-black hover:brightness-110 transition-[filter]">
+                        <BoxIcon className="w-4 h-4" /> Começar com a lista pronta do ramo
+                      </Link>
+                      <Link href="/estoque/importar" className="min-h-[44px] px-5 flex items-center gap-2 rounded-full bg-surface-2 text-sm font-extrabold hover:bg-white/10">
+                        <UploadIcon className="w-4 h-4" /> Já tem uma planilha? Importe
+                      </Link>
+                    </div>
                   )}
                   {(search || filter !== "todos") && (
                     <button

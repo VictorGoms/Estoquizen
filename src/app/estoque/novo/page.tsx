@@ -20,9 +20,11 @@ import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
 import ProductAvatar from "@/components/estoque/ProductAvatar";
 import { api } from "@/lib/api";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
+import { ordenarUnidades } from "@/lib/segmentos";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
-/* Lista única de unidades (decisão de 2026-10-17); só os botões, sem digitar */
+/* Lista única de unidades (decisão de 2026-10-17); só os botões, sem digitar. O ramo do workspace
+   (EQZ-13) só muda a ordem dos atalhos */
 const UNITS = ["un", "kg", "g", "L", "ml", "cx", "pct", "peça", "par", "fardo", "saco", "garrafa", "m"];
 
 /* Nome e foto da embalagem pelo código de barras no Open Food Facts (foto: licença CC BY-SA,
@@ -83,6 +85,7 @@ function NovoItemContent() {
   const [name, setName]         = useState("");
   const [code, setCode]         = useState(searchParams.get("code") ?? "");
   const [unit, setUnit]         = useState("un");
+  const [unidades, setUnidades] = useState(UNITS);
   const [price, setPrice]       = useState("");
   const [cost, setCost]         = useState(""); /* custo de compra (EQZ-23), opcional */
   const [qty, setQty]           = useState("");
@@ -135,7 +138,11 @@ function NovoItemContent() {
       setWsName(ws.name);
       setWsId(ws.id);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const [{ data: { user } }, { data: w }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("workspaces").select("segment").eq("id", ws.id).single(),
+      ]);
+      setUnidades(ordenarUnidades(UNITS, w?.segment));
       if (user) {
         const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
@@ -361,7 +368,7 @@ function NovoItemContent() {
               <div className="flex flex-col gap-2 min-w-0">
                 <span id="novo-unidade" className="text-[13px] font-extrabold text-fg-muted">Unidade</span>
                 <div role="group" aria-labelledby="novo-unidade" className="flex flex-wrap gap-2">
-                  {UNITS.map((u) => {
+                  {unidades.map((u) => {
                     const active = unit === u;
                     return (
                       <button
