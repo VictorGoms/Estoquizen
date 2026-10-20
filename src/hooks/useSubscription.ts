@@ -47,3 +47,23 @@ export function useSubscription(workspaceId: string | null | undefined) {
 export function mutateSubscription(workspaceId: string) {
   return mutate(["subscription", workspaceId]);
 }
+
+/** Guarda no cache uma assinatura já buscada (a escolha de workspace busca todas), sem refazer o pedido. */
+export function guardarSubscription(workspaceId: string, sub: Subscription) {
+  return mutate(["subscription", workspaceId], sub, { revalidate: false });
+}
+
+/* Último estado conhecido de bloqueio de cada workspace, no navegador: num recarregamento, o
+   WorkspaceGate mostra um carregando neutro em vez de piscar a página antes da tela de bloqueio */
+const CHAVE_BLOQUEIO = (id: string) => `estoquizen_bloqueado:${id}`;
+
+export function lembrarBloqueio(workspaceId: string, bloqueada: boolean) {
+  try {
+    if (bloqueada) localStorage.setItem(CHAVE_BLOQUEIO(workspaceId), "1");
+    else localStorage.removeItem(CHAVE_BLOQUEIO(workspaceId));
+  } catch { /* navegador sem localStorage: só pisca, como antes */ }
+}
+
+export function bloqueioLembrado(workspaceId: string): boolean {
+  try { return localStorage.getItem(CHAVE_BLOQUEIO(workspaceId)) === "1"; } catch { return false; }
+}

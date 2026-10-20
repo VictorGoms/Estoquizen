@@ -11,7 +11,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import { setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
-import { estaBloqueada, type Subscription } from "@/hooks/useSubscription";
+import { estaBloqueada, guardarSubscription, lembrarBloqueio, type Subscription } from "@/hooks/useSubscription";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
 const PlusIcon = () => (
@@ -104,6 +104,8 @@ export default function SelectWorkspacePage() {
       if (!vivo) return;
       const a: Record<string, string> = {};
       for (const r of rows) {
+        /* Já deixa a assinatura no cache: ao entrar no workspace, a tela de bloqueio não pisca */
+        if (r) { guardarSubscription(r[0], r[1]); lembrarBloqueio(r[0], estaBloqueada(r[1])); }
         if (!r || !estaBloqueada(r[1])) continue;
         const s = r[1];
         a[r[0]] = s.status === "canceled" ? "Cancelado" : s.status === "deleted" ? "Em exclusão" : s.trial_ends_at ? "Teste encerrado" : "Pagamento pendente";

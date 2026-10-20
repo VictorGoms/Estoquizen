@@ -122,7 +122,7 @@ components/
   # Sessão
   SessionGuard.tsx          — verifica sessão + inatividade, redireciona para /login
   SessionGuardWrapper.tsx   — wrapper client para usar SessionGuard no layout.tsx
-  WorkspaceGate.tsx         — workspace com assinatura encerrada (trial_expired, canceled, deleted): as páginas internas viram a tela de bloqueio; ficam abertas /select-workspace, /perfil e /configuracoes
+  WorkspaceGate.tsx         — workspace com assinatura encerrada (trial_expired, canceled, deleted): as páginas internas viram a tela de bloqueio; ficam abertas /select-workspace, /perfil e /configuracoes. Sem piscar: a escolha de workspace já deixa a assinatura no cache do SWR (`guardarSubscription`) e o último "bloqueado" fica no localStorage (`estoquizen_bloqueado:<id>`), lido num layout effect antes da primeira pintura
 
   auth/
     AuthLayout.tsx / Divider.tsx / InputField.tsx / PasswordField.tsx / PrimaryButton.tsx / SocialButton.tsx
