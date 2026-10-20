@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { api } from "@/lib/api";
@@ -41,6 +41,12 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
   const [erro, setErro]           = useState("");
   const [exportando, setExportando] = useState<"produtos" | "movimentacoes" | null>(null);
   const [exportMsg, setExportMsg]   = useState("");
+  /* Data de hoje só depois de montar (regra do projeto: nada de Date.now() no render) */
+  const [agora, setAgora] = useState<number | null>(null);
+  useEffect(() => { setAgora(Date.now()); }, []);
+
+  const dias    = ate && agora !== null ? Math.max(0, Math.ceil((ate.getTime() - agora) / (24 * 60 * 60 * 1000))) : null;
+  const urgente = dias !== null && dias <= 7;
 
   async function assinar() {
     setAssinando(true);
@@ -89,9 +95,30 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
           <h1 className="text-[26px] font-black tracking-tight leading-tight">{titulo(sub)}</h1>
           <p className="text-[15px] font-bold text-fg-muted leading-relaxed">
             O workspace <span className="text-fg">{workspace.name}</span> está bloqueado.
-            {ate && <> Os dados ficam guardados até <span className="text-fg">{ate.toLocaleDateString("pt-BR")}</span>; depois, o workspace é excluído.</>}
           </p>
         </div>
+
+        {/* Prazo da exclusão: o job de limpeza avisa por e-mail no 14º dia e 3 dias antes */}
+        {ate && dias !== null && (
+          <div
+            role={urgente ? "alert" : "status"}
+            className={`rounded-4xl px-4 py-3.5 flex items-center gap-4 ring-1 ${urgente ? "bg-zero/15 ring-zero/40" : "bg-low/10 ring-low/30"}`}
+          >
+            <span className={`min-w-[56px] text-center text-[34px] font-black leading-none tabular-nums ${urgente ? "text-zero" : "text-low"}`}>
+              {dias}
+            </span>
+            <div className="min-w-0">
+              <p className={`text-[15px] font-black ${urgente ? "text-zero" : "text-low"}`}>
+                {dias === 0
+                  ? "Os dados podem ser excluídos a qualquer momento"
+                  : `${dias === 1 ? "Falta 1 dia" : `Faltam ${dias} dias`} para os dados serem excluídos`}
+              </p>
+              <p className="text-[13px] font-bold text-fg-muted mt-0.5">
+                Exclusão a partir de {ate.toLocaleDateString("pt-BR")}. Assine de novo ou exporte os dados antes disso.
+              </p>
+            </div>
+          </div>
+        )}
 
         {podePagar ? (
           <section aria-labelledby="bloq-assinar" className="flex flex-col gap-3">
