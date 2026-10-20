@@ -159,7 +159,7 @@ export default function ConfiguracoesPage() {
     }
   }
 
-  /* "cancel" abre direto a tela de cancelamento do portal (vale no fim do ciclo; os dados ficam) */
+  /* "cancel" abre direto a tela de cancelamento do portal (vale no fim do ciclo; os dados ficam 30 dias) */
   async function handlePortal(flow?: "cancel") {
     if (!workspace) return;
     setPortalLoading(flow === "cancel" ? "cancel" : "manage");
@@ -311,7 +311,8 @@ export default function ConfiguracoesPage() {
 
             {(justCanceled || scheduledCancel) && (
               <p role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 text-sm font-bold text-low leading-relaxed">
-                Cancelamento agendado. O acesso completo continua até o fim do ciclo pago e os dados ficam guardados.
+                Cancelamento agendado. O acesso completo continua até o fim do ciclo pago; depois, o workspace fica só para
+                consulta e exportação por 30 dias e então é excluído.
                 Para desfazer, use &quot;Gerenciar assinatura e pagamento&quot;.
               </p>
             )}
@@ -429,7 +430,7 @@ export default function ConfiguracoesPage() {
                   >
                     <span className="text-left">
                       {portalLoading === "cancel" ? "Abrindo…" : "Cancelar assinatura"}
-                      <span className="block text-[13px] font-bold text-fg-subtle">Vale no fim do ciclo pago. Os dados não são apagados.</span>
+                      <span className="block text-[13px] font-bold text-fg-subtle">Vale no fim do ciclo pago. Depois disso, os dados ficam guardados por 30 dias.</span>
                     </span>
                     <ExternalIcon />
                   </button>

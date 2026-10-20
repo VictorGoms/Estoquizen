@@ -12,9 +12,20 @@ interface Subscription {
   trial_ends_at: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
+  /* Quando entrou em trial_expired/canceled (trigger subscriptions_track_expiry); base da exclusão */
+  expired_at: string | null;
 }
 
 const PLAN_LABEL: Record<string, string> = { basic: "Basic", growth: "Growth", pro: "Pro" };
+
+/* O job de limpeza exclui o workspace 30 dias depois do fim da assinatura (com aviso por e-mail antes) */
+const DIAS_GUARDADOS = 30;
+
+function guardadoAte(expiredAt: string | null): string {
+  if (!expiredAt) return "";
+  const ate = new Date(new Date(expiredAt).getTime() + DIAS_GUARDADOS * 24 * 60 * 60 * 1000);
+  return ` Os dados ficam guardados até ${ate.toLocaleDateString("pt-BR")}; depois, o workspace é excluído.`;
+}
 
 function daysUntil(dateStr: string): number {
   return Math.max(0, Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -80,11 +91,11 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
     /* Sem data de trial = nunca teve trial (Basic/Pro, ou CPF que já usou o trial): falta pagar */
     urgent = true;
     title = "Pagamento pendente";
-    desc  = `O pagamento do plano ${PLAN_LABEL[sub.plan] ?? sub.plan} não foi concluído. Você está em modo somente leitura até assinar.`;
+    desc  = `O pagamento do plano ${PLAN_LABEL[sub.plan] ?? sub.plan} não foi concluído. Você está em modo somente leitura até assinar.${guardadoAte(sub.expired_at)}`;
   } else if (sub.status === "trial_expired") {
     urgent = true;
     title = "Seu trial expirou";
-    desc  = "Você está em modo somente leitura. Assine para criar e editar dados.";
+    desc  = `Você está em modo somente leitura. Assine para criar e editar dados.${guardadoAte(sub.expired_at)}`;
   } else if (sub.status === "past_due") {
     urgent = true;
     title = "Pagamento pendente";
@@ -93,8 +104,9 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
   } else if (sub.status === "canceled") {
     urgent = true;
     title = "Assinatura cancelada";
-    desc  = "Você está em modo somente leitura. Reative para criar e editar dados.";
-    btnLabel = "Reativar assinatura"; btnAction = handlePortal;
+    desc  = `Você está em modo somente leitura. Assine de novo para criar e editar dados.${guardadoAte(sub.expired_at)}`;
+    /* Assinatura encerrada não volta pelo portal: é um checkout novo (a API cria outra assinatura) */
+    btnLabel = "Assinar de novo"; btnAction = handleCheckout;
   } else if (sub.status === "active" && sub.cancel_at_period_end && sub.current_period_end) {
     const days = daysUntil(sub.current_period_end);
     title = `Assinatura ativa até ${new Date(sub.current_period_end).toLocaleDateString("pt-BR")}`;
