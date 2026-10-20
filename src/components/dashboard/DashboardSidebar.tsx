@@ -28,7 +28,7 @@ export const ROLE_LABEL: Record<WorkspaceRole, string> = {
   member: "Membro",
 };
 
-const NAV_SECTIONS = [
+export const NAV_SECTIONS = [
   {
     label: "Principal",
     items: [

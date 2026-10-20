@@ -503,7 +503,15 @@ export default function DashboardPage() {
 
           {/* ── Atividade recente ── */}
           <section className="bg-surface rounded-5xl p-5 lg:p-6 flex flex-col gap-1.5">
-            <h2 className="text-lg lg:text-xl font-black pb-2">Atividade recente</h2>
+            <div className="flex items-center justify-between gap-3 pb-2">
+              <h2 className="text-lg lg:text-xl font-black">Atividade recente</h2>
+              {/* Mesmo público do item "Histórico" do menu (owner e admin) */}
+              {(role === "owner" || role === "admin") && (
+                <Link href="/historico" className="flex items-center min-h-[40px] px-4 rounded-full bg-surface-2 text-sm font-extrabold hover:bg-white/10 transition-colors">
+                  Ver histórico
+                </Link>
+              )}
+            </div>
             {movLoading ? (
               <div className="flex flex-col gap-2">
                 {[0, 1, 2].map((i) => <div key={i} className="h-14 rounded-2xl bg-surface-2 animate-pulse" />)}
