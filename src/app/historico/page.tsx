@@ -41,7 +41,7 @@ interface Mov {
   produto:    { id: string; name: string; unit: string };
 }
 
-interface MemberRow { user_id: string; profiles: { name?: string | null; email?: string | null } | null }
+interface MemberRow { user_id: string; profiles: { name?: string | null; email?: string | null; avatar_url?: string | null } | null }
 
 type Tipo = "todos" | "entradas" | "saidas";
 
@@ -76,9 +76,12 @@ export default function HistoricoPage() {
 
   const liberado = !!planInfo(plan)?.historicoPorPessoa;
 
-  const { data: nomes } = useSWR(wsId && liberado ? ["historico-membros", wsId] : null, async () => {
+  const { data: pessoas } = useSWR(wsId && liberado ? ["historico-membros", wsId] : null, async () => {
     const rows = await api.get<MemberRow[]>(`/members?workspace_id=${wsId}`);
-    return new Map(rows.map((m) => [m.user_id, m.profiles?.name || m.profiles?.email || "Sem nome"]));
+    return new Map(rows.map((m) => [m.user_id, {
+      nome: m.profiles?.name || m.profiles?.email || "Sem nome",
+      foto: m.profiles?.avatar_url ?? null,
+    }]));
   });
 
   const { data: movs, isLoading } = useSWR(wsId && liberado && now ? ["historico", wsId, dias] : null, async () => {
@@ -100,7 +103,8 @@ export default function HistoricoPage() {
   });
 
   /* "Ex-membro": quem fez a movimentação saiu do workspace. "…" enquanto os nomes carregam */
-  const nomeDe = (id: string | null) => (!id ? "Sem autor" : !nomes ? "…" : nomes.get(id) ?? "Ex-membro");
+  const nomeDe = (id: string | null) => (!id ? "Sem autor" : !pessoas ? "…" : pessoas.get(id)?.nome ?? "Ex-membro");
+  const fotoDe = (id: string | null) => (id ? pessoas?.get(id)?.foto ?? null : null);
 
   /* Resumo por pessoa no período (sem o filtro de pessoa, para comparar) */
   const resumo = useMemo(() => {
@@ -168,6 +172,7 @@ export default function HistoricoPage() {
               {resumo.map(([id, r]) => {
                 const ativo = pessoa === id;
                 const nome  = nomeDe(id || null);
+                const foto  = fotoDe(id || null);
                 return (
                   <button
                     key={id || "sem-autor"}
@@ -176,8 +181,11 @@ export default function HistoricoPage() {
                     onClick={() => setPessoa(ativo ? "todos" : id)}
                     className={`flex items-center gap-3 p-3 rounded-[22px] text-left cursor-pointer transition-colors ${ativo ? "bg-inverse text-ink" : "bg-surface hover:bg-[#19243a]"}`}
                   >
-                    <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${ativo ? "bg-ink text-fg" : "bg-surface-2"}`}>
-                      {personInitials(nome)}
+                    <span className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-sm font-black shrink-0 ${ativo ? "bg-ink text-fg" : "bg-surface-2"}`}>
+                      {foto
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={foto} alt="" loading="lazy" className="w-full h-full object-cover" />
+                        : personInitials(nome)}
                     </span>
                     <span className="min-w-0 flex flex-col">
                       <span className="text-[15px] font-extrabold truncate">{nome}</span>

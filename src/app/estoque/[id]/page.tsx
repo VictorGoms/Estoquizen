@@ -26,6 +26,7 @@ import { sanitizeText, sanitizeCode } from "@/lib/sanitize";
 import { api } from "@/lib/api";
 import { deriveStatus, formatBRL, formatQty, stockLevel, timeAgo, parseQtyInput, parsePriceInput, previsaoDias, formatPrevisao, tituloMovimentacao } from "@/lib/stock";
 import { useForecast } from "@/hooks/useForecast";
+import { caminhoNovo, apagarFotoAntiga } from "@/lib/storageImage";
 import {
   ArrowLeftIcon, BoxIcon, CameraIcon, PencilIcon, TrashIcon, ScanIcon, InIcon, OutIcon, CheckIcon, Spinner,
 } from "@/components/ui/icons";
@@ -239,11 +240,12 @@ export default function ItemDetailPage() {
       if (!ws) return;
       const compressed = await compressImage(file);
       /* Pasta do workspace: o storage só deixa gravar na pasta de um workspace do qual a pessoa é membro */
-      const path = `${ws.id}/${product.id}.jpg`;
+      const fotoAntiga = product.image_url;
+      const path = caminhoNovo(ws.id, product.id, "jpg");
 
       const { error: upErr } = await supabase.storage
         .from("product-images")
-        .upload(path, compressed, { upsert: true, contentType: "image/jpeg" });
+        .upload(path, compressed, { contentType: "image/jpeg" });
 
       if (upErr) {
         setActionError(dbErrorPt(upErr, "Não foi possível enviar a imagem."));
@@ -254,13 +256,13 @@ export default function ItemDetailPage() {
         .from("product-images")
         .getPublicUrl(path);
 
-      /* Adiciona timestamp para quebrar cache do browser a cada novo upload */
-      const publicUrl = urlData?.publicUrl ? `${urlData.publicUrl}?t=${Date.now()}` : "";
+      const publicUrl = urlData?.publicUrl ?? "";
 
       await api.patch(`/products/${product.id}`, { image_url: publicUrl });
 
       setProduct((p) => p ? { ...p, image_url: publicUrl } : p);
       mutateProducts(ws.id);
+      void apagarFotoAntiga("product-images", fotoAntiga, path);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Erro ao enviar imagem");
     } finally {

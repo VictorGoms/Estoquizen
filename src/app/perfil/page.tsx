@@ -16,6 +16,7 @@ import { clearSession } from "@/lib/session";
 import { SlidersIcon, ArrowRightIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 import FormField, { inputClass } from "@/components/ui/FormField";
 import { sanitizeEmail } from "@/lib/sanitize";
+import { caminhoNovo, apagarFotoAntiga } from "@/lib/storageImage";
 
 const LogOutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -155,15 +156,15 @@ export default function PerfilPage() {
     setImgUploading(true);
     try {
       const blob = await compressImage(file);
-      const ext  = "jpg";
-      const path = `${profile.id}/avatar.${ext}`;
+      const fotoAntiga = profile.avatar_url;
+      const path = caminhoNovo(profile.id, "avatar", "jpg");
       const { error: upErr } = await supabase.storage
         .from("profile-images")
-        .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+        .upload(path, blob, { contentType: "image/jpeg" });
       if (upErr) { setImgError(dbErrorPt(upErr, "Não foi possível enviar a imagem.")); return; }
 
       const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(path);
-      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      const publicUrl = urlData.publicUrl;
 
       const { error: dbErr } = await supabase
         .from("profiles")
@@ -173,6 +174,7 @@ export default function PerfilPage() {
 
       setProfile((p) => p ? { ...p, avatar_url: publicUrl } : p);
       setUserProfile({ avatarUrl: publicUrl });
+      void apagarFotoAntiga("profile-images", fotoAntiga, path);
     } catch (err: unknown) {
       setImgError(err instanceof Error ? err.message : "Erro ao enviar imagem");
     } finally {
