@@ -108,7 +108,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/notificacoes`        — Notificações
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
 - `/contagem`            — Contagem do dia (Growth/Pro; todos os papéis desde o SCRUM-62): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
-- `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp)
+- `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp). "Adicionar item" põe qualquer produto à mão (`/shopping-list`, vale para a equipe e sai sozinho quando chega uma entrada do produto); os ajustes dos itens automáticos continuam só neste navegador
 - `/licencas`            — Licenças (pública): aviso MIT dos ícones Fluent Emoji e crédito do Open Food Facts (CC BY-SA)
 - `/perfil`              — Perfil do usuário; "E-mail de acesso" troca o e-mail (`updateUser({ email })`, link de confirmação volta em `/perfil?email=confirmado`; conta só do Google não troca)
 
@@ -142,6 +142,9 @@ components/
 
   pagamento/
     PagamentoEmbutido.tsx — pagamento dentro do app (Checkout incorporado do Stripe, 2026-10-21): quadro sobre a página com o formulário do Stripe; depois de pagar espera o webhook ativar o plano. Usado na escolha de plano, na tela de bloqueio, no banner do trial e em Configurações. Troca de plano de quem já paga segue no portal (a API devolve url). Sem `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`lib/pagamento.ts`), tudo vai para a página do Stripe como antes
+
+  compras/
+    AdicionarItem.tsx — quadro "Adicionar à lista" da lista de compras: busca nos produtos que ainda não estão nela, quantidade sugerida
 
   configuracoes/
     Cancelamento.tsx — EQZ-07: cancelamento 100% no app (sem o Stripe): 1 pergunta, uma oferta e a confirmação (POST /billing/cancel); depois "Desfazer cancelamento" em Configurações. A oferta (descer para o plano mais barato que caiba ou pausar por 1 ou 2 meses: usa até o fim do mês pago, depois fica bloqueado sem cobrança e volta sozinho); grava em /billing/cancel-feedback. Em Configurações, pausa agendada tem "Desfazer pausa" e a em andamento "Retomar agora"

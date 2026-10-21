@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
@@ -9,22 +10,35 @@ import BottomNav from "@/components/dashboard/BottomNav";
 import ProductAvatar from "@/components/estoque/ProductAvatar";
 import StatusChip from "@/components/estoque/StatusChip";
 import { supabase } from "@/lib/supabase";
+import { api } from "@/lib/api";
+import AdicionarItem from "@/components/compras/AdicionarItem";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { useForecast } from "@/hooks/useForecast";
 import { deriveStatus, formatQty, parseQtyInput, previsaoDias, consumoDiario, formatPrevisao, type StockStatus } from "@/lib/stock";
-import { CartIcon, CheckIcon } from "@/components/ui/icons";
+import { CartIcon, CheckIcon, PlusIcon, XIcon } from "@/components/ui/icons";
 
 /*
  * Lista de compras (EQZ-15). O app monta a lista com o que está no mínimo ou acaba nesta semana,
  * sugere a quantidade e a pessoa compartilha o texto pelo WhatsApp dela (sem API, sem custo).
+ * Desde 2026-10-21 dá para pôr itens à mão, mesmo sem estar no mínimo: ficam no banco
+ * (/shopping-list), valem para a equipe toda e saem sozinhos quando chega uma entrada do produto.
  */
+
+/** Item posto à mão (compartilhado pela equipe) */
+interface Manual {
+  id:         string;
+  product_id: string;
+  qty:        number;
+}
 
 interface Item {
   p:        Product;
   status:   StockStatus;
   previsao: number | null;
   sugerida: number;
+  /** Posto à mão: a quantidade fica no banco, não só neste navegador */
+  manual?:  Manual;
 }
 
 /* Unidades que aceitam fração (as outras sobem para o inteiro) */
@@ -60,9 +74,14 @@ export default function ComprasPage() {
   const [rodape, setRodape]     = useState(true);
   const [podeShare, setPodeShare] = useState(false);
   const [aviso, setAviso]       = useState("");
+  const [adicionando, setAdicionando] = useState(false);
 
   const { products, loading } = useProducts(wsId);
   const forecast = useForecast(wsId);
+  const { data: manuais, mutate: mutateManuais } = useSWR(
+    wsId ? ["lista-manual", wsId] : null,
+    () => api.get<Manual[]>(`/shopping-list?workspace_id=${wsId}`),
+  );
 
   useEffect(() => {
     async function load() {
@@ -93,16 +112,43 @@ export default function ComprasPage() {
     try { localStorage.setItem(chaveLocal(wsId), JSON.stringify(next)); } catch { /* sem localStorage */ }
   }
 
-  /* No mínimo/zerado, ou acabando em até 7 dias pela média de saídas */
-  const itens = useMemo<Item[]>(() => products
-    .map((p) => {
-      const status   = deriveStatus(p.qty, p.min_qty ?? 0);
-      const previsao = previsaoDias(p.qty, p.created_at, forecast.get(p.id), now);
-      const porDia   = consumoDiario(p.created_at, forecast.get(p.id), now);
-      return { p, status, previsao, sugerida: quantidadeSugerida(p, porDia) };
-    })
-    .filter((i) => i.status !== "normal" || (i.previsao !== null && i.previsao <= 7))
-    .sort((a, b) => a.p.name.localeCompare(b.p.name, "pt-BR")), [products, forecast, now]);
+  /* No mínimo/zerado, ou acabando em até 7 dias pela média de saídas, mais os postos à mão */
+  const itens = useMemo<Item[]>(() => {
+    const porProduto = new Map((manuais ?? []).map((m) => [m.product_id, m]));
+    return products
+      .map((p) => {
+        const status   = deriveStatus(p.qty, p.min_qty ?? 0);
+        const previsao = previsaoDias(p.qty, p.created_at, forecast.get(p.id), now);
+        const porDia   = consumoDiario(p.created_at, forecast.get(p.id), now);
+        return { p, status, previsao, sugerida: quantidadeSugerida(p, porDia), manual: porProduto.get(p.id) };
+      })
+      .filter((i) => i.manual || i.status !== "normal" || (i.previsao !== null && i.previsao <= 7))
+      .sort((a, b) => a.p.name.localeCompare(b.p.name, "pt-BR"));
+  }, [products, forecast, now, manuais]);
+
+  /* Para o quadro "Adicionar à lista": o que ainda não está nela */
+  const foraDaLista = useMemo(() => {
+    const na = new Set(itens.map((i) => i.p.id));
+    return products.filter((p) => !na.has(p.id)).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [products, itens]);
+
+  const sugeridaDe = (p: Product) => quantidadeSugerida(p, consumoDiario(p.created_at, forecast.get(p.id), now));
+
+  async function adicionar(p: Product, qtd: number) {
+    if (!wsId) return;
+    await api.post("/shopping-list", { workspace_id: wsId, product_id: p.id, qty: qtd });
+    /* A quantidade escolhida agora vale mais que um ajuste antigo feito neste navegador */
+    const { [p.id]: _, ...resto } = escolhas;
+    salvar(resto);
+    await mutateManuais();
+    setAdicionando(false);
+  }
+
+  async function remover(m: Manual) {
+    if (!wsId) return;
+    await api.delete(`/shopping-list/${m.id}?workspace_id=${wsId}`).catch(() => undefined);
+    await mutateManuais();
+  }
 
   const grupos = useMemo(() => {
     const m = new Map<string, Item[]>();
@@ -116,7 +162,7 @@ export default function ComprasPage() {
   }, [itens]);
 
   const incluido = (i: Item) => escolhas[i.p.id]?.on ?? true;
-  const qtdDe    = (i: Item) => escolhas[i.p.id]?.qtd ?? i.sugerida;
+  const qtdDe    = (i: Item) => (i.manual ? i.manual.qty : escolhas[i.p.id]?.qtd ?? i.sugerida);
   const marcados = itens.filter(incluido);
 
   function texto(): string {
@@ -154,11 +200,22 @@ export default function ComprasPage() {
       <main className="lg:pl-64 pt-14 pb-28 lg:pb-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 flex flex-col gap-6">
 
-          <div className="flex flex-col gap-1">
-            <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Lista de compras</h1>
-            <p className="text-sm lg:text-[15px] font-bold text-fg-muted">
-              O que está no mínimo ou acaba nesta semana, com a quantidade sugerida. Ajuste e mande pelo WhatsApp.
-            </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-col gap-1 min-w-0">
+              <h1 className="text-[28px] lg:text-[32px] font-black tracking-tight leading-tight">Lista de compras</h1>
+              <p className="text-sm lg:text-[15px] font-bold text-fg-muted">
+                O que está no mínimo ou acaba nesta semana, com a quantidade sugerida. Ajuste, adicione o que quiser e mande pelo WhatsApp.
+              </p>
+            </div>
+            {!loading && (
+              <button
+                type="button"
+                onClick={() => setAdicionando(true)}
+                className="min-h-[48px] px-5 rounded-full bg-accent text-ink text-[15px] font-black flex items-center gap-2 cursor-pointer hover:brightness-110 transition-[filter]"
+              >
+                <PlusIcon className="w-[18px] h-[18px]" strokeWidth={2.6} /> Adicionar item
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -172,11 +229,20 @@ export default function ComprasPage() {
               </span>
               <div className="flex flex-col gap-1">
                 <p className="text-lg font-black">Nada para comprar agora</p>
-                <p className="text-sm font-bold text-fg-muted">Nenhum produto está no mínimo ou acaba nesta semana.</p>
+                <p className="text-sm font-bold text-fg-muted">Nenhum produto está no mínimo ou acaba nesta semana. Quer pôr algo mesmo assim?</p>
               </div>
-              <Link href="/estoque" className="min-h-[44px] flex items-center px-5 rounded-full bg-surface-2 text-sm font-extrabold hover:bg-white/10 transition-colors">
-                Ver estoque
-              </Link>
+              <div className="flex flex-wrap justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setAdicionando(true)}
+                  className="min-h-[44px] flex items-center gap-2 px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter]"
+                >
+                  <PlusIcon className="w-4 h-4" strokeWidth={2.6} /> Adicionar item
+                </button>
+                <Link href="/estoque" className="min-h-[44px] flex items-center px-5 rounded-full bg-surface-2 text-sm font-extrabold hover:bg-white/10 transition-colors">
+                  Ver estoque
+                </Link>
+              </div>
             </div>
           ) : (
             <>
@@ -206,6 +272,7 @@ export default function ComprasPage() {
                                 {i.status !== "normal" && <StatusChip status={i.status} size="sm" />}
                                 <span>Tem {formatQty(i.p.qty)} {i.p.unit} · mínimo {formatQty(i.p.min_qty ?? 0)}</span>
                                 {i.previsao !== null && <span>· {formatPrevisao(i.previsao)}</span>}
+                                {i.manual && <span className="text-accent">· adicionado à mão</span>}
                               </span>
                             </span>
                           </label>
@@ -219,13 +286,27 @@ export default function ComprasPage() {
                               onChange={(e) => setDrafts({ ...drafts, [i.p.id]: e.target.value })}
                               onBlur={() => {
                                 const n = parseQtyInput(drafts[i.p.id] ?? "");
-                                if (n > 0) salvar({ ...escolhas, [i.p.id]: { on: true, qtd: n } });
+                                /* Item à mão: a quantidade vale para a equipe; os automáticos ficam neste navegador */
+                                if (n > 0 && i.manual) {
+                                  if (n !== i.manual.qty) adicionar(i.p, n).catch(() => undefined);
+                                } else if (n > 0) salvar({ ...escolhas, [i.p.id]: { on: true, qtd: n } });
                                 const { [i.p.id]: _, ...resto } = drafts;
                                 setDrafts(resto);
                               }}
                               className="w-16 h-11 rounded-full bg-ink text-center text-[15px] font-black tabular-nums outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                             />
                             <span className="text-[13px] font-bold text-fg-muted w-7">{i.p.unit}</span>
+                            {i.manual && (
+                              <button
+                                type="button"
+                                onClick={() => remover(i.manual!)}
+                                aria-label={`Tirar ${i.p.name} da lista`}
+                                title="Tirar da lista"
+                                className="w-10 h-10 rounded-full bg-surface-2 text-fg-muted flex items-center justify-center cursor-pointer hover:bg-white/10 hover:text-fg transition-colors"
+                              >
+                                <XIcon className="w-4 h-4" />
+                              </button>
+                            )}
                           </span>
                         </li>
                       );
@@ -277,6 +358,15 @@ export default function ComprasPage() {
           )}
         </div>
       </main>
+      {adicionando && (
+        <AdicionarItem
+          produtos={foraDaLista}
+          sugerida={sugeridaDe}
+          onAdicionar={adicionar}
+          onFechar={() => setAdicionando(false)}
+        />
+      )}
+
       <BottomNav />
     </div>
   );
