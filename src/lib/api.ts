@@ -4,6 +4,8 @@
  */
 
 import { supabase } from "./supabase";
+import { registrar } from "./analytics";
+import { eventoDaChamada } from "./eventos";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
@@ -52,6 +54,9 @@ async function request<T>(
   if (!res.ok) {
     throw new Error(json?.error || STATUS_MESSAGES[res.status] || `Erro ${res.status}. Tente novamente.`);
   }
+  /* Funil do analytics (EQZ-01): só com o aceite dos cookies; sem aceite, não faz nada */
+  const evento = eventoDaChamada(method, path, body, json?.data);
+  if (evento) registrar(evento.nome, evento.props);
   return (json?.data ?? undefined) as T;
 }
 

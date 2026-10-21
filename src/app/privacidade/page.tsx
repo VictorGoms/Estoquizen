@@ -28,6 +28,7 @@ export default function PrivacidadePage() {
           <li><strong>Pagamento:</strong> é feito pelo Stripe. O Estoquizen não recebe nem guarda o número do cartão; guardamos só os identificadores da assinatura no Stripe, o plano, a situação e as datas.</li>
           <li><strong>Cancelamento:</strong> o motivo, quando você responde a pergunta ao cancelar.</li>
           <li><strong>Dados técnicos:</strong> endereço IP e dados do navegador nos registros dos nossos provedores de hospedagem, usados para segurança e para limitar abusos; e dados guardados no seu navegador para manter a sessão e suas preferências. Não usamos cookies de publicidade.</li>
+          <li><strong>Uso do app (só se você aceitar os cookies de análise):</strong> páginas visitadas, cliques e ações como cadastrar um produto ou registrar uma entrada, ligados a um identificador da sua conta. Não enviamos nome, e-mail, CPF, nomes de produtos nem o que você digita, e não gravamos a tela.</li>
         </ul>
       </Secao>
 
@@ -35,7 +36,7 @@ export default function PrivacidadePage() {
         <ul>
           <li><strong>Prestar o serviço que você contratou</strong> (execução do contrato): sua conta, o estoque, a equipe, a cobrança e os e-mails do serviço, como convite, confirmação de assinatura e avisos de fim de teste, de pausa e de exclusão.</li>
           <li><strong>Segurança e prevenção de abuso</strong> (legítimo interesse): limite de tentativas, um teste grátis por pessoa e proteção das contas.</li>
-          <li><strong>Melhorar o produto</strong> (legítimo interesse): estatísticas de uso e os motivos de cancelamento, olhados em conjunto.</li>
+          <li><strong>Melhorar o produto:</strong> estatísticas de uso do app, só com o seu consentimento (cookies de análise), e os motivos de cancelamento (legítimo interesse), olhados em conjunto.</li>
           <li><strong>Cumprir obrigações legais</strong>, como guardar registros de pagamento.</li>
         </ul>
         <p>Não vendemos dados pessoais e não usamos os dados do seu estoque para nenhuma outra finalidade.</p>
@@ -49,6 +50,7 @@ export default function PrivacidadePage() {
           <li><strong>Vercel</strong>: hospedagem do site.</li>
           <li><strong>Stripe</strong>: pagamentos.</li>
           <li><strong>Resend</strong>: envio de e-mails.</li>
+          <li><strong>PostHog</strong>: estatísticas de uso do app, só se você aceitar os cookies de análise (Estados Unidos).</li>
           <li><strong>Google</strong>: só se você entrar com a conta Google.</li>
           <li><strong>Open Food Facts</strong>: quando você cadastra pelo código de barras, enviamos só o código para buscar o nome e a foto da embalagem.</li>
           <li><strong>Portais das Secretarias da Fazenda</strong>: para ler uma nota de compra pela chave de acesso, consultamos o portal público da nota.</li>
@@ -87,7 +89,16 @@ export default function PrivacidadePage() {
         </p>
       </Secao>
 
-      <Secao titulo="7. Segurança">
+      <Secao titulo="7. Cookies" id="cookies">
+        <ul>
+          <li><strong>Necessários:</strong> mantêm você conectado, guardam a empresa escolhida e as suas preferências (inclusive a resposta sobre cookies). Sem eles o app não funciona, por isso não pedem permissão.</li>
+          <li><strong>De análise (PostHog):</strong> só depois que você clica em &quot;Aceitar&quot; no aviso de cookies. Mostram como o app é usado, sem gravar a tela, para sabermos o que melhorar.</li>
+          <li><strong>Pagamento (Stripe):</strong> o formulário do Stripe só é carregado quando você abre o pagamento, e usa cookies próprios para evitar fraude.</li>
+        </ul>
+        <p>Não usamos cookies de publicidade. Você muda a sua escolha quando quiser em &quot;Preferências de cookies&quot;, no fim desta página, no rodapé do site ou no Perfil.</p>
+      </Secao>
+
+      <Secao titulo="8. Segurança">
         <p>
           A conexão é criptografada (HTTPS), as senhas são guardadas de forma irreversível, cada empresa só acessa os próprios dados,
           as permissões seguem o papel de cada pessoa na equipe e os dados de cartão ficam só no Stripe. Nenhum sistema é totalmente
@@ -95,18 +106,18 @@ export default function PrivacidadePage() {
         </p>
       </Secao>
 
-      <Secao titulo="8. Equipe">
+      <Secao titulo="9. Equipe">
         <p>
           O dono de cada empresa decide quem entra na equipe e com qual papel. As movimentações mostram quem as registrou, para
           a própria empresa acompanhar o estoque.
         </p>
       </Secao>
 
-      <Secao titulo="9. Menores de idade">
+      <Secao titulo="10. Menores de idade">
         <p>O Estoquizen é feito para empresas e para pessoas maiores de 18 anos.</p>
       </Secao>
 
-      <Secao titulo="10. Mudanças nesta política">
+      <Secao titulo="11. Mudanças nesta política">
         <p>
           Quando houver mudança relevante, avisamos por e-mail ou no app antes de ela valer. Veja também os{" "}
           <Link href="/termos">Termos de Uso</Link>.

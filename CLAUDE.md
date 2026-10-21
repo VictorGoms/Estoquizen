@@ -17,6 +17,8 @@ NEXT_PUBLIC_SUPABASE_URL=<sua-url-supabase>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<sua-anon-key>
 NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1   # opcional, este é o padrão
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...     # chave PÚBLICA do Stripe; com ela o pagamento abre dentro do app
+NEXT_PUBLIC_POSTHOG_KEY=phc_...                    # opcional: analytics (EQZ-01). Sem ela, nada de analytics nem aviso de cookies (o normal em dev)
+NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com  # região do projeto no PostHog; destino do proxy /ingest
 ```
 
 ## Dev local (HTTPS)
@@ -32,6 +34,7 @@ npm run dev   # usa --experimental-https com cert/key em ./certs/
 ## Proxy (next.config.ts)
 Requisições `/api/v1/*` são proxiadas pelo Next.js para `http://localhost:3001/api/v1/*`,
 permitindo que o celular (HTTPS) alcance o Fastify (HTTP) sem mixed-content errors.
+`/ingest/*` vai para o PostHog (`NEXT_PUBLIC_POSTHOG_HOST` e o `-assets` dele), para bloqueador de anúncio não cortar o analytics; por isso `skipTrailingSlashRedirect: true`.
 
 ## Regras de layout
 - Sidebar fixa: `w-64` (`lg:flex`), painel flutuante arredondado; offset via `lg:pl-64` no main e `lg:left-64` no topbar
@@ -124,6 +127,8 @@ components/
   # Sem depoimentos inventados: prova social só com cliente real
 
   # Sessão
+  Analytics.tsx             — no layout: aviso de cookies ("Só o necessário" e "Aceitar" com o mesmo peso) e ligação do login com o PostHog (identify/reset). Só aparece com `NEXT_PUBLIC_POSTHOG_KEY`
+  BotaoCookies.tsx          — "Preferências de cookies" (reabre o aviso): rodapé, páginas legais e Perfil
   SessionGuard.tsx          — verifica sessão + inatividade, redireciona para /login
   SessionGuardWrapper.tsx   — wrapper client para usar SessionGuard no layout.tsx. Quais telas pedem login fica em `lib/rotas.ts`: **tela nova precisa entrar em `ROTAS_PUBLICAS` ou `ROTAS_INTERNAS`** (o teste `rotas.test.ts` falha se faltar)
   WorkspaceGate.tsx         — workspace com assinatura encerrada (trial_expired, canceled, deleted): as páginas internas viram a tela de bloqueio; ficam abertas /select-workspace, /perfil e /configuracoes. Sem piscar: a escolha de workspace já deixa a assinatura no cache do SWR (`guardarSubscription`) e o último "bloqueado" fica no localStorage (`estoquizen_bloqueado:<id>`), lido num layout effect antes da primeira pintura
@@ -167,6 +172,8 @@ components/
 - **`rotas.ts`** — telas públicas × internas (`rotaAberta`), usado pelo SessionGuardWrapper e pelo robots
 - **`perguntas.ts`** — perguntas frequentes da landing (com JSON-LD FAQPage) e do /llms.txt
 - **`llms.ts`** — texto do /llms.txt
+- **`analytics.ts`** — EQZ-01, PostHog com consentimento (opção A da LGPD, decisão do João em 2026-10-21): o pacote só é baixado e só grava algo no navegador depois do "Aceitar"; "Só o necessário" depois de aceitar para de contar e apaga os cookies do PostHog (`disable_persistence`). Sem gravação de sessão, `mask_all_text` (clique sem o texto da tela), `limparEvento` no `before_send` (endereço sem #hash e só com os parâmetros de `PARAMS_LIVRES`, porque links de login trazem tokens) e `identify` só com o id do Supabase. `registrar(evento, props)` não faz nada sem aceite
+- **`eventos.ts`** — eventos do funil a partir das escritas na API (`api.ts` chama `eventoDaChamada` depois de cada POST que dá certo): `empresa_criada`, `produto_cadastrado`, `produtos_importados`, `nota_importada`, `movimentacao_registrada`, `contagem_feita`, `membro_convidado`, `pagamento_aberto`, `motivo_cancelamento`, `assinatura_cancelada/pausada/retomada` etc. Rota nova que importa para o funil? Ponha aqui (e no teste). Fora daqui: `cadastro_criado` (cadastro e /auth/callback para Google) e `assinou` (PagamentoEmbutido). Nunca mandar nome, e-mail, CPF, nome de produto ou texto digitado
 - **`supabase.ts`** — singleton `supabase` criado a partir das env vars
 - **`api.ts`** — cliente HTTP (`api.get/post/patch/delete`); injeta Bearer token do Supabase automaticamente; base URL via `NEXT_PUBLIC_API_URL`
 - **`session.ts`** — gestão de sessão em duas camadas: `sessionStorage` (fecha ao fechar o browser) + `localStorage` para inatividade (timeout: 2h); funções: `markSessionActive`, `isBrowserSessionActive`, `isActivityValid`, `touchActivity`, `clearSession`

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import SessionGuardWrapper from "@/components/SessionGuardWrapper";
+import Analytics from "@/components/Analytics";
 import { SITE_URL, SITE_NOME, TITULO_PADRAO, DESCRICAO_PADRAO } from "@/lib/site";
 
 const nunito = Nunito({
@@ -37,6 +38,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`scroll-smooth ${nunito.variable}`} data-scroll-behavior="smooth">
       <body className="bg-ink text-fg font-sans antialiased">
         <SessionGuardWrapper>{children}</SessionGuardWrapper>
+        <Analytics />
       </body>
     </html>
   );

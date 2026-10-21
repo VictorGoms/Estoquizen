@@ -6,6 +6,7 @@ import { loadStripe } from "@stripe/stripe-js/pure";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { api } from "@/lib/api";
 import { CHAVE_STRIPE } from "@/lib/pagamento";
+import { registrar } from "@/lib/analytics";
 import { XIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 /* Carrega o Stripe.js uma vez só, e só quando alguém for pagar. O "pure" importa: o pacote normal
@@ -67,6 +68,7 @@ export default function PagamentoEmbutido({ workspaceId, plan, planLabel, onFech
   /* Pagamento aprovado: espera o webhook marcar a assinatura como ativa (até ~40 s) */
   async function aoConcluir() {
     setFase("ativando");
+    registrar("assinou", { plano: plan });   // fim do funil (EQZ-01)
     for (let i = 0; i < 20 && vivo.current; i++) {
       const s = await api.get<{ status: string; plan: string }>(`/billing/subscription?workspace_id=${workspaceId}`).catch(() => null);
       if (s && s.status === "active" && s.plan === plan) break;

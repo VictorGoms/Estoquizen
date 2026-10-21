@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo from "./Logo";
 import { CONTATO, PRAZO_RESPOSTA } from "@/lib/site";
+import BotaoCookies from "./BotaoCookies";
 
 const LINKS = [
   { label: "Recursos",      href: "#recursos" },
@@ -36,6 +37,9 @@ export default function Footer() {
           Dúvidas? Escreva para{" "}
           <a href={`mailto:${CONTATO}`} className="text-accent font-extrabold underline-offset-2 hover:underline">{CONTATO}</a>
           {" "}· respondemos em até {PRAZO_RESPOSTA}.
+        </p>
+        <p className="mt-2 text-center">
+          <BotaoCookies className="min-h-[44px] px-3 text-[13px] font-bold text-fg-subtle hover:text-fg underline-offset-2 hover:underline" />
         </p>
       </div>
     </footer>

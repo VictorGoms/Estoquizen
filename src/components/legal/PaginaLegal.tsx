@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import { CONTATO } from "@/lib/site";
+import BotaoCookies from "@/components/BotaoCookies";
 
 /*
  * Molde das páginas legais (/termos, /privacidade): mesmo visual da /licencas, texto corrido em
@@ -15,9 +16,9 @@ export const DADOS_LEGAIS = {
   atualizado:  "21 de outubro de 2026",
 };
 
-export function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+export function Secao({ titulo, id, children }: { titulo: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-2.5">
+    <section id={id} className="flex flex-col gap-2.5 scroll-mt-6">
       <h2 className="text-lg font-black">{titulo}</h2>
       <div className="flex flex-col gap-2.5 text-[15px] font-semibold text-fg-soft leading-relaxed [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-1.5 [&_ul]:pl-5 [&_ul]:list-disc [&_strong]:text-fg [&_strong]:font-extrabold [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2">
         {children}
@@ -48,6 +49,7 @@ export default function PaginaLegal({ titulo, resumo, children }: { titulo: stri
           <Link href="/privacidade" className="hover:text-fg">Política de Privacidade</Link>
           <Link href="/licencas" className="hover:text-fg">Licenças</Link>
           <a href={`mailto:${DADOS_LEGAIS.contato}`} className="hover:text-fg">{DADOS_LEGAIS.contato}</a>
+          <BotaoCookies className="hover:text-fg" />
         </nav>
       </main>
     </div>

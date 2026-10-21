@@ -17,6 +17,7 @@ import { SlidersIcon, ArrowRightIcon, CheckIcon, Spinner } from "@/components/ui
 import FormField, { inputClass } from "@/components/ui/FormField";
 import { sanitizeEmail } from "@/lib/sanitize";
 import { caminhoNovo, apagarFotoAntiga } from "@/lib/storageImage";
+import BotaoCookies from "@/components/BotaoCookies";
 
 const LogOutIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -350,6 +351,7 @@ export default function PerfilPage() {
           >
             Sair de todos os aparelhos
           </button>
+          <BotaoCookies className="-mt-2 min-h-[44px] flex items-center justify-center rounded-full text-sm font-extrabold text-fg-muted hover:bg-white/5 hover:text-fg transition-colors" />
 
         </div>
       </main>

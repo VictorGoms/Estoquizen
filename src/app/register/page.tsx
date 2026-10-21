@@ -10,6 +10,7 @@ import SocialButton from "@/components/auth/SocialButton";
 import Divider from "@/components/auth/Divider";
 import { supabase } from "@/lib/supabase";
 import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
+import { registrar } from "@/lib/analytics";
 import { MailIcon, CheckIcon } from "@/components/ui/icons";
 
 export default function RegisterPage() {
@@ -56,6 +57,7 @@ export default function RegisterPage() {
 
     setLoading(false);
     if (authError) { setError(authErrorPt(authError.message)); return; }
+    registrar("cadastro_criado", { metodo: "email" });   // começo do funil (EQZ-01); Google conta no /auth/callback
 
     if (data.session) {
       /* Confirmação de email desativada — usuário já está logado */

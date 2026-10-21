@@ -8,14 +8,21 @@ import { supabase } from "@/lib/supabase";
 import PageLoader from "@/components/ui/PageLoader";
 import { markSessionActive } from "@/lib/session";
 import { readAuthLinkError } from "@/lib/authMessages";
+import { registrar } from "@/lib/analytics";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    function redirect(session: { user?: { user_metadata?: Record<string, unknown> } } | null) {
+    function redirect(session: { user?: { user_metadata?: Record<string, unknown>; app_metadata?: Record<string, unknown>; created_at?: string } } | null) {
       if (!session) return;
       markSessionActive();
+      /* Conta nova pelo Google (criada agora há pouco): começo do funil (EQZ-01). O cadastro por
+         e-mail já conta na tela de cadastro */
+      const criadaEm = session.user?.created_at ? new Date(session.user.created_at).getTime() : 0;
+      if (session.user?.app_metadata?.provider === "google" && Date.now() - criadaEm < 10 * 60_000) {
+        registrar("cadastro_criado", { metodo: "google" });
+      }
       if (session.user?.user_metadata?.from_invite) {
         router.replace("/set-password");
       } else {
