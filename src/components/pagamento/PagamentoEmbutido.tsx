@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { loadStripe, type Stripe } from "@stripe/stripe-js";
+import type { Stripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js/pure";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { api } from "@/lib/api";
 import { CHAVE_STRIPE } from "@/lib/pagamento";
 import { XIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
-/* Carrega o Stripe.js uma vez só, e só quando alguém for pagar */
+/* Carrega o Stripe.js uma vez só, e só quando alguém for pagar. O "pure" importa: o pacote normal
+   injeta o script do Stripe (com cookie de terceiro) assim que é importado, e este componente entra
+   no layout de todas as páginas pela tela de bloqueio, inclusive na landing */
 let stripePromise: Promise<Stripe | null> | null = null;
 const obterStripe = () => (stripePromise ??= loadStripe(CHAVE_STRIPE));
 
