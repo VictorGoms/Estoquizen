@@ -1,5 +1,5 @@
 import Link from "next/link";
-import DashboardMock from "./DashboardMock";
+import HeroLoop from "./HeroLoop";
 import { ArrowRightIcon, ChevronDownIcon, CheckIcon } from "@/components/ui/icons";
 
 const TRUST = ["14 dias grátis no plano Growth", "Sem cartão para testar", "Funciona no celular e no PC"];
@@ -49,9 +49,9 @@ export default function Hero() {
             </ul>
           </div>
 
-          {/* zoom: o mock cresce inteiro (fontes e espaços) nas telas grandes */}
+          {/* zoom: o card do vídeo cresce junto com o resto do hero nas telas grandes */}
           <div className="w-full 2xl:zoom-[1.12] 3xl:zoom-[1.4]">
-            <DashboardMock />
+            <HeroLoop />
           </div>
         </div>
       </div>

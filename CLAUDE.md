@@ -115,7 +115,7 @@ Apenas 3: `owner`, `admin`, `member`
 ```
 components/
   # Landing page
-  Header.tsx / Footer.tsx / Hero.tsx / Problem.tsx / Benefits.tsx / HowItWorks.tsx / Pricing.tsx / Faq.tsx / CTA.tsx / DashboardMock.tsx / Logo.tsx
+  Header.tsx / Footer.tsx / Hero.tsx / Problem.tsx / Benefits.tsx / HowItWorks.tsx / Pricing.tsx / Faq.tsx / CTA.tsx / HeroLoop.tsx (vídeo em loop do hero, arquivos em public/hero/) / Logo.tsx
   # Ordem: Hero → Problem (dor + frase de posicionamento) → Benefits → HowItWorks → Pricing (#precos) → Faq (#perguntas, com JSON-LD FAQPage) → CTA
   # Sem depoimentos inventados: prova social só com cliente real
 
