@@ -36,7 +36,8 @@ interface CancelamentoProps {
   /** Data da próxima mensalidade (a que a pausa pula) */
   proximaCobranca: string | null;
   pausaDisponivel: boolean;
-  onCancelar: () => void;
+  /** Cancelado no fim do ciclo (POST /billing/cancel); recebe até quando o acesso vale */
+  onCancelado: (acessoAte: string | null) => void;
   onDescer:   (plan: Plan) => void;
   onPausado:  (pausa: { pause_starts_at: string; pause_ends_at: string }) => void;
   onFechar:   () => void;
@@ -45,7 +46,7 @@ interface CancelamentoProps {
 const data = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) : null);
 
 /**
- * Antes de abrir o cancelamento do Stripe: 1 pergunta e, conforme o motivo, uma oferta.
+ * Cancelamento dentro do app: 1 pergunta e, conforme o motivo, uma oferta; depois a confirmação.
  * "Caro" oferece o plano mais barato que caiba no uso; "pouco uso" e "negócio parado" oferecem
  * pausar por 1 ou 2 meses (usa até o fim do mês pago; depois o app fica bloqueado, sem cobrança, e
  * volta sozinho). A resposta vai para cancel_feedback.
@@ -57,6 +58,8 @@ export default function Cancelamento(props: CancelamentoProps) {
   const [agindo, setAgindo]     = useState<"cancelar" | "pausar" | "trocar_plano" | null>(null);
   const [erro, setErro]         = useState("");
   const [meses, setMeses]       = useState<1 | 2 | null>(null);
+  /* Segundo passo: a confirmação, com até quando vale e o que acontece depois */
+  const [confirmando, setConfirmando] = useState(false);
 
   /* Plano mais barato abaixo do atual em que produtos e equipe cabem */
   const descerPara = ORDEM.slice(0, ORDEM.indexOf(plan)).find((p) => {
@@ -82,8 +85,15 @@ export default function Cancelamento(props: CancelamentoProps) {
 
   async function cancelar() {
     setAgindo("cancelar");
+    setErro("");
     await registrar("cancelar");
-    props.onCancelar();
+    try {
+      const r = await api.post<{ acesso_ate: string | null }>("/billing/cancel", { workspace_id: workspaceId });
+      props.onCancelado(r.acesso_ate);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Não foi possível cancelar. Tente novamente.");
+      setAgindo(null);
+    }
   }
 
   async function descer() {
@@ -194,20 +204,42 @@ export default function Cancelamento(props: CancelamentoProps) {
         </div>
       )}
 
+      {confirmando && (
+        <div role="alertdialog" aria-labelledby="cancelar-titulo" className="bg-zero/10 ring-1 ring-zero/30 rounded-3xl p-4 flex flex-col gap-3">
+          <p id="cancelar-titulo" className="text-[15px] font-black">Cancelar o plano {PLAN_INFO[plan].label}?</p>
+          <p className="text-sm font-bold text-fg-muted">
+            Você usa normalmente até {data(proximaCobranca) ?? "o fim do mês pago"} e não há mais cobranças. Depois, o workspace
+            fica bloqueado e os dados ficam guardados por 30 dias (dá para exportar). Até lá, dá para desfazer em Configurações.
+          </p>
+        </div>
+      )}
+
       {erro && <p role="alert" className="text-sm font-bold text-zero">{erro}</p>}
 
       <div className="flex flex-wrap gap-2.5">
+        {confirmando ? (
+          <button
+            type="button"
+            onClick={cancelar}
+            disabled={!!agindo}
+            className="min-h-[44px] px-5 rounded-full bg-zero text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-60 flex items-center gap-2"
+          >
+            {agindo === "cancelar" && <Spinner className="w-4 h-4" />}
+            {agindo === "cancelar" ? "Cancelando…" : "Confirmar cancelamento"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmando(true)}
+            disabled={!motivo || !!agindo}
+            className="min-h-[44px] px-5 rounded-full bg-ink text-sm font-black text-fg cursor-pointer hover:bg-panel transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Continuar com o cancelamento
+          </button>
+        )}
         <button
           type="button"
-          onClick={cancelar}
-          disabled={!motivo || !!agindo}
-          className="min-h-[44px] px-5 rounded-full bg-ink text-sm font-black text-fg cursor-pointer hover:bg-panel transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {agindo === "cancelar" ? "Abrindo…" : "Continuar com o cancelamento"}
-        </button>
-        <button
-          type="button"
-          onClick={props.onFechar}
+          onClick={() => (confirmando ? setConfirmando(false) : props.onFechar())}
           disabled={!!agindo}
           className="min-h-[44px] px-5 rounded-full text-sm font-extrabold text-fg-muted cursor-pointer hover:bg-white/5 hover:text-fg transition-colors"
         >

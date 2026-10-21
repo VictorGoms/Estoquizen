@@ -140,7 +140,7 @@ components/
     ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
 
   configuracoes/
-    Cancelamento.tsx — EQZ-07: antes do cancelamento do Stripe, 1 pergunta e uma oferta (descer para o plano mais barato que caiba ou pausar por 1 ou 2 meses: usa até o fim do mês pago, depois fica bloqueado sem cobrança e volta sozinho); grava em /billing/cancel-feedback. Em Configurações, pausa agendada tem "Desfazer pausa" e a em andamento "Retomar agora"
+    Cancelamento.tsx — EQZ-07: cancelamento 100% no app (sem o Stripe): 1 pergunta, uma oferta e a confirmação (POST /billing/cancel); depois "Desfazer cancelamento" em Configurações. A oferta (descer para o plano mais barato que caiba ou pausar por 1 ou 2 meses: usa até o fim do mês pago, depois fica bloqueado sem cobrança e volta sozinho); grava em /billing/cancel-feedback. Em Configurações, pausa agendada tem "Desfazer pausa" e a em andamento "Retomar agora"
 
   onboarding/
     OnboardingShell.tsx / PlanCard.tsx / StepIndicator.tsx

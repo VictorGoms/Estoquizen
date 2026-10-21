@@ -84,8 +84,6 @@ interface Subscription {
 export default function ConfiguracoesPage() {
   const router = useRouter();
   const wsRole = useRole();
-  /* Volta do portal depois de cancelar: o webhook atualiza a assinatura logo em seguida */
-  const [justCanceled, setJustCanceled] = useState(false);
 
   const [wsName, setWsName]   = useState("");
   const [userName, setUserName] = useState("");
@@ -109,7 +107,7 @@ export default function ConfiguracoesPage() {
   const [planError, setPlanError]       = useState("");
   /* Descer de plano pede confirmação na tela (subir já mostra o valor no Stripe) */
   const [confirmando, setConfirmando]   = useState<Plan | null>(null);
-  const [portalLoading, setPortalLoading] = useState<"manage" | "cancel" | null>(null);
+  const [portalLoading, setPortalLoading] = useState<"manage" | null>(null);
   const [portalError, setPortalError]     = useState("");
   /* EQZ-07: a pergunta e a oferta antes do cancelamento do Stripe */
   const [cancelando, setCancelando]       = useState(false);
@@ -129,7 +127,6 @@ export default function ConfiguracoesPage() {
     async function load() {
       const ws = getWorkspace();
       if (!ws) { router.push("/select-workspace"); return; }
-      setJustCanceled(new URLSearchParams(window.location.search).get("assinatura") === "cancelada");
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -179,20 +176,33 @@ export default function ConfiguracoesPage() {
     }
   }
 
-  /* "cancel" abre direto a tela de cancelamento do portal (vale no fim do ciclo; os dados ficam 30 dias) */
-  async function handlePortal(flow?: "cancel") {
+  /* Portal do Stripe: cartão, faturas e troca de plano. Cancelar é aqui no app (Cancelamento.tsx) */
+  async function handlePortal() {
     if (!workspace) return;
-    setPortalLoading(flow === "cancel" ? "cancel" : "manage");
+    setPortalLoading("manage");
     setPortalError("");
     try {
-      const { url } = await api.post<{ url: string }>("/billing/portal", {
-        workspace_id: workspace.id,
-        ...(flow && { flow }),
-      });
+      const { url } = await api.post<{ url: string }>("/billing/portal", { workspace_id: workspace.id });
       window.location.href = url;
     } catch (err) {
       setPortalError(err instanceof Error ? err.message : "Não foi possível abrir o portal. Tente novamente.");
       setPortalLoading(null);
+    }
+  }
+
+  /* Desfaz o cancelamento agendado: a assinatura volta a renovar */
+  async function desfazerCancelamento() {
+    if (!workspace) return;
+    setRetomando(true);
+    setErroPausa("");
+    try {
+      await api.post("/billing/uncancel", { workspace_id: workspace.id });
+      setSubscription((s) => (s ? { ...s, cancel_at_period_end: false } : s));
+      mutateSubscription(workspace.id);
+    } catch (err) {
+      setErroPausa(err instanceof Error ? err.message : "Não foi possível desfazer o cancelamento. Tente novamente.");
+    } finally {
+      setRetomando(false);
     }
   }
 
@@ -297,7 +307,7 @@ export default function ConfiguracoesPage() {
   const confirmLabel = `Digite "${workspace?.name ?? ""}" para confirmar`;
   const paying          = subscription?.status === "active" || subscription?.status === "past_due";
   const scheduledCancel = paying && !!subscription?.cancel_at_period_end;
-  const canCancel       = paying && !!subscription?.stripe_subscription_id && !subscription?.cancel_at_period_end && !justCanceled;
+  const canCancel       = paying && !!subscription?.stripe_subscription_id && !subscription?.cancel_at_period_end;
 
   if (!can(wsRole, "canAccessConfiguracoes")) return <AccessDenied />;
 
@@ -351,12 +361,25 @@ export default function ConfiguracoesPage() {
               </div>
             </dl>
 
-            {(justCanceled || scheduledCancel) && (
-              <p role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 text-sm font-bold text-low leading-relaxed">
-                Cancelamento agendado. O acesso completo continua até o fim do ciclo pago; depois, o workspace fica bloqueado
-                e os dados ficam guardados por 30 dias (dá para exportar) antes de serem excluídos.
-                Para desfazer, use &quot;Gerenciar assinatura e pagamento&quot;.
-              </p>
+            {scheduledCancel && (
+              <div role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 flex flex-col gap-3">
+                <p className="text-sm font-bold text-low leading-relaxed">
+                  Cancelamento agendado. O acesso completo continua até {formatDate(subscription?.current_period_end) ?? "o fim do ciclo pago"};
+                  depois, o workspace fica bloqueado e os dados ficam guardados por 30 dias (dá para exportar) antes de serem excluídos.
+                </p>
+                {can(wsRole, "canGerenciarAssinatura") && (
+                  <button
+                    type="button"
+                    onClick={desfazerCancelamento}
+                    disabled={retomando}
+                    className="self-start min-h-[44px] px-5 rounded-full bg-ink text-sm font-black text-fg cursor-pointer hover:bg-panel transition-colors disabled:opacity-60 flex items-center gap-2"
+                  >
+                    {retomando && <Spinner className="w-4 h-4" />}
+                    {retomando ? "Desfazendo…" : "Desfazer cancelamento"}
+                  </button>
+                )}
+                {erroPausa && <p role="alert" className="text-sm font-bold text-zero">{erroPausa}</p>}
+              </div>
             )}
 
             {(subscription?.pausa_agendada || subscription?.pausada) && !scheduledCancel && (
@@ -506,7 +529,13 @@ export default function ConfiguracoesPage() {
                     memberCount={memberCount}
                     proximaCobranca={subscription?.current_period_end ?? null}
                     pausaDisponivel={!!subscription?.pausa_disponivel}
-                    onCancelar={() => handlePortal("cancel")}
+                    onCancelado={() => {
+                      setCancelando(false);
+                      setSubscription((s) => (s ? {
+                        ...s, cancel_at_period_end: true, pausada: false, pausa_agendada: false, pause_starts_at: null, pause_ends_at: null,
+                      } : s));
+                      if (workspace) mutateSubscription(workspace.id);
+                    }}
                     onDescer={(alvo) => {
                       setCancelando(false);
                       setConfirmando(alvo);
