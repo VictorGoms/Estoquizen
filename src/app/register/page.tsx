@@ -155,21 +155,14 @@ export default function RegisterPage() {
             </span>
             <span className="text-sm font-semibold text-fg-muted leading-snug pt-0.5">
               Concordo com os{" "}
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); router.push("/termos"); }}
-                className="text-accent font-extrabold underline-offset-2 hover:underline"
-              >
+              {/* Abrem em outra aba para não perder o que já foi digitado */}
+              <a href="/termos" target="_blank" rel="noopener" className="text-accent font-extrabold underline-offset-2 hover:underline">
                 Termos de uso
-              </button>{" "}
+              </a>{" "}
               e a{" "}
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); router.push("/privacidade"); }}
-                className="text-accent font-extrabold underline-offset-2 hover:underline"
-              >
+              <a href="/privacidade" target="_blank" rel="noopener" className="text-accent font-extrabold underline-offset-2 hover:underline">
                 Política de privacidade
-              </button>
+              </a>
             </span>
           </label>
           {termsError && (
