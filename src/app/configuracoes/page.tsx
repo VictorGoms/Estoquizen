@@ -18,6 +18,8 @@ import { PLAN_INFO } from "@/hooks/usePlan";
 import { PLANOS } from "@/lib/planos";
 import Cancelamento from "@/components/configuracoes/Cancelamento";
 import { mutateSubscription } from "@/hooks/useSubscription";
+import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
+import { pagamentoEmbutido } from "@/lib/pagamento";
 import { SEGMENTOS, type Segmento } from "@/lib/segmentos";
 
 /* ─── Icons ─── */
@@ -112,6 +114,8 @@ export default function ConfiguracoesPage() {
   /* EQZ-07: a pergunta e a oferta antes do cancelamento do Stripe */
   const [cancelando, setCancelando]       = useState(false);
   const [retomando, setRetomando]         = useState(false);
+  /* Assinar dentro do app (Checkout incorporado); troca de plano de quem já paga segue no portal */
+  const [pagandoPlano, setPagandoPlano]   = useState<Plan | null>(null);
   const [erroPausa, setErroPausa]         = useState("");
 
   const [exporting, setExporting]   = useState<"produtos" | "movimentacoes" | null>(null);
@@ -162,6 +166,8 @@ export default function ConfiguracoesPage() {
   /* Quem já paga recebe da API a tela de confirmação do portal (valor proporcional); os outros, o checkout */
   async function handleUpgrade(plan: Plan) {
     if (!workspace) return;
+    const jaPaga = !!subscription?.stripe_subscription_id && (subscription.status === "active" || subscription.status === "past_due");
+    if (pagamentoEmbutido && !jaPaga) { setPlanError(""); setPagandoPlano(plan); return; }
     setUpgradingTo(plan);
     setPlanError("");
     try {
@@ -735,6 +741,16 @@ export default function ConfiguracoesPage() {
 
         </div>
       </main>
+      {pagandoPlano && workspace && (
+        <PagamentoEmbutido
+          workspaceId={workspace.id}
+          plan={pagandoPlano}
+          planLabel={PLAN_CONFIG[pagandoPlano].label}
+          onFechar={() => setPagandoPlano(null)}
+          onConcluido={() => window.location.reload()}
+        />
+      )}
+
       <BottomNav />
     </div>
   );

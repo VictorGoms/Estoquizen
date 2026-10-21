@@ -9,6 +9,8 @@ import SecondaryButton from "@/components/workspace/SecondaryButton";
 import { api } from "@/lib/api";
 import { ArrowRightIcon } from "@/components/ui/icons";
 import { PLANOS as PLANS } from "@/lib/planos";
+import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
+import { pagamentoEmbutido } from "@/lib/pagamento";
 
 const BackIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -21,6 +23,8 @@ export default function PlanSelectionPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>("growth");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  /* Basic e Pro pagam na hora: dentro do app quando há a chave pública do Stripe */
+  const [pagando, setPagando] = useState<{ workspaceId: string; plan: string } | null>(null);
 
   async function handleContinue() {
     if (!selectedPlan) return;
@@ -41,6 +45,12 @@ export default function PlanSelectionPage() {
       sessionStorage.removeItem("pendingWorkspaceName");
       sessionStorage.removeItem("pendingSegment");
       sessionStorage.removeItem("pendingSegmentOther");
+
+      if (selectedPlan !== "growth" && pagamentoEmbutido) {
+        setPagando({ workspaceId: ws.id, plan: selectedPlan });
+        setLoading(false);
+        return;
+      }
 
       if (selectedPlan !== "growth") {
         /* basic e pro não têm trial — redireciona direto para o checkout */
@@ -63,6 +73,15 @@ export default function PlanSelectionPage() {
 
   return (
     <OnboardingShell currentStep={2}>
+      {pagando && (
+        <PagamentoEmbutido
+          workspaceId={pagando.workspaceId}
+          plan={pagando.plan}
+          planLabel={PLANS.find((p) => p.id === pagando.plan)?.name ?? pagando.plan}
+          onFechar={() => router.push("/select-workspace?checkout=canceled")}
+          onConcluido={() => router.push("/select-workspace?checkout=success")}
+        />
+      )}
       <div className="flex flex-col flex-1 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto w-full flex flex-col flex-1">
 

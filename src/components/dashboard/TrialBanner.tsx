@@ -5,6 +5,8 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useRole, can } from "@/hooks/useRole";
 import { BellIcon } from "@/components/ui/icons";
+import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
+import { pagamentoEmbutido } from "@/lib/pagamento";
 
 interface Subscription {
   status: "trialing" | "trial_expired" | "active" | "past_due" | "canceled" | "deleted";
@@ -34,6 +36,7 @@ function daysUntil(dateStr: string): number {
 export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
   const [sub, setSub]         = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pagando, setPagando] = useState(false);
   /* A API só aceita checkout e portal do owner; os outros veem o aviso sem o botão */
   const role                  = useRole();
   const canManage             = can(role, "canGerenciarAssinatura");
@@ -48,6 +51,7 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
 
   async function handleCheckout() {
     if (!sub) return;
+    if (pagamentoEmbutido) { setPagando(true); return; }
     setLoading(true);
     try {
       const { url } = await api.post<{ url: string }>("/billing/checkout", {
@@ -120,6 +124,16 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
   const readOnly = sub.status === "trial_expired" || sub.status === "canceled";
 
   return (
+    <>
+    {pagando && (
+      <PagamentoEmbutido
+        workspaceId={workspaceId}
+        plan={sub.plan}
+        planLabel={PLAN_LABEL[sub.plan] ?? sub.plan}
+        onFechar={() => setPagando(false)}
+        onConcluido={() => window.location.reload()}
+      />
+    )}
     <div
       role={urgent ? "alert" : "status"}
       className={`rounded-4xl px-4 py-3.5 flex items-center justify-between gap-4 flex-wrap ring-1 ${
@@ -161,5 +175,6 @@ export default function TrialBanner({ workspaceId }: { workspaceId: string }) {
         )}
       </div>
     </div>
+    </>
   );
 }

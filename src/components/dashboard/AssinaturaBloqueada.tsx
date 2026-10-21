@@ -5,7 +5,9 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import { api } from "@/lib/api";
 import { can } from "@/hooks/useRole";
-import { guardadoAte, mutateSubscription, type Subscription } from "@/hooks/useSubscription";
+import { guardadoAte, mutateSubscription, lembrarBloqueio, type Subscription } from "@/hooks/useSubscription";
+import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
+import { pagamentoEmbutido } from "@/lib/pagamento";
 import type { ActiveWorkspace } from "@/hooks/useWorkspace";
 import { PLANOS, type PlanoId } from "@/lib/planos";
 import { exportProductsCsv, exportMovementsCsv } from "@/lib/exportCsv";
@@ -39,6 +41,7 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
   const ate          = sub.pausada ? null : guardadoAte(sub);
   const voltaEm      = sub.pausada && sub.pause_ends_at ? new Date(sub.pause_ends_at).toLocaleDateString("pt-BR") : null;
   const [retomando, setRetomando] = useState(false);
+  const [pagando, setPagando]     = useState(false);
 
   const [plano, setPlano]         = useState<PlanoId>((PLANOS.some((p) => p.id === sub.plan) ? sub.plan : "growth") as PlanoId);
   const [assinando, setAssinando] = useState(false);
@@ -53,6 +56,7 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
   const urgente = dias !== null && dias <= 7;
 
   async function assinar() {
+    if (pagamentoEmbutido) { setErro(""); setPagando(true); return; }
     setAssinando(true);
     setErro("");
     try {
@@ -99,6 +103,20 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
 
   return (
     <div className="min-h-screen bg-ink flex flex-col items-center justify-center gap-6 px-4 py-10">
+      {pagando && (
+        <PagamentoEmbutido
+          workspaceId={workspace.id}
+          plan={plano}
+          planLabel={escolhido.name}
+          onFechar={() => setPagando(false)}
+          onConcluido={() => {
+            /* Plano ativo: some a tela de bloqueio */
+            lembrarBloqueio(workspace.id, false);
+            mutateSubscription(workspace.id);
+            setPagando(false);
+          }}
+        />
+      )}
       <Link href="/select-workspace" className="flex items-center gap-2.5" aria-label="Estoquizen — trocar de workspace">
         <Logo size={32} />
         <span className="text-lg font-black">Estoquizen</span>

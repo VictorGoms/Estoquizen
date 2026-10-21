@@ -16,6 +16,7 @@ Criar `.env.local` na raiz com:
 NEXT_PUBLIC_SUPABASE_URL=<sua-url-supabase>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<sua-anon-key>
 NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1   # opcional, este é o padrão
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...     # chave PÚBLICA do Stripe; com ela o pagamento abre dentro do app
 ```
 
 ## Dev local (HTTPS)
@@ -138,6 +139,9 @@ components/
 
   nota/
     ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
+
+  pagamento/
+    PagamentoEmbutido.tsx — pagamento dentro do app (Checkout incorporado do Stripe, 2026-10-21): quadro sobre a página com o formulário do Stripe; depois de pagar espera o webhook ativar o plano. Usado na escolha de plano, na tela de bloqueio, no banner do trial e em Configurações. Troca de plano de quem já paga segue no portal (a API devolve url). Sem `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`lib/pagamento.ts`), tudo vai para a página do Stripe como antes
 
   configuracoes/
     Cancelamento.tsx — EQZ-07: cancelamento 100% no app (sem o Stripe): 1 pergunta, uma oferta e a confirmação (POST /billing/cancel); depois "Desfazer cancelamento" em Configurações. A oferta (descer para o plano mais barato que caiba ou pausar por 1 ou 2 meses: usa até o fim do mês pago, depois fica bloqueado sem cobrança e volta sozinho); grava em /billing/cancel-feedback. Em Configurações, pausa agendada tem "Desfazer pausa" e a em andamento "Retomar agora"

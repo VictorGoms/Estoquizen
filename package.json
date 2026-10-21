@@ -10,6 +10,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@stripe/react-stripe-js": "^7.0.0",
+    "@stripe/stripe-js": "^10.1.0",
     "@supabase/supabase-js": "^2.101.1",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
