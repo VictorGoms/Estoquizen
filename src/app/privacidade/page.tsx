@@ -1,7 +1,8 @@
 import Link from "next/link";
 import PaginaLegal, { Secao, DADOS_LEGAIS } from "@/components/legal/PaginaLegal";
+import { metadadosDaPagina } from "@/lib/site";
 
-export const metadata = { title: "Política de Privacidade · Estoquizen" };
+export const metadata = metadadosDaPagina("Política de Privacidade", "Quais dados o Estoquizen usa, para quê, com quem compartilha e quais são os seus direitos (LGPD).", "/privacidade");
 
 /* EQZ-10 (LGPD). Rascunho de 2026-10-21 escrito a partir do que o app faz de verdade: mudou o que
    o app coleta, guarda ou com quem compartilha? Mude aqui. Não é parecer jurídico. */

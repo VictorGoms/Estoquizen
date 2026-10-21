@@ -110,6 +110,9 @@ Apenas 3: `owner`, `admin`, `member`
 - `/contagem`            — Contagem do dia (Growth/Pro; todos os papéis desde o SCRUM-62): 5 itens escolhidos pela curva ABC, contagem às cegas, confiabilidade e sequência
 - `/compras`             — Lista de compras (no mínimo ou acabando em 7 dias, quantidade sugerida, compartilhar pelo WhatsApp). "Adicionar item" põe qualquer produto à mão (`/shopping-list`, vale para a equipe e sai sozinho quando chega uma entrada do produto); os ajustes dos itens automáticos continuam só neste navegador
 - `/licencas`            — Licenças (pública): aviso MIT dos ícones Fluent Emoji e crédito do Open Food Facts (CC BY-SA)
+- `/termos` e `/privacidade` — Termos de Uso e Política de Privacidade (públicas, EQZ-10; dados que mudam em `DADOS_LEGAIS` de `components/legal/PaginaLegal.tsx`)
+- `not-found.tsx`       — Página 404 em português ("Abrir o app" e "Ir para a página inicial"). Endereço desconhecido não passa pelo SessionGuard, então quem não entrou também vê a 404
+- `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/opengraph-image` — gerados no build (EQZ-47): `app/robots.ts` (bloqueia as telas internas), `app/sitemap.ts` (só as públicas), `app/llms.txt/route.ts` (resumo para assistentes de IA, montado de planos, perguntas e ramos) e `app/opengraph-image.tsx` (card do WhatsApp/redes, 1200×630, Nunito do Google Fonts no build)
 - `/perfil`              — Perfil do usuário; "E-mail de acesso" troca o e-mail (`updateUser({ email })`, link de confirmação volta em `/perfil?email=confirmado`; conta só do Google não troca)
 
 ## Estrutura de componentes (`src/components/`)
@@ -122,7 +125,7 @@ components/
 
   # Sessão
   SessionGuard.tsx          — verifica sessão + inatividade, redireciona para /login
-  SessionGuardWrapper.tsx   — wrapper client para usar SessionGuard no layout.tsx
+  SessionGuardWrapper.tsx   — wrapper client para usar SessionGuard no layout.tsx. Quais telas pedem login fica em `lib/rotas.ts`: **tela nova precisa entrar em `ROTAS_PUBLICAS` ou `ROTAS_INTERNAS`** (o teste `rotas.test.ts` falha se faltar)
   WorkspaceGate.tsx         — workspace com assinatura encerrada (trial_expired, canceled, deleted): as páginas internas viram a tela de bloqueio; ficam abertas /select-workspace, /perfil e /configuracoes. Sem piscar: a escolha de workspace já deixa a assinatura no cache do SWR (`guardarSubscription`) e o último "bloqueado" fica no localStorage (`estoquizen_bloqueado:<id>`), lido num layout effect antes da primeira pintura
 
   auth/
@@ -160,6 +163,10 @@ components/
 ```
 
 ## Utilitários (`src/lib/`)
+- **`site.ts`** — EQZ-47: endereço oficial (`SITE_URL`, com www), `CONTATO`, `PRAZO_RESPOSTA` ("1 dia útil", rodapé e FAQ), título e descrição padrão e `metadadosDaPagina(titulo, descricao, caminho)` para página pública (título, canônico, card do WhatsApp com a imagem). O `openGraph` de uma página substitui o do layout inteiro: use o helper ou repita tudo
+- **`rotas.ts`** — telas públicas × internas (`rotaAberta`), usado pelo SessionGuardWrapper e pelo robots
+- **`perguntas.ts`** — perguntas frequentes da landing (com JSON-LD FAQPage) e do /llms.txt
+- **`llms.ts`** — texto do /llms.txt
 - **`supabase.ts`** — singleton `supabase` criado a partir das env vars
 - **`api.ts`** — cliente HTTP (`api.get/post/patch/delete`); injeta Bearer token do Supabase automaticamente; base URL via `NEXT_PUBLIC_API_URL`
 - **`session.ts`** — gestão de sessão em duas camadas: `sessionStorage` (fecha ao fechar o browser) + `localStorage` para inatividade (timeout: 2h); funções: `markSessionActive`, `isBrowserSessionActive`, `isActivityValid`, `touchActivity`, `clearSession`
@@ -168,7 +175,7 @@ components/
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
 - **`iconeProduto.ts`** — EQZ-30: 231 ícones Fluent Emoji 3D em `public/icones/produtos/<chave>.webp` (14 grupos; eram 80 até 2026-10-20), dicionário de sinônimos do comércio, palavras do Unicode CLDR em português escolhidas à mão e `iconeDoNome` (expressões → palavras fortes → CLDR → genéricas, com plural); `iconeDoProduto(nome, icon)` respeita a escolha manual (`"nenhum"` = só iniciais); `buscarIcones` alimenta a busca do seletor. Ícone novo: PNG 3D do Fluent convertido para WebP 128 px + entrada em `ICONES` e nos sinônimos (a chave precisa casar com o CHECK `^[a-z]{2,20}$` de `products.icon`). Antes de mexer no dicionário, rodar uma lista de nomes nas versões antiga e nova e comparar
 - **`segmentos.ts`** — EQZ-13: os 7 ramos (`workspaces.segment`), com atalhos de unidade (`ordenarUnidades`: só muda a ordem da lista única), termo (insumos × produtos), dica de rotina e a lista pronta. Os nomes dos itens batem com o dicionário de ícones. Ramo também em Configurações
-- **`planos.ts`** — `PLANOS`: preços e recursos de cada plano, usados na escolha de plano e nos preços da landing (um lugar só). Preços da EQZ-11 (24,90 / 39,90 / 59,90) desde 2026-10-20
+- **`planos.ts`** — `PLANOS`: preços e recursos de cada plano, usados na escolha de plano e nos preços da landing (um lugar só). Preços da EQZ-11 (24,90 / 39,90 / 59,90) desde 2026-10-20. `precoEmNumero` alimenta o JSON-LD (`SoftwareApplication` com as ofertas, na `app/page.tsx`) e o llms.txt
 - **`planilha.ts`** — importação de planilha (EQZ-14): `lerArquivo` (CSV `;`/`,`/tab com UTF-8 ou Windows-1252, ou .xlsx), `adivinharColunas`, `validar` (número em formato brasileiro, código em notação científica, já cadastrado, repetido) e `baixarModelo`
 - **`exportCsv.ts`** — `exportProductsCsv` / `exportMovementsCsv`: CSV no formato do Excel em português (`;`, vírgula decimal, BOM), paginado de 1000 em 1000; usado em `/configuracoes#exportar`
 

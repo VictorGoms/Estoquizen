@@ -15,9 +15,14 @@ const NAV_LINKS = [
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  /* Passou do botão do hero: no celular, o "Começar grátis" vai para o topo fixo (EQZ-47) */
+  const [passouHero, setPassouHero] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 12);
+      setPassouHero(window.scrollY > 480);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -33,7 +38,8 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 3xl:h-[76px] pl-3 pr-2 sm:pl-4">
           <Link href="#home" className="flex items-center gap-2.5 group" aria-label="Estoquizen — início da página">
             <Logo size={34} />
-            <span className="text-lg font-black tracking-tight text-fg group-hover:text-accent transition-colors duration-200">
+            {/* No celular, com o "Começar grátis" no topo, sobra só o símbolo para caber */}
+            <span className={`text-lg font-black tracking-tight text-fg group-hover:text-accent transition-colors duration-200 ${passouHero ? "max-sm:hidden" : ""}`}>
               Estoquizen
             </span>
           </Link>
@@ -59,10 +65,18 @@ export default function Header() {
             </Link>
           </div>
 
+          {/* Celular (EQZ-47): no topo da página, "Entrar"; depois de passar do hero, o botão de
+              cadastro acompanha a rolagem. "Entrar" continua no menu */}
           <div className="flex md:hidden items-center gap-2">
-            <Link href="/login" className="min-h-[44px] flex items-center px-4 rounded-full bg-surface text-sm font-extrabold">
-              Entrar
-            </Link>
+            {passouHero ? (
+              <Link href="/register" className="min-h-[44px] flex items-center px-4 rounded-full bg-accent text-ink text-sm font-black whitespace-nowrap">
+                Começar grátis
+              </Link>
+            ) : (
+              <Link href="/login" className="min-h-[44px] flex items-center px-4 rounded-full bg-surface text-sm font-extrabold">
+                Entrar
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
@@ -88,9 +102,14 @@ export default function Header() {
                 {link.label}
               </a>
             ))}
-            <Link href="/register" className="mt-1 min-h-[52px] flex items-center justify-center rounded-full bg-accent text-ink text-base font-black">
-              Começar grátis
-            </Link>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              <Link href="/login" className="min-h-[52px] flex items-center justify-center rounded-full bg-surface text-base font-extrabold">
+                Entrar
+              </Link>
+              <Link href="/register" className="min-h-[52px] flex items-center justify-center rounded-full bg-accent text-ink text-base font-black">
+                Começar grátis
+              </Link>
+            </div>
           </div>
         )}
       </div>

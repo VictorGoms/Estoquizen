@@ -4,14 +4,13 @@ import { usePathname } from "next/navigation";
 import SessionGuard from "@/components/SessionGuard";
 import WorkspaceGate from "@/components/WorkspaceGate";
 import { UserProvider } from "@/lib/userContext";
+import { rotaAberta } from "@/lib/rotas";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/register-company", "/plan-selection", "/auth/callback", "/forgot-password", "/reset-password", "/convite-invalido", "/set-password", "/aceitar-convite", "/licencas", "/termos", "/privacidade"];
-
+/* Telas públicas e links quebrados (página 404) passam direto; a lista fica em lib/rotas.ts */
 export default function SessionGuardWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 
-  if (isPublic) return <>{children}</>;
+  if (rotaAberta(pathname)) return <>{children}</>;
   return (
     <UserProvider>
       <SessionGuard>

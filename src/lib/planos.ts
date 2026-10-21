@@ -75,3 +75,8 @@ export const PLANOS: PlanoVenda[] = [
     ]),
   },
 ];
+
+/** "R$ 24,90" → 24.9 (para o JSON-LD e o llms.txt, EQZ-47) */
+export function precoEmNumero(price: string): number {
+  return Number(price.replace(/[^\d,]/g, "").replace(",", "."));
+}

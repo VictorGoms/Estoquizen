@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
 import SessionGuardWrapper from "@/components/SessionGuardWrapper";
+import { SITE_URL, SITE_NOME, TITULO_PADRAO, DESCRICAO_PADRAO } from "@/lib/site";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -10,11 +11,16 @@ const nunito = Nunito({
   display: "swap",
 });
 
+/* Metadados do site (EQZ-47). Página pública com título próprio usa metadadosDaPagina (lib/site.ts),
+   que também põe o endereço canônico. A imagem do WhatsApp/redes vem do opengraph-image.tsx */
 export const metadata: Metadata = {
-  title: "Estoquizen — Controle de estoque simples e inteligente",
-  description:
-    "Pare de usar planilhas. Gerencie seu estoque com precisão, alertas inteligentes e visão em tempo real do seu negócio.",
-  keywords: ["controle de estoque", "gestão de estoque", "saas estoque", "stock precision"],
+  metadataBase: new URL(SITE_URL),
+  title: { default: TITULO_PADRAO, template: `%s · ${SITE_NOME}` },
+  description: DESCRICAO_PADRAO,
+  applicationName: SITE_NOME,
+  keywords: ["controle de estoque", "app de estoque", "estoque no celular", "leitor de código de barras", "estoque para pequenos negócios"],
+  openGraph: { type: "website", locale: "pt_BR", siteName: SITE_NOME, title: TITULO_PADRAO, description: DESCRICAO_PADRAO },
+  twitter: { card: "summary_large_image" },
 };
 
 /* Tema escuro nativo (select, barras de rolagem) e área segura do iPhone para o menu inferior */

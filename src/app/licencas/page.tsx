@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { metadadosDaPagina } from "@/lib/site";
 
-export const metadata = { title: "Licenças · Estoquizen" };
+export const metadata = metadadosDaPagina("Licenças", "Conteúdo de terceiros usado no Estoquizen: ícones Fluent Emoji (MIT) e fotos do Open Food Facts.", "/licencas");
 
 /* Créditos de conteúdo de terceiros usado no app (EQZ-30): os ícones dos produtos (Fluent Emoji,
    MIT, que pede o aviso de licença junto) e as fotos de embalagem do Open Food Facts (CC BY-SA). */

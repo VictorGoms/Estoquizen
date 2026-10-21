@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import { CONTATO } from "@/lib/site";
 
 /*
  * Molde das páginas legais (/termos, /privacidade): mesmo visual da /licencas, texto corrido em
@@ -7,10 +8,9 @@ import Logo from "@/components/Logo";
  */
 
 export const DADOS_LEGAIS = {
-  /* Rascunho de 2026-10-21: confirmar com o João antes de publicar (e trocar pela razão social e
-     CNPJ quando houver) */
+  /* Aprovados pelo João em 2026-10-21. Trocar pela razão social e CNPJ quando houver */
   responsavel: "João Victor da Silva Gomes",
-  contato:     "contato@estoquizen.com.br",
+  contato:     CONTATO,
   foro:        "São Paulo/SP",
   atualizado:  "21 de outubro de 2026",
 };

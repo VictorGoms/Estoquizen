@@ -1,7 +1,8 @@
 import Link from "next/link";
 import PaginaLegal, { Secao, DADOS_LEGAIS } from "@/components/legal/PaginaLegal";
+import { metadadosDaPagina } from "@/lib/site";
 
-export const metadata = { title: "Termos de Uso · Estoquizen" };
+export const metadata = metadadosDaPagina("Termos de Uso", "As regras para usar o Estoquizen: conta, planos, cobrança, cancelamento e responsabilidades.", "/termos");
 
 /* EQZ-10. Rascunho de 2026-10-21 com as regras que o app aplica hoje (teste, cobrança, pausa,
    cancelamento, exclusão). Mudou uma regra? Mude aqui também. Não é parecer jurídico. */

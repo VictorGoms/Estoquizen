@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Logo from "./Logo";
+import { CONTATO, PRAZO_RESPOSTA } from "@/lib/site";
 
 const LINKS = [
   { label: "Recursos",      href: "#recursos" },
@@ -30,6 +31,12 @@ export default function Footer() {
           </nav>
           <p className="text-[13px] font-bold text-fg-subtle">© 2026 Estoquizen</p>
         </div>
+        {/* Contato com prazo de resposta (EQZ-47, decisão do João em 2026-10-21) */}
+        <p className="mt-4 px-4 text-center text-sm font-bold text-fg-muted">
+          Dúvidas? Escreva para{" "}
+          <a href={`mailto:${CONTATO}`} className="text-accent font-extrabold underline-offset-2 hover:underline">{CONTATO}</a>
+          {" "}· respondemos em até {PRAZO_RESPOSTA}.
+        </p>
       </div>
     </footer>
   );
