@@ -108,7 +108,7 @@ export default function SelectWorkspacePage() {
         if (r) { guardarSubscription(r[0], r[1]); lembrarBloqueio(r[0], estaBloqueada(r[1])); }
         if (!r || !estaBloqueada(r[1])) continue;
         const s = r[1];
-        a[r[0]] = s.status === "canceled" ? "Cancelado" : s.status === "deleted" ? "Em exclusão" : s.trial_ends_at ? "Teste encerrado" : "Pagamento pendente";
+        a[r[0]] = s.pausada ? "Pausado" : s.status === "canceled" ? "Cancelado" : s.status === "deleted" ? "Em exclusão" : s.trial_ends_at ? "Teste encerrado" : "Pagamento pendente";
       }
       setAvisos(a);
     });

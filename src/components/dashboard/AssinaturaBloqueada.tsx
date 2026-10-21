@@ -5,16 +5,17 @@ import Link from "next/link";
 import Logo from "@/components/Logo";
 import { api } from "@/lib/api";
 import { can } from "@/hooks/useRole";
-import { guardadoAte, type Subscription } from "@/hooks/useSubscription";
+import { guardadoAte, mutateSubscription, type Subscription } from "@/hooks/useSubscription";
 import type { ActiveWorkspace } from "@/hooks/useWorkspace";
 import { PLANOS, type PlanoId } from "@/lib/planos";
 import { exportProductsCsv, exportMovementsCsv } from "@/lib/exportCsv";
 import { Spinner } from "@/components/ui/icons";
 
 /*
- * Tela única de workspace bloqueado (trial vencido sem pagamento, assinatura cancelada ou em
- * exclusão). Substitui as páginas internas: o que dá para fazer é assinar de novo ou levar os
- * dados embora. Perfil, troca de workspace e Configurações continuam abertos.
+ * Tela única de workspace bloqueado (trial vencido sem pagamento, assinatura cancelada, em
+ * exclusão ou pausada). Substitui as páginas internas: o que dá para fazer é assinar de novo (ou
+ * retomar, na pausa) ou levar os dados embora. Perfil, troca de workspace e Configurações
+ * continuam abertos.
  */
 
 const LockIcon = () => (
@@ -25,6 +26,7 @@ const LockIcon = () => (
 );
 
 function titulo(sub: Subscription): string {
+  if (sub.pausada) return "Assinatura pausada";
   if (sub.status === "canceled") return "Assinatura cancelada";
   if (sub.status === "deleted") return "Workspace em exclusão";
   /* trial_expired sem data de trial = nunca teve trial (Basic/Pro): o pagamento não foi concluído */
@@ -34,7 +36,9 @@ function titulo(sub: Subscription): string {
 export default function AssinaturaBloqueada({ workspace, sub }: { workspace: ActiveWorkspace; sub: Subscription }) {
   const podePagar    = can(workspace.role, "canGerenciarAssinatura");
   const podeExportar = can(workspace.role, "canAccessConfiguracoes");
-  const ate          = guardadoAte(sub);
+  const ate          = sub.pausada ? null : guardadoAte(sub);
+  const voltaEm      = sub.pausada && sub.pause_ends_at ? new Date(sub.pause_ends_at).toLocaleDateString("pt-BR") : null;
+  const [retomando, setRetomando] = useState(false);
 
   const [plano, setPlano]         = useState<PlanoId>((PLANOS.some((p) => p.id === sub.plan) ? sub.plan : "growth") as PlanoId);
   const [assinando, setAssinando] = useState(false);
@@ -58,6 +62,19 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
       /* Ex.: 409 quando os produtos ou a equipe não cabem no plano escolhido */
       setErro(err instanceof Error ? err.message : "Não foi possível abrir o pagamento. Tente novamente.");
       setAssinando(false);
+    }
+  }
+
+  /* Pausa: cobra uma mensalidade agora e libera na hora (a API desfaz a pausa no Stripe) */
+  async function retomar() {
+    setRetomando(true);
+    setErro("");
+    try {
+      await api.post("/billing/resume", { workspace_id: workspace.id });
+      await mutateSubscription(workspace.id);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Não foi possível retomar. Tente novamente.");
+      setRetomando(false);
     }
   }
 
@@ -89,13 +106,20 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
 
       <main className="w-full max-w-xl bg-surface rounded-5xl p-6 lg:p-8 flex flex-col gap-6">
         <div className="flex flex-col items-center text-center gap-3">
-          <span className="w-16 h-16 rounded-full bg-zero/15 text-zero flex items-center justify-center">
+          <span className={`w-16 h-16 rounded-full flex items-center justify-center ${sub.pausada ? "bg-low/15 text-low" : "bg-zero/15 text-zero"}`}>
             <LockIcon />
           </span>
           <h1 className="text-[26px] font-black tracking-tight leading-tight">{titulo(sub)}</h1>
-          <p className="text-[15px] font-bold text-fg-muted leading-relaxed">
-            O workspace <span className="text-fg">{workspace.name}</span> está bloqueado.
-          </p>
+          {sub.pausada ? (
+            <p className="text-[15px] font-bold text-fg-muted leading-relaxed">
+              O workspace <span className="text-fg">{workspace.name}</span> está pausado{voltaEm ? <> até <span className="text-fg">{voltaEm}</span></> : null}.
+              Nada é cobrado nesse período e os dados ficam guardados. Na volta, a cobrança recomeça e o acesso também.
+            </p>
+          ) : (
+            <p className="text-[15px] font-bold text-fg-muted leading-relaxed">
+              O workspace <span className="text-fg">{workspace.name}</span> está bloqueado.
+            </p>
+          )}
         </div>
 
         {/* Prazo da exclusão: o job de limpeza avisa por e-mail no 14º dia e 3 dias antes */}
@@ -120,7 +144,29 @@ export default function AssinaturaBloqueada({ workspace, sub }: { workspace: Act
           </div>
         )}
 
-        {podePagar ? (
+        {sub.pausada ? (
+          podePagar ? (
+            <section aria-labelledby="bloq-retomar" className="flex flex-col gap-3">
+              <h2 id="bloq-retomar" className="text-sm font-extrabold text-fg-muted">Voltar antes</h2>
+              <button
+                type="button"
+                onClick={retomar}
+                disabled={retomando}
+                className="min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-60"
+              >
+                {retomando ? <><Spinner /> Retomando…</> : "Retomar agora"}
+              </button>
+              <p className="text-[13px] font-bold text-fg-subtle text-center">
+                Cobra a mensalidade hoje, no mesmo cartão, e libera o acesso na hora.
+              </p>
+              {erro && <p role="alert" className="text-sm font-bold text-zero">{erro}</p>}
+            </section>
+          ) : (
+            <p className="px-5 py-3.5 rounded-4xl bg-surface-2 text-sm font-bold text-fg-muted text-center">
+              Fale com o dono do workspace para retomar antes.
+            </p>
+          )
+        ) : podePagar ? (
           <section aria-labelledby="bloq-assinar" className="flex flex-col gap-3">
             <h2 id="bloq-assinar" className="text-sm font-extrabold text-fg-muted">Assinar de novo</h2>
             <div role="group" aria-label="Plano" className="grid grid-cols-3 gap-2">

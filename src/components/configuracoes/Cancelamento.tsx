@@ -38,7 +38,7 @@ interface CancelamentoProps {
   pausaDisponivel: boolean;
   onCancelar: () => void;
   onDescer:   (plan: Plan) => void;
-  onPausado:  (pausedUntil: string) => void;
+  onPausado:  (pausa: { pause_starts_at: string; pause_ends_at: string }) => void;
   onFechar:   () => void;
 }
 
@@ -47,7 +47,8 @@ const data = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("pt
 /**
  * Antes de abrir o cancelamento do Stripe: 1 pergunta e, conforme o motivo, uma oferta.
  * "Caro" oferece o plano mais barato que caiba no uso; "pouco uso" e "negócio parado" oferecem
- * pausar a cobrança por 1 mês (1 vez por ano). A resposta vai para cancel_feedback.
+ * pausar por 1 ou 2 meses (usa até o fim do mês pago; depois o app fica bloqueado, sem cobrança, e
+ * volta sozinho). A resposta vai para cancel_feedback.
  */
 export default function Cancelamento(props: CancelamentoProps) {
   const { workspaceId, plan, productCount, memberCount, proximaCobranca, pausaDisponivel } = props;
@@ -55,6 +56,7 @@ export default function Cancelamento(props: CancelamentoProps) {
   const [detalhe, setDetalhe]   = useState("");
   const [agindo, setAgindo]     = useState<"cancelar" | "pausar" | "trocar_plano" | null>(null);
   const [erro, setErro]         = useState("");
+  const [meses, setMeses]       = useState<1 | 2 | null>(null);
 
   /* Plano mais barato abaixo do atual em que produtos e equipe cabem */
   const descerPara = ORDEM.slice(0, ORDEM.indexOf(plan)).find((p) => {
@@ -91,16 +93,18 @@ export default function Cancelamento(props: CancelamentoProps) {
     props.onDescer(descerPara);
   }
 
-  async function pausar() {
+  async function pausar(n: 1 | 2) {
     setAgindo("pausar");
+    setMeses(n);
     setErro("");
     await registrar("pausar");
     try {
-      const r = await api.post<{ paused_until: string }>("/billing/pause", { workspace_id: workspaceId });
-      props.onPausado(r.paused_until);
+      const r = await api.post<{ pause_starts_at: string; pause_ends_at: string }>("/billing/pause", { workspace_id: workspaceId, meses: n });
+      props.onPausado(r);
     } catch (err) {
-      setErro(err instanceof Error ? err.message : "Não foi possível pausar a cobrança. Tente novamente.");
+      setErro(err instanceof Error ? err.message : "Não foi possível pausar. Tente novamente.");
       setAgindo(null);
+      setMeses(null);
     }
   }
 
@@ -167,21 +171,26 @@ export default function Cancelamento(props: CancelamentoProps) {
       {oferta === "pausar" && (
         <div className="bg-ink rounded-3xl p-4 flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <p className="text-[15px] font-black">Pausar a cobrança por 1 mês</p>
+            <p className="text-[15px] font-black">Pausar por 1 ou 2 meses</p>
             <p className="text-sm font-bold text-fg-muted">
-              {data(proximaCobranca) ? `A mensalidade de ${data(proximaCobranca)} não é cobrada. ` : "A próxima mensalidade não é cobrada. "}
-              O acesso continua normal e os dados ficam. Depois a cobrança volta sozinha. Dá para usar uma vez por ano.
+              Você usa normalmente até {data(proximaCobranca) ?? "o fim do mês"}, que já está pago. Depois, o app fica pausado, sem
+              cobrança, e os dados ficam guardados. No fim da pausa a cobrança volta sozinha e o acesso também; dá para retomar antes.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={pausar}
-            disabled={!!agindo}
-            className="self-start min-h-[44px] px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-60 flex items-center gap-2"
-          >
-            {agindo === "pausar" && <Spinner className="w-4 h-4" />}
-            {agindo === "pausar" ? "Pausando…" : "Pausar 1 mês"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {([1, 2] as const).map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => pausar(n)}
+                disabled={!!agindo}
+                className="min-h-[44px] px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] disabled:opacity-60 flex items-center gap-2"
+              >
+                {agindo === "pausar" && meses === n && <Spinner className="w-4 h-4" />}
+                {agindo === "pausar" && meses === n ? "Pausando…" : n === 1 ? "Pausar 1 mês" : "Pausar 2 meses"}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

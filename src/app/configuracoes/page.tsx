@@ -17,6 +17,7 @@ import { CheckIcon, Spinner } from "@/components/ui/icons";
 import { PLAN_INFO } from "@/hooks/usePlan";
 import { PLANOS } from "@/lib/planos";
 import Cancelamento from "@/components/configuracoes/Cancelamento";
+import { mutateSubscription } from "@/hooks/useSubscription";
 import { SEGMENTOS, type Segmento } from "@/lib/segmentos";
 
 /* ─── Icons ─── */
@@ -72,9 +73,11 @@ interface Subscription {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   cancel_at_period_end: boolean;
-  /* Pausa da cobrança (EQZ-07): calculados pela API */
-  paused_until?: string | null;
+  /* Pausa (EQZ-07): período bloqueado e o que a API calcula na hora */
+  pause_starts_at?: string | null;
+  pause_ends_at?: string | null;
   pausada?: boolean;
+  pausa_agendada?: boolean;
   pausa_disponivel?: boolean;
 }
 
@@ -110,6 +113,8 @@ export default function ConfiguracoesPage() {
   const [portalError, setPortalError]     = useState("");
   /* EQZ-07: a pergunta e a oferta antes do cancelamento do Stripe */
   const [cancelando, setCancelando]       = useState(false);
+  const [retomando, setRetomando]         = useState(false);
+  const [erroPausa, setErroPausa]         = useState("");
 
   const [exporting, setExporting]   = useState<"produtos" | "movimentacoes" | null>(null);
   const [exportMsg, setExportMsg]   = useState("");
@@ -188,6 +193,23 @@ export default function ConfiguracoesPage() {
     } catch (err) {
       setPortalError(err instanceof Error ? err.message : "Não foi possível abrir o portal. Tente novamente.");
       setPortalLoading(null);
+    }
+  }
+
+  /* Desfaz a pausa agendada, ou retoma a que está em andamento (cobra hoje e libera na hora) */
+  async function retomarPausa() {
+    if (!workspace) return;
+    setRetomando(true);
+    setErroPausa("");
+    try {
+      await api.post("/billing/resume", { workspace_id: workspace.id });
+      const s = await api.get<Subscription>(`/billing/subscription?workspace_id=${workspace.id}`).catch(() => null);
+      if (s) setSubscription(s);
+      mutateSubscription(workspace.id);
+    } catch (err) {
+      setErroPausa(err instanceof Error ? err.message : "Não foi possível desfazer a pausa. Tente novamente.");
+    } finally {
+      setRetomando(false);
     }
   }
 
@@ -337,11 +359,26 @@ export default function ConfiguracoesPage() {
               </p>
             )}
 
-            {subscription?.pausada && !scheduledCancel && (
-              <p role="status" className="px-5 py-3.5 rounded-4xl bg-ok/10 text-sm font-bold text-ok leading-relaxed">
-                Cobrança pausada até {formatDate(subscription.paused_until)}. A mensalidade desse período não é cobrada e o
-                acesso continua normal. Depois a cobrança volta sozinha.
-              </p>
+            {(subscription?.pausa_agendada || subscription?.pausada) && !scheduledCancel && (
+              <div role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 flex flex-col gap-3">
+                <p className="text-sm font-bold text-low leading-relaxed">
+                  {subscription.pausada
+                    ? <>Assinatura pausada até {formatDate(subscription.pause_ends_at)}. Nada é cobrado e o app fica bloqueado nesse período; os dados ficam guardados. Depois a cobrança e o acesso voltam sozinhos.</>
+                    : <>Pausa agendada. O acesso continua normal até {formatDate(subscription.pause_starts_at)}; de lá até {formatDate(subscription.pause_ends_at)} o workspace fica pausado, sem cobrança, e depois volta sozinho.</>}
+                </p>
+                {can(wsRole, "canGerenciarAssinatura") && (
+                  <button
+                    type="button"
+                    onClick={retomarPausa}
+                    disabled={retomando}
+                    className="self-start min-h-[44px] px-5 rounded-full bg-ink text-sm font-black text-fg cursor-pointer hover:bg-panel transition-colors disabled:opacity-60 flex items-center gap-2"
+                  >
+                    {retomando && <Spinner className="w-4 h-4" />}
+                    {subscription.pausada ? (retomando ? "Retomando…" : "Retomar agora (cobra hoje)") : (retomando ? "Desfazendo…" : "Desfazer pausa")}
+                  </button>
+                )}
+                {erroPausa && <p role="alert" className="text-sm font-bold text-zero">{erroPausa}</p>}
+              </div>
             )}
 
             {/* ── Trocar de plano: qualquer um, para cima ou para baixo. Descer só se o uso couber
@@ -475,9 +512,10 @@ export default function ConfiguracoesPage() {
                       setConfirmando(alvo);
                       requestAnimationFrame(() => document.getElementById(`plano-${alvo}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
                     }}
-                    onPausado={(pausedUntil) => {
+                    onPausado={(pausa) => {
                       setCancelando(false);
-                      setSubscription((s) => (s ? { ...s, paused_until: pausedUntil, pausada: true, pausa_disponivel: false } : s));
+                      setSubscription((s) => (s ? { ...s, ...pausa, pausa_agendada: true, pausa_disponivel: false } : s));
+                      if (workspace) mutateSubscription(workspace.id);
                     }}
                     onFechar={() => setCancelando(false)}
                   />

@@ -15,14 +15,20 @@ export interface Subscription {
   expired_at:             string | null;
   stripe_customer_id:     string | null;
   stripe_subscription_id: string | null;
+  /* Pausa (EQZ-07): período bloqueado e o que a API calcula na hora */
+  pause_starts_at?:       string | null;
+  pause_ends_at?:         string | null;
+  pausada?:               boolean;
+  pausa_agendada?:        boolean;
+  pausa_disponivel?:      boolean;
 }
 
 /**
- * Workspace sem acesso: trial vencido sem pagamento, assinatura cancelada ou marcada para exclusão.
- * A mesma regra do workspace_is_writable() do banco (past_due continua com acesso).
+ * Workspace sem acesso: trial vencido sem pagamento, assinatura cancelada ou marcada para exclusão,
+ * ou pausa em andamento. A mesma regra do workspace_is_writable() do banco (past_due continua com acesso).
  */
 export function estaBloqueada(sub: Subscription | null | undefined): boolean {
-  return !!sub && (sub.status === "trial_expired" || sub.status === "canceled" || sub.status === "deleted");
+  return !!sub && (sub.status === "trial_expired" || sub.status === "canceled" || sub.status === "deleted" || !!sub.pausada);
 }
 
 /* O job de limpeza exclui o workspace 30 dias depois do fim da assinatura (com aviso por e-mail antes) */

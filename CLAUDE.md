@@ -129,7 +129,7 @@ components/
 
   dashboard/
     DashboardSidebar.tsx / DashboardTopBar.tsx / BottomNav.tsx / TrialBanner.tsx
-    AssinaturaBloqueada.tsx — tela de workspace bloqueado: motivo, até quando os dados ficam (expired_at + 30 dias), assinar de novo (escolha do plano, só owner) e exportar (owner/admin)
+    AssinaturaBloqueada.tsx — tela de workspace bloqueado: motivo, até quando os dados ficam (expired_at + 30 dias), assinar de novo (escolha do plano, só owner) e exportar (owner/admin). Variante "Assinatura pausada" (EQZ-07): data da volta e "Retomar agora" (cobra hoje), sem contagem de exclusão
 
   estoque/
     StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
@@ -140,7 +140,7 @@ components/
     ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
 
   configuracoes/
-    Cancelamento.tsx — EQZ-07: antes do cancelamento do Stripe, 1 pergunta e uma oferta (descer para o plano mais barato que caiba ou pausar a cobrança 1 mês); grava em /billing/cancel-feedback
+    Cancelamento.tsx — EQZ-07: antes do cancelamento do Stripe, 1 pergunta e uma oferta (descer para o plano mais barato que caiba ou pausar por 1 ou 2 meses: usa até o fim do mês pago, depois fica bloqueado sem cobrança e volta sozinho); grava em /billing/cancel-feedback. Em Configurações, pausa agendada tem "Desfazer pausa" e a em andamento "Retomar agora"
 
   onboarding/
     OnboardingShell.tsx / PlanCard.tsx / StepIndicator.tsx
@@ -174,7 +174,7 @@ components/
 - **`useForecast.ts`** — saídas de 30 dias por produto (RPC `stock_forecast`); a previsão é `previsaoDias`/`consumoDiario` em `lib/stock.ts`
 - **`useLastOutflow.ts`** — última saída de cada produto (RPC `stock_last_outflow`); "parado" é `estaParado` em `lib/stock.ts` (estoque > 0, cadastro e última saída há 60+ dias). Growth e Pro
 - **`useStockCounts.ts`** — contagens dos últimos 90 dias (tabela `stock_counts`); a escolha do dia, a sequência e a confiabilidade ficam em `lib/contagem.ts`
-- **`useSubscription.ts`** — assinatura do workspace pela API (`/billing/subscription`, a tabela não é lida direto); `estaBloqueada` (mesma regra do `workspace_is_writable`), `guardadoAte` (fim + 30 dias, prazo do job de limpeza)
+- **`useSubscription.ts`** — assinatura do workspace pela API (`/billing/subscription`, a tabela não é lida direto); `estaBloqueada` (mesma regra do `workspace_is_writable`, incluindo a pausa em andamento), `guardadoAte` (fim + 30 dias, prazo do job de limpeza)
 - **`useProducts.ts`** — lista de produtos paginada de 1000 em 1000; `mutateProducts` também invalida a contagem e a previsão
 
 ## Segurança (next.config.ts)
