@@ -18,7 +18,7 @@ export default function CTA() {
           >
             Criar conta grátis <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
           </Link>
-          <p className="text-sm 3xl:text-base font-extrabold text-ink/70">14 dias grátis no plano Growth · Cancele quando quiser</p>
+          <p className="text-sm 3xl:text-base font-extrabold text-ink/70">14 dias grátis, sem cartão · Cancele quando quiser</p>
         </div>
       </div>
     </section>

@@ -31,7 +31,7 @@ const PERGUNTAS = [
   },
   {
     q: "Como funciona o teste grátis?",
-    a: "O plano Growth tem 14 dias grátis, sem cartão. No fim do teste, você escolhe um plano para continuar. Se não escolher, nada é cobrado: o workspace fica bloqueado, mas você ainda exporta os dados em planilha por 30 dias.",
+    a: "Os planos Basic e Growth têm 14 dias grátis, sem cartão (um teste por pessoa); o Pro começa pago. No fim do teste, você escolhe um plano para continuar. Se não escolher, nada é cobrado: o workspace fica bloqueado, mas você ainda exporta os dados em planilha por 30 dias.",
   },
   {
     q: "Tem fidelidade ou multa para cancelar?",

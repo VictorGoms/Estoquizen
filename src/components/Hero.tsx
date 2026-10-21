@@ -2,7 +2,7 @@ import Link from "next/link";
 import HeroLoop from "./HeroLoop";
 import { ArrowRightIcon, ChevronDownIcon, CheckIcon } from "@/components/ui/icons";
 
-const TRUST = ["14 dias grátis no plano Growth", "Sem cartão para testar", "Funciona no celular e no PC"];
+const TRUST = ["14 dias grátis", "Sem cartão para testar", "Funciona no celular e no PC"];
 
 export default function Hero() {
   return (

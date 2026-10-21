@@ -41,19 +41,22 @@ export default function PlanSelectionPage() {
       if (segment) body.segment = segment;
       if (segment === "outro" && segmentOther) body.segment_other = segmentOther;
 
-      const ws = await api.post<{ id: string }>("/workspaces", body);
+      /* trial: false = já usou o teste (1 por pessoa e por CPF) ou escolheu o Pro */
+      const ws = await api.post<{ id: string; trial?: boolean }>("/workspaces", body);
       sessionStorage.removeItem("pendingWorkspaceName");
       sessionStorage.removeItem("pendingSegment");
       sessionStorage.removeItem("pendingSegmentOther");
 
-      if (selectedPlan !== "growth" && pagamentoEmbutido) {
+      /* Basic e Growth começam com 14 dias grátis (EQZ-12); o Pro, ou quem já usou o teste, paga na hora */
+      const pagaAgora = !ws.trial;
+
+      if (pagaAgora && pagamentoEmbutido) {
         setPagando({ workspaceId: ws.id, plan: selectedPlan });
         setLoading(false);
         return;
       }
 
-      if (selectedPlan !== "growth") {
-        /* basic e pro não têm trial — redireciona direto para o checkout */
+      if (pagaAgora) {
         const checkout = await api.post<{ url: string }>("/billing/checkout", {
           workspace_id: ws.id,
           plan:         selectedPlan,
@@ -134,9 +137,9 @@ export default function PlanSelectionPage() {
           </div>
 
           <p className="text-center text-[13px] font-bold text-fg-subtle mt-5">
-            {selectedPlan === "growth"
-              ? "14 dias grátis no Growth · Cancele quando quiser · Sem fidelidade"
-              : "Pagamento necessário para ativar · Cancele quando quiser · Sem fidelidade"}
+            {selectedPlan !== "pro"
+              ? "14 dias grátis, sem cartão · Cancele quando quiser · Sem fidelidade"
+              : "O Pro começa pago · Cancele quando quiser · Sem fidelidade"}
           </p>
 
         </div>

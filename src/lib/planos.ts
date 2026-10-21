@@ -42,6 +42,7 @@ export const PLANOS: PlanoVenda[] = [
       { text: "Contagem do dia e dinheiro parado", included: false },
       { text: "Histórico por funcionário", included: false },
     ],
+    trialNote: "14 dias grátis",
   },
   {
     id: "growth",

@@ -4,7 +4,7 @@ import { CheckIcon, XIcon } from "@/components/ui/icons";
 
 /* Preços na landing (EQZ-02): os mesmos planos da escolha de plano, mais a reversão de risco. */
 const GARANTIAS = [
-  "14 dias grátis no Growth, sem cartão",
+  "14 dias grátis no Basic e no Growth, sem cartão",
   "Sem fidelidade: cancele quando quiser, pelo próprio app",
   "Seus dados são seus: exporte em planilha a qualquer momento",
 ];
@@ -19,7 +19,7 @@ export default function Pricing() {
             Planos simples, sem fidelidade
           </h2>
           <p className="mt-4 text-lg 3xl:text-xl font-semibold text-fg-muted leading-relaxed 3xl:leading-7">
-            Cobrança mensal no cartão de crédito. Comece pelo Growth com 14 dias grátis.
+            Cobrança mensal no cartão de crédito. Teste o Basic ou o Growth por 14 dias, sem cartão.
           </p>
         </div>
 

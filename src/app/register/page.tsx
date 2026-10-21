@@ -92,7 +92,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Crie sua conta"
-      subtitle="14 dias grátis no plano Growth, sem cartão"
+      subtitle="14 dias grátis no Basic e no Growth, sem cartão"
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
         {/* Full name */}

@@ -199,9 +199,11 @@ export default function PerfilPage() {
     setTimeout(() => setSaved(false), 2500);
   }
 
-  async function handleLogout() {
+  /* "local" sai só deste aparelho; "global" derruba todas as sessões da conta (celular, outro PC,
+     link de login que alguém tenha visto) */
+  async function handleLogout(todos = false) {
     clearSession();
-    await supabase.auth.signOut({ scope: "local" });
+    await supabase.auth.signOut({ scope: todos ? "global" : "local" });
     clearWorkspace();
     router.push("/login");
   }
@@ -336,10 +338,17 @@ export default function PerfilPage() {
 
           <button
             type="button"
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
             className="min-h-[52px] flex items-center justify-center gap-2 rounded-full bg-zero/10 text-zero text-[15px] font-extrabold cursor-pointer hover:bg-zero/20 transition-colors"
           >
             <LogOutIcon /> Sair da conta
+          </button>
+          <button
+            type="button"
+            onClick={() => handleLogout(true)}
+            className="-mt-2 min-h-[44px] flex items-center justify-center rounded-full text-sm font-extrabold text-fg-muted cursor-pointer hover:bg-white/5 hover:text-fg transition-colors"
+          >
+            Sair de todos os aparelhos
           </button>
 
         </div>
