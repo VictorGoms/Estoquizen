@@ -15,13 +15,17 @@ export default function PrivacidadePage() {
           O Estoquizen (estoquizen.com.br) é um serviço de controle de estoque operado por <strong>{responsavel}</strong>, que é o
           controlador dos dados pessoais tratados no serviço, nos termos da Lei Geral de Proteção de Dados (Lei 13.709/2018, LGPD).
         </p>
-        <p>Para qualquer assunto de privacidade, escreva para <a href={`mailto:${contato}`}>{contato}</a>.</p>
+        <p>
+          Para qualquer assunto de privacidade, escreva para <a href={`mailto:${contato}`}>{contato}</a>. Como agente de tratamento de
+          pequeno porte, o Estoquizen está dispensado de indicar um encarregado (Resolução CD/ANPD nº 2/2022), e este e-mail é o canal
+          de comunicação com os titulares.
+        </p>
       </Secao>
 
       <Secao titulo="2. Que dados usamos">
         <ul>
           <li><strong>Cadastro:</strong> nome, e-mail, senha (guardada só em formato irreversível), telefone (opcional) e foto de perfil (opcional). No login com Google, recebemos nome, e-mail e foto da sua conta Google.</li>
-          <li><strong>CPF:</strong> pedido ao criar uma empresa, para identificar quem é o titular da assinatura e garantir um teste grátis por pessoa. Para esse controle guardamos também uma versão codificada e irreversível do CPF.</li>
+          <li><strong>CPF:</strong> pedido ao criar uma empresa, para identificar quem é o titular da assinatura (execução do contrato, art. 7º, V da LGPD) e garantir um teste grátis por pessoa (legítimo interesse, art. 7º, IX). Para esse controle guardamos também uma versão codificada e irreversível do CPF. O CPF fica no seu perfil enquanto a conta existir; a versão codificada é guardada mesmo depois, só para impedir testes repetidos.</li>
           <li><strong>Empresa (workspace):</strong> nome, descrição e ramo do negócio.</li>
           <li><strong>Dados de estoque</strong> que você e sua equipe incluem: produtos, códigos de barras, preços, custos, quantidades, fotos, entradas e saídas (com quem fez e quando), contagens, lista de compras e as notas de compra lidas (chave, fornecedor e itens).</li>
           <li><strong>Equipe:</strong> nome e e-mail das pessoas convidadas, papel e situação do convite.</li>
@@ -57,8 +61,11 @@ export default function PrivacidadePage() {
           <li><strong>Autoridades</strong>, quando a lei exigir.</li>
         </ul>
         <p>
-          Alguns desses serviços ficam fora do Brasil, principalmente nos Estados Unidos. Essa transferência acontece para prestar o
-          serviço que você contratou, com provedores que adotam medidas de segurança e proteção de dados compatíveis com a LGPD.
+          <strong>Transferência para fora do Brasil:</strong> Supabase, Railway, Vercel, Stripe, Resend e PostHog são empresas com
+          servidores nos Estados Unidos. Para os serviços necessários ao Estoquizen funcionar, a transferência acontece para executar o
+          contrato com você (art. 33, IX, combinado com o art. 7º, V da LGPD). Para o PostHog, ela depende do seu consentimento
+          específico, pedido no aviso de cookies (art. 33, VIII), e você pode retirá-lo quando quiser. Escolhemos provedores que adotam
+          medidas de segurança e proteção de dados compatíveis com a LGPD.
         </p>
       </Secao>
 

@@ -7,6 +7,7 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe
 import { api } from "@/lib/api";
 import { CHAVE_STRIPE } from "@/lib/pagamento";
 import { registrar } from "@/lib/analytics";
+import ResumoContrato from "./ResumoContrato";
 import { XIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 /* Carrega o Stripe.js uma vez só, e só quando alguém for pagar. O "pure" importa: o pacote normal
@@ -114,6 +115,8 @@ export default function PagamentoEmbutido({ workspaceId, plan, planLabel, onFech
             </button>
           </div>
         )}
+
+        {(fase === "carregando" || fase === "pagando") && <ResumoContrato plan={plan} />}
 
         {fase === "pagando" && segredo && (
           /* O Stripe desenha o formulário num iframe claro: o fundo branco evita a borda escura em volta */

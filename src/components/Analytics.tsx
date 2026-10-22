@@ -60,6 +60,10 @@ export default function Analytics() {
         entender como o Estoquizen é usado e melhorar o app. Sem publicidade.{" "}
         <Link href="/privacidade#cookies" className="text-accent font-extrabold underline-offset-2 hover:underline">Saiba mais</Link>
       </p>
+      {/* LGPD art. 33, VIII: o envio ao exterior precisa ser informado à parte, antes do aceite */}
+      <p className="text-[13px] font-bold text-fg-muted leading-relaxed">
+        Ao aceitar, os dados de análise vão para o PostHog, com servidores nos Estados Unidos.
+      </p>
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
