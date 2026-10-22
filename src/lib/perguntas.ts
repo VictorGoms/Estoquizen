@@ -1,4 +1,5 @@
 import { CONTATO, PRAZO_RESPOSTA } from "@/lib/site";
+import { DIAS_TESTE, OFERTA_ATE } from "@/lib/teste";
 
 /*
  * Perguntas frequentes (EQZ-02): as objeções de quem ainda usa caderno ou planilha. Aparecem na
@@ -32,7 +33,7 @@ export const PERGUNTAS: { q: string; a: string }[] = [
   },
   {
     q: "Como funciona o teste grátis?",
-    a: "Os planos Basic e Growth têm 14 dias grátis, sem cartão (um teste por pessoa); o Pro começa pago. No fim do teste, você escolhe um plano para continuar. Se não escolher, nada é cobrado: o workspace fica bloqueado, mas você ainda exporta os dados em planilha por 30 dias.",
+    a: `Todos os planos têm ${DIAS_TESTE} dias grátis, sem cartão (um teste por pessoa), na oferta de lançamento para quem começar até ${OFERTA_ATE}. No fim do teste, você escolhe um plano para continuar. Se não escolher, nada é cobrado: o workspace fica bloqueado, mas você ainda exporta os dados em planilha por 30 dias.`,
   },
   {
     q: "Tem fidelidade ou multa para cancelar?",

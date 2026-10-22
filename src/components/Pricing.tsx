@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { PLANOS } from "@/lib/planos";
 import { CheckIcon, XIcon } from "@/components/ui/icons";
+import { DIAS_TESTE, OFERTA_ATE, TESTE_GRATIS } from "@/lib/teste";
 
 /* Preços na landing (EQZ-02): os mesmos planos da escolha de plano, mais a reversão de risco. */
 const GARANTIAS = [
-  "14 dias grátis no Basic e no Growth, sem cartão",
+  `${TESTE_GRATIS} em qualquer plano, sem cartão`,
   "Sem fidelidade: cancele quando quiser, pelo próprio app",
   "Seus dados são seus: exporte em planilha a qualquer momento",
 ];
@@ -19,7 +20,8 @@ export default function Pricing() {
             Planos simples, sem fidelidade
           </h2>
           <p className="mt-4 text-lg 3xl:text-xl font-semibold text-fg-muted leading-relaxed 3xl:leading-7">
-            Cobrança mensal no cartão de crédito. Teste o Basic ou o Growth por 14 dias, sem cartão.
+            Cobrança mensal no cartão de crédito. Teste qualquer plano por {DIAS_TESTE} dias, sem cartão: oferta de lançamento
+            para quem começar até {OFERTA_ATE}.
           </p>
         </div>
 
@@ -70,7 +72,7 @@ export default function Pricing() {
                   p.highlighted ? "bg-accent text-ink hover:brightness-110" : "bg-surface-2 hover:bg-white/10"
                 }`}
               >
-                {p.trialNote ? "Testar 14 dias grátis" : `Começar no ${p.name}`}
+                {p.trialNote ? `Testar ${TESTE_GRATIS}` : `Começar no ${p.name}`}
               </Link>
             </article>
           ))}

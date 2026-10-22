@@ -2,6 +2,7 @@ import { PLANOS } from "@/lib/planos";
 import { PERGUNTAS } from "@/lib/perguntas";
 import { SEGMENTOS } from "@/lib/segmentos";
 import { SITE_URL, CONTATO, PRAZO_RESPOSTA } from "@/lib/site";
+import { OFERTA_ATE, TESTE_GRATIS } from "@/lib/teste";
 
 /*
  * Texto do /llms.txt (EQZ-47, formato de llmstxt.org): o resumo do Estoquizen para assistentes de IA
@@ -22,7 +23,7 @@ export function textoLlms(): string {
   return [
     "# Estoquizen",
     "",
-    `> App brasileiro de controle de estoque para pequenos negócios (${ramos.join(", ")}). Funciona no navegador do celular, do tablet e do computador, sem instalar nada. 14 dias grátis nos planos Basic e Growth, sem cartão.`,
+    `> App brasileiro de controle de estoque para pequenos negócios (${ramos.join(", ")}). Funciona no navegador do celular, do tablet e do computador, sem instalar nada. ${TESTE_GRATIS} em todos os planos, sem cartão (oferta de lançamento até ${OFERTA_ATE}).`,
     "",
     "O que o Estoquizen faz:",
     "",

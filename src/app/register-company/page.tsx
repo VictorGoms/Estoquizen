@@ -10,6 +10,7 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 import { supabase } from "@/lib/supabase";
 import { sanitizeText } from "@/lib/sanitize";
 import { SEGMENTOS, type Segmento } from "@/lib/segmentos";
+import { TESTE_GRATIS } from "@/lib/teste";
 
 const BENEFITS = [
   {
@@ -42,7 +43,7 @@ const BENEFITS = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
-    text: "14 dias grátis no Basic e no Growth, sem cartão",
+    text: `${TESTE_GRATIS} em qualquer plano, sem cartão`,
   },
 ];
 

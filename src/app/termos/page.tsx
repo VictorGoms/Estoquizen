@@ -1,6 +1,7 @@
 import Link from "next/link";
 import PaginaLegal, { Secao, DADOS_LEGAIS } from "@/components/legal/PaginaLegal";
 import { metadadosDaPagina } from "@/lib/site";
+import { DIAS_TESTE, OFERTA_ATE } from "@/lib/teste";
 
 export const metadata = metadadosDaPagina("Termos de Uso", "As regras para usar o Estoquizen: conta, planos, cobrança, cancelamento e responsabilidades.", "/termos");
 
@@ -47,7 +48,7 @@ export default function TermosPage() {
       <Secao titulo="5. Planos, teste grátis e cobrança">
         <ul>
           <li>Os planos são mensais e cobrados no cartão de crédito pelo Stripe. A assinatura se renova sozinha todo mês até ser cancelada.</li>
-          <li>Os planos Basic e Growth têm <strong>14 dias grátis</strong>, sem cartão, um teste por pessoa e por CPF. O Pro começa pago. No fim do teste nada é cobrado: a empresa fica bloqueada até você escolher um plano.</li>
+          <li>Todos os planos têm <strong>{DIAS_TESTE} dias grátis</strong>, sem cartão, um teste por pessoa e por CPF (oferta de lançamento para quem começar até {OFERTA_ATE}/2026; depois dessa data o prazo pode mudar, e o que valer aparece na página de preços na hora do cadastro). No fim do teste nada é cobrado: a empresa fica bloqueada até você escolher um plano.</li>
           <li>Trocar de plano vale na hora. Ao subir, é cobrada a diferença proporcional do mês; ao descer, o valor não usado vira crédito nas próximas faturas. Só dá para descer se os produtos e a equipe couberem no plano novo.</li>
           <li>Em vez de cancelar, você pode <strong>pausar por 1 ou 2 meses</strong>: usa normalmente até o fim do mês já pago, depois a empresa fica bloqueada, sem cobrança, e volta sozinha. Dá para retomar antes.</li>
           <li>Se o pagamento falhar, o Stripe tenta de novo por alguns dias. Se não conseguir, a assinatura é encerrada.</li>

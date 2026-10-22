@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TESTE_GRATIS } from "@/lib/teste";
 
 /*
  * Dados do site num lugar só (EQZ-47): endereço oficial, contato e prazo de resposta. Usados nos
@@ -13,7 +14,7 @@ export const PRAZO_RESPOSTA = "1 dia útil";
 
 export const TITULO_PADRAO    = "Estoquizen — Controle de estoque simples e inteligente";
 export const DESCRICAO_PADRAO =
-  "App de controle de estoque para pequenos negócios: lê o código de barras pela câmera, dá entrada pela nota de compra e avisa quando um produto chega ao mínimo. 14 dias grátis, sem cartão.";
+  `App de controle de estoque para pequenos negócios: lê o código de barras pela câmera, dá entrada pela nota de compra e avisa quando um produto chega ao mínimo. ${TESTE_GRATIS}, sem cartão.`;
 
 /* Card do WhatsApp/redes (app/opengraph-image.tsx). Página com openGraph próprio perde a imagem
    herdada do layout, por isso ela vai explícita aqui */

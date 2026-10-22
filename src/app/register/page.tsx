@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
 import { registrar } from "@/lib/analytics";
 import { MailIcon, CheckIcon } from "@/components/ui/icons";
+import { TESTE_GRATIS } from "@/lib/teste";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -94,7 +95,7 @@ export default function RegisterPage() {
   return (
     <AuthLayout
       title="Crie sua conta"
-      subtitle="14 dias grátis no Basic e no Growth, sem cartão"
+      subtitle={`${TESTE_GRATIS} em qualquer plano, sem cartão`}
     >
       <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
         {/* Full name */}

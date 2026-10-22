@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "@/components/ui/icons";
+import { TESTE_GRATIS } from "@/lib/teste";
 
 export default function CTA() {
   return (
@@ -18,7 +19,7 @@ export default function CTA() {
           >
             Criar conta grátis <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
           </Link>
-          <p className="text-sm 3xl:text-base font-extrabold text-ink/80">14 dias grátis, sem cartão · Cancele quando quiser</p>
+          <p className="text-sm 3xl:text-base font-extrabold text-ink/80">{TESTE_GRATIS}, sem cartão · Cancele quando quiser</p>
         </div>
       </div>
     </section>

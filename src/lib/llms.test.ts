@@ -3,6 +3,7 @@ import { textoLlms } from "./llms";
 import { PLANOS, precoEmNumero } from "./planos";
 import { PERGUNTAS } from "./perguntas";
 import { CONTATO, SITE_URL } from "./site";
+import { TESTE_GRATIS } from "./teste";
 
 describe("preço em número (JSON-LD)", () => {
   it("lê o formato brasileiro", () => {
@@ -23,9 +24,9 @@ describe("llms.txt (EQZ-47)", () => {
   it("traz cada plano com o preço da landing", () => {
     for (const p of PLANOS) expect(texto).toContain(`**${p.name}** (${p.price}${p.priceNote}`);
   });
-  it("só o Pro aparece sem teste grátis", () => {
-    expect(texto).toMatch(/\*\*Pro\*\* \([^)]*sem teste grátis\)/);
-    expect(texto).toMatch(/\*\*Basic\*\* \([^)]*14 dias grátis, sem cartão\)/);
+  it("todos os planos aparecem com o teste grátis da oferta", () => {
+    for (const p of PLANOS) expect(texto).toContain(`**${p.name}** (${p.price}${p.priceNote}, ${TESTE_GRATIS}, sem cartão)`);
+    expect(texto).not.toContain("sem teste grátis");
   });
   it("traz todas as perguntas, o contato e links absolutos", () => {
     for (const { q } of PERGUNTAS) expect(texto).toContain(`### ${q}`);

@@ -3,7 +3,9 @@
  * Os limites seguem o PLAN_INFO (usePlan.ts) e a tabela fechada pelo João em 2026-10-17 (EQZ-27).
  * Preços da EQZ-11 (Basic R$ 24,90, Growth R$ 39,90, Pro R$ 59,90), os mesmos dos preços do Stripe
  * (STRIPE_PRICE_* no Railway) desde 2026-10-20. Mudou aqui? Mude no Stripe também.
+ * Todos os planos têm o teste grátis (TESTE_GRATIS, oferta de lançamento de 2026-10-21).
  */
+import { TESTE_GRATIS } from "@/lib/teste";
 
 export type PlanoId = "basic" | "growth" | "pro";
 
@@ -42,7 +44,7 @@ export const PLANOS: PlanoVenda[] = [
       { text: "Contagem do dia e dinheiro parado", included: false },
       { text: "Histórico por funcionário", included: false },
     ],
-    trialNote: "14 dias grátis",
+    trialNote: TESTE_GRATIS,
   },
   {
     id: "growth",
@@ -52,7 +54,7 @@ export const PLANOS: PlanoVenda[] = [
     description: "Para negócios em crescimento",
     highlighted: true,
     badge: "Mais popular",
-    trialNote: "14 dias grátis",
+    trialNote: TESTE_GRATIS,
     features: [
       ...linhas([
         "Até 300 produtos", "Até 10 pessoas na equipe", ...TODOS,
@@ -73,6 +75,7 @@ export const PLANOS: PlanoVenda[] = [
       "Ler nota de compra sem limite (XML e NFC-e de SP)", "Métricas de até 12 meses", "Contagem do dia e dinheiro parado",
       "Histórico por funcionário", "Suporte prioritário",
     ]),
+    trialNote: TESTE_GRATIS,
   },
 ];
 

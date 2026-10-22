@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { TESTE_GRATIS } from "@/lib/teste";
 
 /*
  * Imagem de compartilhamento (EQZ-47): o card que aparece quando alguém manda o link no WhatsApp ou
@@ -15,7 +16,7 @@ const COR = { ink: "#0b1220", surface: "#151f33", fg: "#f4f7fc", muted: "#a9b5c9
 const TITULO_1  = "Controle seu estoque";
 const TITULO_2  = "de forma simples";
 const LINHA     = "Código de barras pela câmera · nota de compra · alerta de mínimo";
-const SELO      = "14 dias grátis, sem cartão";
+const SELO      = `${TESTE_GRATIS}, sem cartão`;
 const ENDERECO  = "estoquizen.com.br";
 
 /* Nunito do Google Fonts, só com as letras usadas. Sem internet no build, cai na fonte padrão */

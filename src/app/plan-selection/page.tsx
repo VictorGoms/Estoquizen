@@ -11,6 +11,7 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 import { PLANOS as PLANS } from "@/lib/planos";
 import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
 import { pagamentoEmbutido } from "@/lib/pagamento";
+import { TESTE_GRATIS } from "@/lib/teste";
 
 const BackIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -47,7 +48,7 @@ export default function PlanSelectionPage() {
       sessionStorage.removeItem("pendingSegment");
       sessionStorage.removeItem("pendingSegmentOther");
 
-      /* Basic e Growth começam com 14 dias grátis (EQZ-12); o Pro, ou quem já usou o teste, paga na hora */
+      /* Todo plano começa com o teste grátis (lib/teste.ts); só quem já usou o teste paga na hora */
       const pagaAgora = !ws.trial;
 
       if (pagaAgora && pagamentoEmbutido) {
@@ -137,9 +138,7 @@ export default function PlanSelectionPage() {
           </div>
 
           <p className="text-center text-[13px] font-bold text-fg-subtle mt-5">
-            {selectedPlan !== "pro"
-              ? "14 dias grátis, sem cartão · Cancele quando quiser · Sem fidelidade"
-              : "O Pro começa pago · Cancele quando quiser · Sem fidelidade"}
+            {TESTE_GRATIS}, sem cartão · Cancele quando quiser · Sem fidelidade
           </p>
 
         </div>
