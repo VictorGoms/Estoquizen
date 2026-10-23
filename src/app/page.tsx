@@ -18,10 +18,20 @@ export const metadata: Metadata = {
 };
 
 /* Dados estruturados (EQZ-47): quem faz e o que é vendido, com os preços dos planos. Sem nota nem
-   avaliação: só entra quando houver avaliação de cliente real */
+   avaliação: só entra quando houver avaliação de cliente real. O WebSite (2026-10-23) dá ao Google o
+   nome do site ("Estoquizen" em vez de "estoquizen.com.br" no resultado) e reforça a marca, que ele
+   ainda corrige para "estoque" */
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#site`,
+      name: SITE_NOME,
+      url: `${SITE_URL}/`,
+      inLanguage: "pt-BR",
+      publisher: { "@id": `${SITE_URL}/#organizacao` },
+    },
     {
       "@type": "Organization",
       "@id": `${SITE_URL}/#organizacao`,
