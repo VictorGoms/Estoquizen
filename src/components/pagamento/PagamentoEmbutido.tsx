@@ -85,7 +85,9 @@ export default function PagamentoEmbutido({ workspaceId, plan, planLabel, onFech
         role="dialog"
         aria-modal="true"
         aria-labelledby="pagamento-titulo"
-        className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-surface rounded-t-5xl sm:rounded-5xl p-4 sm:p-5 flex flex-col gap-4"
+        /* *:shrink-0: sem isso, numa coluna flex com altura máxima os filhos encolhem em vez de o quadro
+           rolar, e o formulário do Stripe ficava cortado embaixo, escondendo o botão de assinar */
+        className="relative w-full sm:max-w-lg max-h-[92vh] overflow-y-auto bg-surface rounded-t-5xl sm:rounded-5xl p-4 sm:p-5 flex flex-col gap-4 *:shrink-0"
       >
         <div className="flex items-center justify-between gap-3 px-1">
           <h2 id="pagamento-titulo" className="text-lg font-black">Assinar o {planLabel}</h2>
