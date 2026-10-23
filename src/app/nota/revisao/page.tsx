@@ -7,7 +7,8 @@ import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import BottomNav from "@/components/dashboard/BottomNav";
 import ProductReviewCard, { type ReviewProduct } from "@/components/nota/ProductReviewCard";
-import { ArrowLeftIcon, BoxIcon, CheckIcon, PencilIcon, Spinner } from "@/components/ui/icons";
+import AdicionarItemNota, { type ItemDigitado } from "@/components/nota/AdicionarItemNota";
+import { ArrowLeftIcon, BoxIcon, CheckIcon, PencilIcon, PlusIcon, Spinner } from "@/components/ui/icons";
 import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { formatBRL } from "@/lib/stock";
@@ -59,42 +60,52 @@ function normName(s: string): string {
     .trim();
 }
 
+type ProdutoDoEstoque = { id: string; code: string; name: string; source_name?: string; unit: string; price: number };
+
+/* Cruza o item com o estoque: novo, já cadastrado ou com preço/unidade diferente */
+function comStatus(p: ReviewProduct, estoque: ProdutoDoEstoque[]): ReviewProduct {
+  const match = (p.code ? estoque.find((e) => e.code === p.code) : undefined)
+    ?? estoque.find((e) => normName(e.source_name ?? e.name) === normName(p.name));
+  if (!match) return { ...p, status: "novo", stockUnit: undefined };
+  const outraUnidade = match.unit.toLowerCase() !== p.unit.toLowerCase();
+  /* Item digitado sem preço não é divergência de preço */
+  const outroPreco   = !(p.manual && !p.unitPrice) && Math.abs(match.price - p.unitPrice) > 0.01;
+  return { ...p, status: outraUnidade || outroPreco ? "divergente" : "existente", stockUnit: outraUnidade ? match.unit : undefined };
+}
+
 export default function NotaRevisaoPage() {
   const router  = useRouter();
   const [chave, setChave]       = useState("");
   const [tipo, setTipo]         = useState("");
   const [wsName, setWsName]     = useState("");
   const [products, setProducts] = useState<ReviewProduct[]>([]);
+  const [estoque, setEstoque]   = useState<ProdutoDoEstoque[]>([]);
+  /* EQZ-34: formulário de item digitado (já aberto quando a pessoa escolheu digitar a nota) */
+  const [adicionando, setAdicionando] = useState(false);
 
   useEffect(() => {
     setChave(getChaveFromSession());
-    try { setTipo(sessionStorage.getItem("nf_tipo") ?? ""); } catch { /* sem sessionStorage */ }
+    let tipoSalvo = "";
+    try { tipoSalvo = sessionStorage.getItem("nf_tipo") ?? ""; } catch { /* sem sessionStorage */ }
+    setTipo(tipoSalvo);
+    if (tipoSalvo === "manual") setAdicionando(true);
     const sessionProducts = loadProductsFromSession();
     setProducts(sessionProducts);
 
-    /* Cruza com o estoque real para atualizar status */
+    /* Cruza com o estoque real para atualizar status (e guarda para os itens digitados) */
     const ws = getWorkspace();
     if (ws) setWsName(ws.name);
-    if (!ws || sessionProducts.length === 0) return;
+    if (!ws) return;
 
-    api.get<{ id: string; code: string; name: string; source_name?: string; unit: string; price: number }[]>(
-      `/products?workspace_id=${ws.id}`
-    ).then((existing) => {
-      const byCode       = Object.fromEntries(existing.filter((p) => p.code).map((p) => [p.code, p]));
-      const bySourceName = Object.fromEntries(existing.map((p) => [normName(p.source_name ?? p.name), p]));
-      setProducts(sessionProducts.map((p) => {
-        const match = (p.code ? byCode[p.code] : undefined) ?? bySourceName[normName(p.name)];
-        if (!match) return { ...p, status: "novo" as const };
-        const outraUnidade = match.unit.toLowerCase() !== p.unit.toLowerCase();
-        const divergente   = outraUnidade || Math.abs(match.price - p.unitPrice) > 0.01;
-        return {
-          ...p,
-          status:    divergente ? "divergente" as const : "existente" as const,
-          stockUnit: outraUnidade ? match.unit : undefined,
-        };
-      }));
+    api.get<ProdutoDoEstoque[]>(`/products?workspace_id=${ws.id}`).then((existing) => {
+      setEstoque(existing);
+      setProducts((atuais) => atuais.map((p) => comStatus(p, existing)));
     }).catch(() => { /* mantém status "novo" se falhar */ });
   }, []);
+
+  function handleAdicionar(item: ItemDigitado) {
+    setProducts((prev) => [...prev, comStatus({ ...item, id: `manual-${Date.now()}`, status: "novo", manual: true }, estoque)]);
+  }
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -122,7 +133,7 @@ export default function NotaRevisaoPage() {
       const byCode       = new Map(existing.filter((p) => p.code).map((p) => [p.code, p.id]));
       const bySourceName = new Map(existing.map((p) => [normName(p.source_name ?? p.name), p.id]));
 
-      type ImportItem = { product_id?: string; name: string; code?: string; unit: string; price?: number; qty: number };
+      type ImportItem = { product_id?: string; name: string; code?: string; unit: string; price?: number; qty: number; manual?: boolean };
       const itens: ImportItem[] = [];
       /* A mesma nota pode trazer o mesmo produto novo em duas linhas: vira um produto só */
       const novosPorNome = new Map<string, ImportItem>();
@@ -130,7 +141,12 @@ export default function NotaRevisaoPage() {
       for (const p of products) {
         const key        = normName(p.name);
         const existingId = (p.code ? byCode.get(p.code) : undefined) ?? bySourceName.get(key);
-        const base       = { name: p.name, code: p.code || undefined, unit: p.unit, price: p.unitPrice, qty: p.qty };
+        /* Digitado sem preço: não troca o preço do produto já cadastrado */
+        const semPreco   = p.manual && !p.unitPrice;
+        const base       = {
+          name: p.name, code: p.code || undefined, unit: p.unit, price: semPreco ? undefined : p.unitPrice, qty: p.qty,
+          ...(p.manual ? { manual: true } : {}),
+        };
 
         if (existingId) {
           /* Unidade diferente (nota em "un", estoque em "kg"): a quantidade já foi conferida na
@@ -148,7 +164,8 @@ export default function NotaRevisaoPage() {
         }
       }
 
-      /* A API importa tudo numa transação e recusa a mesma nota de novo (409) */
+      /* A API importa tudo numa transação e recusa a mesma nota de novo (409). Nota digitada à mão
+         (EQZ-34) é uma NFC-e: a chave, se houver, segura a importação repetida */
       await api.post("/nfe/importar", {
         workspace_id: ws.id,
         tipo:  tipo === "xml" ? "xml" : "nfce",
@@ -175,7 +192,7 @@ export default function NotaRevisaoPage() {
   const newCount    = products.filter((p) => p.status === "novo").length;
   const existingCount = products.filter((p) => p.status === "existente").length;
   const divergentCount = products.filter((p) => p.status === "divergente").length;
-  const docLabel = tipo === "xml" ? "NF-e (XML)" : "NFC-e";
+  const docLabel = tipo === "xml" ? "NF-e (XML)" : tipo === "manual" ? "Nota digitada" : "NFC-e";
 
   return (
     <div className="min-h-screen bg-ink">
@@ -260,22 +277,43 @@ export default function NotaRevisaoPage() {
               <h2 id="rev-lista" className="text-lg font-black">
                 {totalItems} {totalItems === 1 ? "produto" : "produtos"} na nota
               </h2>
-              {!confirmed && products.length > 0 && (
-                <button
-                  type="button"
-                  aria-pressed={editMode}
-                  onClick={() => setEditMode((v) => !v)}
-                  className={`flex items-center gap-2 min-h-[40px] px-4 rounded-full text-sm cursor-pointer transition-colors ${
-                    editMode ? "bg-inverse text-ink font-black" : "bg-surface text-fg font-extrabold hover:bg-surface-2"
-                  }`}
-                >
-                  {editMode ? <CheckIcon className="w-4 h-4" strokeWidth={2.8} /> : <PencilIcon className="w-4 h-4" strokeWidth={2.4} />}
-                  {editMode ? "Concluir edição" : "Editar"}
-                </button>
+              {!confirmed && (
+                <div className="flex flex-wrap gap-2">
+                  {!adicionando && (
+                    <button
+                      type="button"
+                      onClick={() => setAdicionando(true)}
+                      className="flex items-center gap-2 min-h-[40px] px-4 rounded-full bg-surface text-sm text-fg font-extrabold cursor-pointer hover:bg-surface-2 transition-colors"
+                    >
+                      <PlusIcon className="w-4 h-4" strokeWidth={2.4} /> Adicionar item
+                    </button>
+                  )}
+                  {products.length > 0 && (
+                    <button
+                      type="button"
+                      aria-pressed={editMode}
+                      onClick={() => setEditMode((v) => !v)}
+                      className={`flex items-center gap-2 min-h-[40px] px-4 rounded-full text-sm cursor-pointer transition-colors ${
+                        editMode ? "bg-inverse text-ink font-black" : "bg-surface text-fg font-extrabold hover:bg-surface-2"
+                      }`}
+                    >
+                      {editMode ? <CheckIcon className="w-4 h-4" strokeWidth={2.8} /> : <PencilIcon className="w-4 h-4" strokeWidth={2.4} />}
+                      {editMode ? "Concluir edição" : "Editar"}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
-            {products.length === 0 ? (
+            {adicionando && !confirmed && (
+              <AdicionarItemNota onAdicionar={handleAdicionar} onFechar={() => setAdicionando(false)} />
+            )}
+
+            {products.length === 0 && tipo === "manual" ? (
+              <p className="py-8 px-6 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/8 rounded-5xl">
+                Os itens que você adicionar aparecem aqui. Nada entra no estoque antes de você confirmar.
+              </p>
+            ) : products.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center bg-surface rounded-5xl">
                 <span className="w-14 h-14 rounded-full bg-surface-2 text-fg-muted flex items-center justify-center">
                   <BoxIcon className="w-7 h-7" />

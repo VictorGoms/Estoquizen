@@ -146,6 +146,7 @@ components/
     # ProductAvatar (EQZ-30): foto (da pessoa ou da embalagem do Open Food Facts, mostrada inteira em fundo branco) → ícone escolhido (`products.icon`) → ícone pelo nome → iniciais. Passe `icon={p.icon}` onde houver o produto
 
   nota/
+    AdicionarItemNota.tsx   — EQZ-34: item digitado à mão na revisão (código opcional pela câmera, que sugere o nome por lib/codigoBarras.ts; nome, quantidade, unidade, preço). Vai com manual: true. A tela /nota oferece, quando a SEFAZ não deixa ler: ler o QR (resolve o captcha da chave digitada), digitar os itens (nf_tipo "manual", importa como nfce com a chave, se válida) ou enviar o XML; e o atalho "Cupom apagado ou sem QR?"
     ProductReviewCard.tsx   — linha de produto da revisão (status, quantidade editável, remover)
 
   pagamento/

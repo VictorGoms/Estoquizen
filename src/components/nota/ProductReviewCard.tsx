@@ -16,6 +16,8 @@ export interface ReviewProduct {
   /* Unidade do produto já cadastrado, quando difere da nota (ex.: nota em "un", estoque em "kg").
      A quantidade entra nessa unidade e o preço do produto não muda: a pessoa confere a quantidade. */
   stockUnit?: string;
+  /* Digitado à mão (EQZ-34), não lido da nota: o catálogo de códigos não confia nele como nome de nota */
+  manual?: boolean;
 }
 
 const STATUS_CONFIG: Record<ReviewProduct["status"], { label: string; chip: string }> = {

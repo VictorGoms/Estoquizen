@@ -73,6 +73,8 @@ export default function NotaPage() {
   const [xmlInfo,      setXmlInfo]      = useState<{ nome: string; itens: number; arquivo: string } | null>(null);
   const [dragOver,     setDragOver]     = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
+  /* EQZ-34: a SEFAZ não deixou ler a NFC-e. Guarda a chave tentada e se veio do QR, para oferecer as saídas */
+  const [falha, setFalha] = useState<{ chave: string; viaQr: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -126,6 +128,7 @@ export default function NotaPage() {
   async function consultarChave(chaveRaw: string, linkDoQr?: string) {
     setLoading(true);
     setError("");
+    setFalha(null);
     try {
       const result = await api.post<{ chave: string; total_itens: number; itens: unknown[] }>(
         "/nfe/consultar",
@@ -137,9 +140,21 @@ export default function NotaPage() {
       router.push("/nota/revisao");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao consultar nota fiscal.");
+      setFalha({ chave: chaveRaw, viaQr: !!linkDoQr });
     } finally {
       setLoading(false);
     }
+  }
+
+  /* EQZ-34: dá entrada digitando os itens na tela de revisão. A chave (se válida) vai junto e impede
+     importar a mesma nota duas vezes */
+  function digitarItens(chaveDaNota: string) {
+    try {
+      sessionStorage.setItem("nf_items", "[]");
+      sessionStorage.setItem("nf_chave", chaveValida(chaveDaNota) ? chaveDaNota : "");
+      sessionStorage.setItem("nf_tipo",  "manual");
+    } catch { /* sem sessionStorage */ }
+    router.push("/nota/revisao");
   }
 
   if (role === null) return <PageLoader />;
@@ -163,7 +178,44 @@ export default function NotaPage() {
   function handleChaveChange(v: string) {
     setChave(formatarChave(v));
     setError("");
+    setFalha(null);
   }
+
+  /* As saídas quando a SEFAZ não deixa ler: QR (resolve o captcha da chave digitada), digitar ou XML */
+  const planoB = falha && !loading && (
+    <div className="bg-ink rounded-4xl p-4 flex flex-col gap-3">
+      <p className="text-[15px] font-black">Outras formas de dar entrada nesta nota</p>
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2">
+        {!falha.viaQr && (
+          <button
+            type="button"
+            onClick={() => { setModo("qrcode"); setError(""); setFalha(null); setShowQrScanner(true); }}
+            className="min-h-[48px] px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110 transition-[filter] flex items-center justify-center gap-2"
+          >
+            <QrIcon className="w-[18px] h-[18px]" /> Ler o QR Code do cupom
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => digitarItens(falha.chave)}
+          className="min-h-[48px] px-5 rounded-full bg-surface-2 text-sm font-black cursor-pointer hover:bg-white/10 transition-colors"
+        >
+          Digitar os itens
+        </button>
+        <button
+          type="button"
+          onClick={() => { setTipo("xml"); setError(""); setFalha(null); }}
+          className="min-h-[48px] px-5 rounded-full bg-surface-2 text-sm font-black cursor-pointer hover:bg-white/10 transition-colors"
+        >
+          Tenho o XML da nota
+        </button>
+      </div>
+      <p className="text-[13px] font-bold text-fg-subtle leading-relaxed">
+        {!falha.viaQr && "Em vários estados, o QR Code abre a nota quando a chave digitada não abre. "}
+        Quando a leitura falha, a nossa equipe é avisada para liberar as notas deste estado.
+      </p>
+    </div>
+  );
 
   function getTag(el: Element, tag: string) {
     return el.getElementsByTagName(tag)[0]?.textContent?.trim() ?? "";
@@ -271,7 +323,7 @@ export default function NotaPage() {
                     type="button"
                     disabled={opt.soon}
                     aria-pressed={active}
-                    onClick={() => { setTipo(opt.id); setError(""); setChave(""); setXmlInfo(null); }}
+                    onClick={() => { setTipo(opt.id); setError(""); setChave(""); setXmlInfo(null); setFalha(null); }}
                     className={`relative flex sm:flex-col items-center sm:items-start gap-3.5 sm:gap-3 p-4 rounded-4xl text-left cursor-pointer transition-colors disabled:cursor-not-allowed ${
                       active ? "bg-inverse text-ink" : "bg-surface text-fg hover:bg-[#19243a] disabled:hover:bg-surface"
                     } ${opt.soon ? "opacity-55" : ""}`}
@@ -331,6 +383,7 @@ export default function NotaPage() {
               {modo === "qrcode" && (
                 <div className="flex flex-col gap-4">
                   {error && <ErrorBox>{error}</ErrorBox>}
+                  {planoB}
                   {loading ? (
                     <div role="status" className="flex flex-col items-center gap-3 py-8 text-fg-muted">
                       <Spinner className="w-7 h-7" />
@@ -385,6 +438,7 @@ export default function NotaPage() {
                     <ErrorBox>Chave inválida: confira os números. O último dígito não bate com os anteriores.</ErrorBox>
                   )}
                   {error && <ErrorBox>{error}</ErrorBox>}
+                  {planoB}
 
                   <button
                     type="submit"
@@ -395,6 +449,16 @@ export default function NotaPage() {
                     {loading ? "Consultando…" : "Buscar nota"}
                   </button>
                 </form>
+              )}
+
+              {!falha && (
+                <button
+                  type="button"
+                  onClick={() => digitarItens(chave.replace(/\s/g, ""))}
+                  className="self-center min-h-[40px] px-3 text-[13px] font-extrabold text-fg-muted underline underline-offset-2 cursor-pointer hover:text-fg"
+                >
+                  Cupom apagado ou sem QR? Digite os itens à mão
+                </button>
               )}
             </section>
           )}
