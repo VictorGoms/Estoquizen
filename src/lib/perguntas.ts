@@ -25,7 +25,7 @@ export const PERGUNTAS: { q: string; a: string }[] = [
   },
   {
     q: "A leitura da nota funciona no meu estado?",
-    a: "O XML da NF-e funciona com nota de qualquer estado. A leitura do QR code ou da chave do cupom (NFC-e), por enquanto, está garantida em São Paulo. Se não funcionar, envie o XML ou cadastre à mão.",
+    a: "O XML da NF-e funciona com nota de qualquer estado. A leitura do cupom (NFC-e) pelo QR code já foi testada em São Paulo e na Bahia, e pode funcionar em outros estados. Se não funcionar, envie o XML ou cadastre à mão.",
   },
   {
     q: "Já tenho tudo numa planilha. Preciso cadastrar de novo?",

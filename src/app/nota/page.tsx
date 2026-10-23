@@ -98,12 +98,15 @@ export default function NotaPage() {
     setShowQrScanner(false);
     setError("");
 
-    /* Extrai chave: parâmetro ?p= ou ?chave= ou primeiros 44 dígitos da string */
+    /* Extrai chave: parâmetro ?p= ou ?chave= ou primeiros 44 dígitos da string. O link inteiro também vai
+       para a API: ele traz a assinatura que abre a nota sem captcha em estados como a BA (2026-10-23) */
     let chaveExtraida = "";
+    let linkDoQr: string | undefined;
     try {
       const url    = new URL(raw);
-      const param  = url.searchParams.get("p") ?? url.searchParams.get("chave") ?? "";
+      const param  = url.searchParams.get("p") ?? url.searchParams.get("chave") ?? url.searchParams.get("chNFe") ?? "";
       chaveExtraida = param.replace(/\D/g, "").slice(0, 44);
+      if (url.protocol === "http:" || url.protocol === "https:") linkDoQr = raw.trim();
     } catch {
       /* Não é URL — tenta extrair 44 dígitos direto */
       chaveExtraida = raw.replace(/\D/g, "").slice(0, 44);
@@ -117,16 +120,16 @@ export default function NotaPage() {
     /* Preenche o campo e dispara a consulta automaticamente */
     setModo("chave");
     setChave(formatarChave(chaveExtraida));
-    consultarChave(chaveExtraida);
+    consultarChave(chaveExtraida, linkDoQr);
   }
 
-  async function consultarChave(chaveRaw: string) {
+  async function consultarChave(chaveRaw: string, linkDoQr?: string) {
     setLoading(true);
     setError("");
     try {
       const result = await api.post<{ chave: string; total_itens: number; itens: unknown[] }>(
         "/nfe/consultar",
-        { tipo: "nfce", chave: chaveRaw, workspace_id: getWorkspace()?.id }
+        { tipo: "nfce", chave: chaveRaw, workspace_id: getWorkspace()?.id, ...(linkDoQr ? { qr_url: linkDoQr } : {}) }
       );
       sessionStorage.setItem("nf_items", JSON.stringify(result.itens));
       sessionStorage.setItem("nf_chave", result.chave);
@@ -343,7 +346,7 @@ export default function NotaPage() {
                     </button>
                   )}
                   <p className="text-[13px] font-bold text-fg-subtle text-center leading-relaxed">
-                    Aponte a câmera para o QR Code impresso no fim do cupom (NFC-e de SP).
+                    Aponte a câmera para o QR Code impresso no fim do cupom.
                   </p>
                 </div>
               )}

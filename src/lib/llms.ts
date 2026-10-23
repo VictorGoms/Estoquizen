@@ -28,7 +28,7 @@ export function textoLlms(): string {
     "O que o Estoquizen faz:",
     "",
     "- Entrada e saída de estoque lendo o código de barras pela câmera do celular.",
-    "- Entrada pela nota de compra: XML da NF-e de qualquer estado e QR code da NFC-e de São Paulo.",
+    "- Entrada pela nota de compra: XML da NF-e de qualquer estado e QR code da NFC-e (testado em São Paulo e na Bahia).",
     "- Alerta quando um produto chega ao estoque mínimo e previsão de quantos dias o estoque dura.",
     "- Lista de compras com quantidade sugerida, para mandar ao fornecedor pelo WhatsApp.",
     "- Importar e exportar planilha (Excel ou CSV) e listas prontas de produtos por ramo.",
