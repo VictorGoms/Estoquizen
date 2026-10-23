@@ -59,7 +59,7 @@ export default function TermosPage() {
       <Secao titulo="6. Cancelamento, reembolso e exclusão">
         <ul>
           <li>Você pode cancelar quando quiser, em Configurações, sem multa nem fidelidade. O cancelamento vale no fim do mês já pago.</li>
-          <li><strong>Direito de arrependimento:</strong> no primeiro pagamento de uma assinatura, você pode desistir em até 7 dias e recebe o valor de volta (Código de Defesa do Consumidor, art. 49). É só usar &quot;Desistir e receber o valor de volta&quot; em Configurações (ou escrever para o contato abaixo): a assinatura é cancelada na hora e o valor volta no mesmo cartão (se foi pago por boleto, combinamos a devolução por Pix ou transferência). Fora desse caso, não há devolução proporcional do mês em curso.</li>
+          <li><strong>Direito de arrependimento:</strong> no primeiro pagamento de uma assinatura, você pode desistir em até 7 dias e recebe o valor de volta (Código de Defesa do Consumidor, art. 49). É só usar &quot;Desistir e receber o valor de volta&quot; em Configurações (ou escrever para o contato abaixo): a assinatura é cancelada na hora e o valor volta no mesmo cartão (se foi pago por boleto, combinamos a devolução por Pix ou transferência). Pelo app, a desistência vale uma vez por pessoa; nas seguintes, o pedido é feito pelo contato abaixo. Fora desse caso, não há devolução proporcional do mês em curso.</li>
           <li>Depois que a assinatura termina, a empresa fica bloqueada e os dados ficam guardados por 30 dias para você voltar ou exportar. Avisamos por e-mail antes de excluir. Depois desse prazo, os dados são apagados de forma definitiva.</li>
           <li>Excluir a empresa em Configurações apaga tudo na hora e cancela a assinatura paga.</li>
         </ul>

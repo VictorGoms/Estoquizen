@@ -155,7 +155,7 @@ components/
     AdicionarItem.tsx — quadro "Adicionar à lista" da lista de compras: busca nos produtos que ainda não estão nela, quantidade sugerida
 
   configuracoes/
-    Desistencia.tsx — EQZ-50: "Desistir e receber o valor de volta", só nos 7 dias depois do 1º pagamento da assinatura (GET /billing/desistencia diz até quando e quanto); confirma e chama POST /billing/desistir (devolve no cartão e cancela na hora). Não pede motivo. Aparece acima de "Cancelar assinatura", também com cancelamento agendado
+    Desistencia.tsx — EQZ-50: "Desistir e receber o valor de volta", só nos 7 dias depois do 1º pagamento da assinatura (GET /billing/desistencia diz até quando e quanto); confirma e chama POST /billing/desistir (devolve no cartão e cancela na hora). Não pede motivo. Aparece acima de "Cancelar assinatura", também com cancelamento agendado. Pelo app vale 1 vez por pessoa (decisão do João, 2026-10-23): quando a API devolve `pelo_contato`, mostra o pedido pelo contato@ no lugar do botão
     Cancelamento.tsx — EQZ-07: cancelamento 100% no app (sem o Stripe): 1 pergunta, uma oferta e a confirmação (POST /billing/cancel); depois "Desfazer cancelamento" em Configurações. A oferta (descer para o plano mais barato que caiba ou pausar por 1 ou 2 meses: usa até o fim do mês pago, depois fica bloqueado sem cobrança e volta sozinho); grava em /billing/cancel-feedback. Em Configurações, pausa agendada tem "Desfazer pausa" e a em andamento "Retomar agora"
 
   onboarding/

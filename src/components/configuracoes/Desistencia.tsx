@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { formatBRL } from "@/lib/stock";
+import { CONTATO, PRAZO_RESPOSTA } from "@/lib/site";
 import { Spinner } from "@/components/ui/icons";
 
 interface Prazo {
   disponivel: boolean;
+  /** No prazo, mas a pessoa já desistiu pelo app antes: o pedido vai pelo contato@ (1 vez por pessoa) */
+  pelo_contato?: boolean;
   ate:        string | null;
   /** Centavos */
   valor:      number;
@@ -44,7 +47,21 @@ export default function Desistencia({ workspaceId, onDesistiu }: {
     return () => { vivo = false; };
   }, [workspaceId]);
 
-  if (!prazo?.disponivel || !prazo.ate) return null;
+  if (!prazo?.ate) return null;
+
+  if (!prazo.disponivel) {
+    if (!prazo.pelo_contato) return null;
+    return (
+      <div className="bg-surface-2 rounded-4xl p-4 lg:p-5 flex flex-col gap-1">
+        <p className="text-[15px] font-black">Mudou de ideia? Dá para desistir até {data(prazo.ate)}</p>
+        <p className="text-sm font-bold text-fg-muted">
+          Você já usou a desistência pelo app uma vez, então este pedido é pelo e-mail: escreva para{" "}
+          <a href={`mailto:${CONTATO}?subject=${encodeURIComponent("Desistência da assinatura")}`} className="text-accent underline underline-offset-2">{CONTATO}</a>
+          {" "}e respondemos em até {PRAZO_RESPOSTA}.
+        </p>
+      </div>
+    );
+  }
 
   async function desistir() {
     setAgindo(true);

@@ -78,7 +78,7 @@ export default function PrivacidadePage() {
         <ul>
           <li><strong>Dados da empresa e do estoque:</strong> enquanto a assinatura estiver ativa. Quando ela termina (teste vencido sem assinatura ou cancelamento), os dados ficam guardados por 30 dias para você voltar ou exportar, com avisos por e-mail, e depois são excluídos de forma definitiva.</li>
           <li><strong>Conta:</strong> enquanto você a mantiver. Você pode pedir a exclusão a qualquer momento.</li>
-          <li><strong>Controle do teste grátis</strong> (CPF codificado): guardado mesmo depois da exclusão da conta, só para impedir testes repetidos.</li>
+          <li><strong>Controle do teste grátis e da desistência pelo app</strong> (CPF codificado): guardado mesmo depois da exclusão da conta, só para impedir que se repitam.</li>
           <li><strong>Pagamentos e registros exigidos por lei:</strong> pelo prazo que a lei determinar.</li>
           <li><strong>Motivos de cancelamento:</strong> podem ficar guardados sem ligação com a empresa, só para estatística.</li>
         </ul>
