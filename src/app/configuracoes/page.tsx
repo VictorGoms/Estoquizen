@@ -17,7 +17,10 @@ import { CheckIcon, Spinner } from "@/components/ui/icons";
 import { PLAN_INFO } from "@/hooks/usePlan";
 import { PLANOS } from "@/lib/planos";
 import Cancelamento from "@/components/configuracoes/Cancelamento";
+import Desistencia, { type ResultadoDesistencia } from "@/components/configuracoes/Desistencia";
 import { mutateSubscription } from "@/hooks/useSubscription";
+import { formatBRL } from "@/lib/stock";
+import { PRAZO_RESPOSTA } from "@/lib/site";
 import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
 import { pagamentoEmbutido } from "@/lib/pagamento";
 import { SEGMENTOS, type Segmento } from "@/lib/segmentos";
@@ -117,6 +120,8 @@ export default function ConfiguracoesPage() {
   /* Assinar dentro do app (Checkout incorporado); troca de plano de quem já paga segue no portal */
   const [pagandoPlano, setPagandoPlano]   = useState<Plan | null>(null);
   const [erroPausa, setErroPausa]         = useState("");
+  /* EQZ-50: desistência feita agora (quanto voltou) */
+  const [desistiu, setDesistiu]           = useState<ResultadoDesistencia | null>(null);
 
   const [exporting, setExporting]   = useState<"produtos" | "movimentacoes" | null>(null);
   const [exportMsg, setExportMsg]   = useState("");
@@ -367,6 +372,15 @@ export default function ConfiguracoesPage() {
               </div>
             </dl>
 
+            {desistiu && (
+              <p role="status" className="px-5 py-3.5 rounded-4xl bg-ok/10 text-sm font-bold text-ok leading-relaxed">
+                Desistência feita e assinatura cancelada.
+                {desistiu.devolvido > 0 && ` Devolvemos ${formatBRL(desistiu.devolvido / 100)} no cartão: o estorno aparece em 5 a 10 dias úteis, dependendo do banco.`}
+                {desistiu.manual > 0 && ` Uma parte (${formatBRL(desistiu.manual / 100)}) foi paga sem estorno automático: vamos escrever no seu e-mail em até ${PRAZO_RESPOSTA} para devolver.`}
+                {" "}Os dados ficam guardados por 30 dias; dá para exportar abaixo.
+              </p>
+            )}
+
             {scheduledCancel && (
               <div role="status" className="px-5 py-3.5 rounded-4xl bg-low/10 flex flex-col gap-3">
                 <p className="text-sm font-bold text-low leading-relaxed">
@@ -514,6 +528,19 @@ export default function ConfiguracoesPage() {
                   <span>{portalLoading === "manage" ? "Abrindo…" : "Gerenciar assinatura e pagamento"}</span>
                   <ExternalIcon />
                 </button>
+                {paying && subscription?.stripe_subscription_id && workspace && (
+                  <Desistencia
+                    workspaceId={workspace.id}
+                    onDesistiu={(r) => {
+                      setDesistiu(r);
+                      setCancelando(false);
+                      setSubscription((s) => (s ? {
+                        ...s, status: "canceled", cancel_at_period_end: false, pausada: false, pausa_agendada: false, pausa_disponivel: false,
+                      } : s));
+                      if (workspace) mutateSubscription(workspace.id);
+                    }}
+                  />
+                )}
                 {canCancel && !cancelando && (
                   <button
                     type="button"
