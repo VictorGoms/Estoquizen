@@ -288,5 +288,5 @@ export function iconesPorGrupo(): { grupo: string; chaves: string[] }[] {
   return grupos;
 }
 
-/** Foto da embalagem vinda do Open Food Facts (fundo branco: mostrar inteira, sem cortar). */
-export const ehFotoDeEmbalagem = (url: string | null | undefined) => !!url && /openfoodfacts\.(org|net)\//.test(url);
+/** Foto da embalagem vinda do Open Food Facts ou das bases irmãs (fundo branco: mostrar inteira, sem cortar). */
+export const ehFotoDeEmbalagem = (url: string | null | undefined) => !!url && /open(food|products|beauty|petfood)facts\.(org|net)\//.test(url);

@@ -22,36 +22,11 @@ import { api } from "@/lib/api";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
 import { ordenarUnidades, UNIDADES as UNITS } from "@/lib/segmentos";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
+import { buscarPorCodigo } from "@/lib/codigoBarras";
 
 /* A lista única de unidades fica em lib/segmentos.ts; o ramo do workspace (EQZ-13) só muda a ordem */
 
-/* Nome e foto da embalagem pelo código de barras no Open Food Facts (foto: licença CC BY-SA,
-   crédito em /licencas) */
-async function lookupBarcode(ean: string): Promise<{ nome: string | null; foto: string | null } | null> {
-  if (ean.length < 8) return null;
-  try {
-    const res  = await fetch(`https://world.openfoodfacts.org/api/v0/product/${ean}.json`);
-    const json = await res.json();
-    if (json.status !== 1) return null;
-    const p = json.product;
-
-    /* product_name é o campo exibido no site — tem prioridade */
-    const nome = (
-      p.product_name       ||
-      p.product_name_pt_BR ||
-      p.product_name_pt    ||
-      p.product_name_en    ||
-      ""
-    ).trim();
-
-    const foto = [p.image_front_url, p.image_url, p.image_front_small_url]
-      .find((u): u is string => typeof u === "string" && /^https:\/\/images\.openfoodfacts\.(org|net)\//.test(u)) ?? null;
-
-    return nome || foto ? { nome: nome || null, foto } : null;
-  } catch {
-    return null;
-  }
-}
+/* Nome e foto pelo código de barras: bases abertas e catálogo próprio (EQZ-53, lib/codigoBarras.ts) */
 
 function Section({ title, aside, children }: { title: string; aside?: string; children: React.ReactNode }) {
   return (
@@ -77,7 +52,8 @@ function NovoItemContent() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
   const [lookingUp, setLookingUp] = useState(false);
-  const [autoFilled,  setAutoFilled]  = useState(false);
+  /* De onde veio o nome sugerido ("pelo Open Food Facts"); null = digitado */
+  const [autoFilled,  setAutoFilled]  = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
   const [name, setName]         = useState("");
@@ -103,8 +79,8 @@ function NovoItemContent() {
     const initialCode = searchParams.get("code");
     if (!initialCode || name) return;
     setLookingUp(true);
-    lookupBarcode(initialCode).then((found) => {
-      if (found?.nome) { setName(found.nome); setAutoFilled(true); }
+    buscarPorCodigo(initialCode).then((found) => {
+      if (found?.nome) { setName(found.nome); setAutoFilled(found.fonte); }
       setFotoEmbalagem(found?.foto ?? null);
       setLookingUp(false);
     });
@@ -118,9 +94,9 @@ function NovoItemContent() {
     if (digits.length < 8) return;
     const timer = setTimeout(() => {
       setLookingUp(true);
-      setAutoFilled(false);
-      lookupBarcode(digits).then((found) => {
-        if (found?.nome && !name) { setName(found.nome); setAutoFilled(true); }
+      setAutoFilled(null);
+      buscarPorCodigo(digits).then((found) => {
+        if (found?.nome && !name) { setName(found.nome); setAutoFilled(found.fonte); }
         setFotoEmbalagem(found?.foto ?? null);
         setLookingUp(false);
       });
@@ -330,7 +306,7 @@ function NovoItemContent() {
                 required
                 hint={autoFilled ? (
                   <p className="flex items-center gap-1.5 text-[13px] font-bold text-accent">
-                    <CheckIcon className="w-4 h-4" strokeWidth={2.6} /> Nome sugerido pelo Open Food Facts. Confira antes de salvar.
+                    <CheckIcon className="w-4 h-4" strokeWidth={2.6} /> Nome sugerido {autoFilled}. Confira antes de salvar.
                   </p>
                 ) : null}
               >
@@ -341,7 +317,7 @@ function NovoItemContent() {
                     required
                     autoComplete="off"
                     value={name}
-                    onChange={(e) => { setName(e.target.value); setAutoFilled(false); }}
+                    onChange={(e) => { setName(e.target.value); setAutoFilled(null); }}
                     placeholder={lookingUp ? "Identificando produto…" : "Ex.: Feijão carioca 1kg"}
                     className={`${inputClass} pr-11`}
                   />
@@ -440,7 +416,7 @@ function NovoItemContent() {
                       <img src={fotoEmbalagem} alt="Foto da embalagem" width={72} height={72} className="w-[72px] h-[72px] rounded-3xl object-contain bg-white p-1 shrink-0" />
                       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
                         <span className="text-sm font-extrabold">Usar a foto da embalagem</span>
-                        <span className="text-[13px] font-bold text-fg-muted">Achada pelo código de barras no Open Food Facts</span>
+                        <span className="text-[13px] font-bold text-fg-muted">Achada pelo código de barras numa base aberta (Open Food Facts e irmãs)</span>
                       </span>
                       <input
                         type="checkbox"

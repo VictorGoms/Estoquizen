@@ -43,7 +43,12 @@ export default function PrivacidadePage() {
           <li><strong>Melhorar o produto:</strong> estatísticas de uso do app, só com o seu consentimento (cookies de análise), e os motivos de cancelamento (legítimo interesse), olhados em conjunto.</li>
           <li><strong>Cumprir obrigações legais</strong>, como guardar registros de pagamento.</li>
         </ul>
-        <p>Não vendemos dados pessoais e não usamos os dados do seu estoque para nenhuma outra finalidade.</p>
+        <p>
+          Não vendemos dados pessoais e não usamos os dados do seu estoque para nenhuma outra finalidade, com uma exceção:{" "}
+          <strong>o código de barras e o nome de um produto</strong> podem ser sugeridos a outros clientes que cadastrarem o mesmo
+          código, sem dizer de qual empresa veio. Só quando o nome veio de uma nota fiscal ou foi cadastrado igual por mais de uma
+          empresa. Preços, quantidades, fornecedores e o nome da sua empresa nunca são compartilhados.
+        </p>
       </Secao>
 
       <Secao titulo="4. Com quem compartilhamos">
@@ -56,7 +61,7 @@ export default function PrivacidadePage() {
           <li><strong>Resend</strong>: envio de e-mails.</li>
           <li><strong>PostHog</strong>: estatísticas de uso do app, só se você aceitar os cookies de análise (Estados Unidos).</li>
           <li><strong>Google</strong>: só se você entrar com a conta Google.</li>
-          <li><strong>Open Food Facts</strong>: quando você cadastra pelo código de barras, enviamos só o código para buscar o nome e a foto da embalagem.</li>
+          <li><strong>Open Food Facts e bases irmãs</strong> (Open Products Facts, Open Beauty Facts e Open Pet Food Facts): quando você cadastra pelo código de barras, enviamos só o código para buscar o nome e a foto da embalagem.</li>
           <li><strong>Portais das Secretarias da Fazenda</strong>: para ler uma nota de compra pela chave de acesso, consultamos o portal público da nota.</li>
           <li><strong>Autoridades</strong>, quando a lei exigir.</li>
         </ul>

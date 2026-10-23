@@ -78,7 +78,9 @@ export default function TermosPage() {
       <Secao titulo="8. Seus dados">
         <p>
           Os dados do seu estoque são seus. Você autoriza o Estoquizen a guardá-los e processá-los só para prestar o serviço, e pode
-          exportá-los em planilha a qualquer momento. Você é responsável pela exatidão do que inclui e pelas decisões tomadas a partir
+          exportá-los em planilha a qualquer momento. A única coisa usada para ajudar outros clientes é o par código de barras e
+          nome do produto, para sugerir o nome a quem cadastrar o mesmo código, sem identificar a sua empresa (detalhes na Política
+          de Privacidade). Você é responsável pela exatidão do que inclui e pelas decisões tomadas a partir
           desses dados, como compras e preços.
         </p>
       </Secao>

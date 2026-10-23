@@ -61,7 +61,8 @@ export default function LicencasPage() {
             <a href="https://world.openfoodfacts.org" className="text-accent underline underline-offset-2" rel="noopener noreferrer" target="_blank">
               Open Food Facts
             </a>
-            , um banco de dados aberto feito por colaboradores. Os dados são publicados sob a Open Database License (ODbL) e as
+            {" "}ou das bases irmãs dele (Open Products Facts, Open Beauty Facts e Open Pet Food Facts), bancos de dados abertos feitos
+            por colaboradores. Os dados são publicados sob a Open Database License (ODbL) e as
             fotos sob a licença Creative Commons Atribuição-CompartilhaIgual (CC BY-SA). Detalhes nos{" "}
             <a href="https://world.openfoodfacts.org/terms-of-use" className="text-accent underline underline-offset-2" rel="noopener noreferrer" target="_blank">
               termos de uso do Open Food Facts
