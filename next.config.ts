@@ -1,6 +1,29 @@
 import type { NextConfig } from "next";
 
+/* CSP (EQZ-59, auditoria de 2026-10-23; o Stripe recomenda para o pagamento embutido). Em modo
+   Report-Only: o navegador só avisa no console o que bloquearia. Depois de uns dias sem aviso nas
+   telas (pagamento, scanner, foto, nota), trocar o header para Content-Security-Policy. */
+const STRIPE   = "https://*.stripe.com";
+const SUPABASE = "https://*.supabase.co";
+const BASES    = ["openfoodfacts", "openproductsfacts", "openbeautyfacts", "openpetfoodfacts"];
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://js.stripe.com`,
+  "style-src 'self' 'unsafe-inline'",
+  `img-src 'self' data: blob: ${SUPABASE} ${STRIPE} ${BASES.map((b) => `https://images.${b}.org`).join(" ")}`,
+  "font-src 'self' data:",
+  `connect-src 'self' ${SUPABASE} wss://*.supabase.co https://api.stripe.com ${STRIPE} ${BASES.map((b) => `https://world.${b}.org`).join(" ")}`,
+  `frame-src https://js.stripe.com ${STRIPE}`,
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 const securityHeaders = [
+  { key: "Content-Security-Policy-Report-Only", value: csp },
   // Bloqueia carregamento do site em iframes (anti-clickjacking)
   { key: "X-Frame-Options",        value: "DENY" },
   // Impede que o browser tente adivinhar o Content-Type

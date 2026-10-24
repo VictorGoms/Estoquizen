@@ -104,7 +104,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/nota`                — Input de NF-e
 - `/nota/revisao`        — Revisão da NF-e
 - `/membros`             — Lista de membros
-- `/membros/[id]`        — Edição de membro
+- `/membros/[id]`        — Edição de membro (dados pela API `GET /members`)
 - `/membros/novo`        — Convidar membro
 - `/scanner`             — Leitor de código de barras (câmera)
 - `/configuracoes`       — Configurações do workspace
@@ -209,3 +209,9 @@ Headers HTTP globais aplicados em todas as rotas:
 - `X-XSS-Protection: 1; mode=block`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=*, geolocation=(), microphone=()`
+- `Content-Security-Policy-Report-Only` (EQZ-59, 2026-10-24): só avisa no console do navegador o que bloquearia (Stripe, Supabase, as 4 bases abertas, PostHog pelo `/ingest`). Domínio externo novo (script, imagem, fetch, iframe) entra na lista do `next.config.ts`. Depois de uns dias sem aviso nas telas de pagamento, scanner, foto e nota, trocar para `Content-Security-Policy`
+
+## Perfis e convites (auditoria de segurança de 2026-10-23)
+- O banco não deixa o cliente ler `profiles.cpf` (GRANT por coluna): leia `profiles` sempre com as colunas listadas, nunca `select("*")`
+- Perfil de colega só aparece para quem está **ativo** no mesmo workspace; convite pendente traz só o e-mail, pela API (`GET /members`). Por isso `/membros/[id]` carrega o membro pela API, não direto do Supabase
+- O link do convite leva `?workspace_id=` (`/auth/callback` → `/set-password?workspace_id=`); `lib/convite.ts` (`workspaceDoLink`) lê e confere o id, e o aceite chama `accept_workspace_invite({ p_workspace_id })`. O workspace do `user_metadata` só vale para convite enviado antes de 2026-10-24 (o convite de outra empresa o reescreve)
