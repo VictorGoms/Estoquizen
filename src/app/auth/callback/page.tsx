@@ -9,6 +9,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import { markSessionActive } from "@/lib/session";
 import { readAuthLinkError } from "@/lib/authMessages";
 import { registrar } from "@/lib/analytics";
+import { workspaceDoLink } from "@/lib/convite";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -24,7 +25,10 @@ export default function AuthCallbackPage() {
         registrar("cadastro_criado", { metodo: "google" });
       }
       if (session.user?.user_metadata?.from_invite) {
-        router.replace("/set-password");
+        /* O link do convite diz qual workspace aceitar (EQZ-56); o metadata pode ter sido
+           reescrito pelo convite de outra empresa */
+        const ws = workspaceDoLink(window.location.search);
+        router.replace(ws ? `/set-password?workspace_id=${ws}` : "/set-password");
       } else {
         router.replace("/select-workspace");
       }

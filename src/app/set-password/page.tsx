@@ -9,6 +9,7 @@ import PasswordField from "@/components/auth/PasswordField";
 import { UsersIcon, ArrowRightIcon } from "@/components/ui/icons";
 import PageLoader from "@/components/ui/PageLoader";
 import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
+import { workspaceDoLink } from "@/lib/convite";
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function SetPasswordPage() {
   const [checking, setChecking]         = useState(true);
   const [error, setError]               = useState("");
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
+  const [linkWorkspace, setLinkWorkspace] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -31,7 +33,11 @@ export default function SetPasswordPage() {
         return;
       }
 
-      const wsId  = session.user.user_metadata.workspace_id as string;
+      /* O workspace vem do link do convite (EQZ-56). O do metadata fica só para convite enviado
+         antes desta mudança, enquanto o link dele não expira */
+      const doLink = workspaceDoLink(window.location.search);
+      setLinkWorkspace(doLink);
+      const wsId  = doLink ?? (session.user.user_metadata.workspace_id as string);
       const userId = session.user.id;
 
       // Verifica se o convite ainda existe (pode ter sido revogado)
@@ -74,7 +80,9 @@ export default function SetPasswordPage() {
       const { error: pwErr } = await supabase.auth.updateUser({ password });
       if (pwErr) throw new Error(authErrorPt(pwErr.message));
 
-      const { error: rpcErr } = await supabase.rpc("accept_workspace_invite");
+      const { error: rpcErr } = linkWorkspace
+        ? await supabase.rpc("accept_workspace_invite", { p_workspace_id: linkWorkspace })
+        : await supabase.rpc("accept_workspace_invite");
       if (rpcErr) throw new Error(rpcErr.message);
 
       router.replace("/select-workspace");

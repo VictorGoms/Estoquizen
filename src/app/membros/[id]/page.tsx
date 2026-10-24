@@ -10,7 +10,6 @@ import PageLoader from "@/components/ui/PageLoader";
 import PageError from "@/components/ui/PageError";
 import AccessDenied from "@/components/ui/AccessDenied";
 import { supabase } from "@/lib/supabase";
-import { dbErrorPt } from "@/lib/dbMessages";
 import { api } from "@/lib/api";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
@@ -18,6 +17,21 @@ import { ArrowLeftIcon, CheckIcon, TrashIcon, Spinner } from "@/components/ui/ic
 
 type Role   = "owner" | "admin" | "member";
 type Status = "ativo" | "pendente" | "inativo";
+
+/* Linha de GET /members (perfil junto; convite pendente traz só o e-mail) */
+interface ApiMemberRow {
+  id:         string;
+  user_id:    string;
+  role:       string;
+  status:     string;
+  created_at: string;
+  profiles: {
+    name?:         string | null;
+    email?:        string | null;
+    avatar_color?: string | null;
+    avatar_url?:   string | null;
+  } | null;
+}
 
 interface MemberData {
   memberId:    string;   // workspace_members.id
@@ -83,31 +97,29 @@ export default function MemberDetailPage() {
         setUserName(profile?.name ?? user.email?.split("@")[0] ?? "");
       }
 
-      const { data: wmData, error: err } = await supabase
-        .from("workspace_members")
-        .select("id, role, status, created_at, user_id")
-        .eq("id", memberId)
-        .eq("workspace_id", ws.id)
-        .single();
-
-      if (err || !wmData) {
-        setError(err && err.code !== "PGRST116" ? dbErrorPt(err, "Não foi possível carregar o membro.") : "Membro não encontrado");
+      /* Pela API, como a lista: o banco não mostra o perfil de convite pendente (EQZ-54), e a API
+         devolve só o e-mail dele */
+      let rows: ApiMemberRow[];
+      try {
+        rows = await api.get<ApiMemberRow[]>(`/members?workspace_id=${ws.id}`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Não foi possível carregar o membro.");
         setLoading(false);
         return;
       }
 
-      const wm = wmData as unknown as { id: string; role: string; status: string; created_at: string; user_id: string };
+      const wm = rows.find((r) => r.id === memberId);
+      if (!wm) {
+        setError("Membro não encontrado");
+        setLoading(false);
+        return;
+      }
 
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("id, name, email, avatar_color, avatar_url")
-        .eq("id", wm.user_id)
-        .single();
-
+      const prof = wm.profiles;
       const name = prof?.name ?? prof?.email?.split("@")[0] ?? "Sem nome";
       const m: MemberData = {
         memberId:    wm.id,
-        userId:      prof?.id ?? wm.user_id,
+        userId:      wm.user_id,
         name,
         email:       prof?.email ?? "",
         avatarColor: prof?.avatar_color ?? "#1d2840",
