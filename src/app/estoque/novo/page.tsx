@@ -19,6 +19,7 @@ import { useProductLimit } from "@/hooks/useProductLimit";
 import ProductLimitBanner from "@/components/dashboard/ProductLimitBanner";
 import ProductAvatar from "@/components/estoque/ProductAvatar";
 import { api } from "@/lib/api";
+import { dbErrorPt } from "@/lib/dbMessages";
 import { parseQtyInput, parsePriceInput } from "@/lib/stock";
 import { ordenarUnidades, UNIDADES as UNITS } from "@/lib/segmentos";
 import { ArrowLeftIcon, ScanIcon, ImageIcon, CheckIcon, Spinner } from "@/components/ui/icons";
@@ -216,12 +217,17 @@ function NovoItemContent() {
         const { error: uploadErr } = await supabase.storage
           .from("product-images")
           .upload(path, compressed, { upsert: true, contentType: compressed.type });
-        if (!uploadErr) {
-          const { data: urlData } = supabase.storage
-            .from("product-images")
-            .getPublicUrl(path);
-          imageUrl = urlData.publicUrl;
+        /* Antes o erro era ignorado e o produto ficava sem foto sem avisar. Agora para e explica
+           (o Storage só aceita JPG, PNG ou WebP de até 5 MB, EQZ-64) */
+        if (uploadErr) {
+          setError(dbErrorPt(uploadErr, "Não foi possível enviar a foto. Tente de novo ou salve sem foto."));
+          setSaving(false);
+          return;
         }
+        const { data: urlData } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
       } else if (fotoEmbalagem && usarFotoEmbalagem) {
         imageUrl = fotoEmbalagem;
       }

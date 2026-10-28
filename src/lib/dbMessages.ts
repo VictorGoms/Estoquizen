@@ -22,8 +22,9 @@ export function dbErrorPt(
   if (code === "23503")                          return "Este registro está ligado a outro e não pode ser alterado.";
   if (["23502", "23514", "22P02", "22003"].includes(code)) return "Algum valor está inválido. Confira os campos.";
   if (m.includes("jwt expired") || m.includes("invalid jwt")) return "Sua sessão expirou. Entre novamente.";
-  if (m.includes("exceeded the maximum") || m.includes("too large")) return "Arquivo grande demais.";
-  if (m.includes("mime type") || m.includes("invalid file type"))    return "Formato de arquivo não aceito.";
+  /* Limites dos buckets de fotos (EQZ-64): 5 MB e só JPG, PNG ou WebP */
+  if (m.includes("exceeded the maximum") || m.includes("too large")) return "A foto passa de 5 MB. Escolha uma imagem menor.";
+  if (m.includes("mime type") || m.includes("invalid file type"))    return "Formato de foto não aceito: use JPG, PNG ou WebP.";
   if (m.includes("failed to fetch") || m.includes("network"))        return "Sem conexão com o servidor. Verifique sua internet.";
   return fallback;
 }
