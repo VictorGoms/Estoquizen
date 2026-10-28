@@ -34,7 +34,8 @@ Interface web do **Estoquizen**, um SaaS de gestão de estoque para pequenos neg
 **Estoque**
 - Lista de produtos com busca por nome ou código e filtro por situação: normal, baixo ou zerado (comparando com o estoque mínimo de cada produto).
 - Cadastro manual. Ao informar o código de barras, a tela sugere o nome do produto consultando a base pública do Open Food Facts.
-- Página do produto com edição, registro de entradas e saídas com motivo, histórico e foto. A imagem é comprimida no navegador (Canvas, máx. 800px) antes de ir para o Supabase Storage.
+- Página do produto com edição, registro de entradas e saídas com motivo, histórico e foto. A imagem é comprimida no navegador (Canvas, máx. 800px) antes de ir para o Supabase Storage, que aceita só JPG, PNG ou WebP de até 5 MB.
+- Cada entrada ou saída vai com uma `Idempotency-Key`: dois toques no botão ou um reenvio depois de queda de rede contam uma vez só.
 
 **Leitor de código de barras**
 - Usa a câmera do celular ou do computador (ZXing) para dar entrada ou saída de um produto em poucos toques.
@@ -70,6 +71,8 @@ Interface web do **Estoquizen**, um SaaS de gestão de estoque para pequenos neg
 - Configurações com plano atual, barra de uso do limite, acesso ao portal de assinatura do Stripe e encerramento da conta com confirmação.
 - Perfil com foto (upload para o Supabase Storage).
 - Sessão mantida por até 30 dias sem uso ("Manter conectado neste aparelho", o padrão). Em computador compartilhado, desmarcando a opção, a sessão acaba ao fechar o navegador ou após 2h de inatividade.
+- Cadastro e troca de senha recusam senha que já apareceu em vazamentos, consultando o HaveIBeenPwned por k-anonimato: só os 5 primeiros caracteres do hash SHA-1 saem do navegador.
+- CAPTCHA da Cloudflare (Turnstile) pronto no login, no cadastro e na recuperação de senha; aparece quando `NEXT_PUBLIC_TURNSTILE_SITE_KEY` está definida.
 
 ## Stack
 
@@ -89,7 +92,8 @@ Interface web do **Estoquizen**, um SaaS de gestão de estoque para pequenos neg
 - As chamadas para `/api/v1/*` passam por um *rewrite* do Next.js para a API Fastify (variável `API_URL`). Assim o navegador fala só com a origem do frontend, sem problema de CORS ou de *mixed content* quando acessado pelo celular em HTTPS.
 - O cliente HTTP (`src/lib/api.ts`) injeta o token da sessão do Supabase em cada requisição.
 - Login, leituras simples e upload de imagens usam o Supabase direto, protegidos pelas policies de Row Level Security do banco.
-- Headers de segurança globais em `next.config.ts`: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` e `Permissions-Policy`.
+- Headers de segurança globais em `next.config.ts`: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` e uma Content Security Policy em modo de relatório.
+- As escritas passam pela API, e o banco recusa o que o cliente não pode gravar. As auditorias de segurança e como elas são testadas estão no [README da API](https://github.com/VictorGoms/Estoquizen-API#segurança).
 
 ## Como rodar localmente
 
@@ -108,6 +112,7 @@ NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_anon_key
 NEXT_PUBLIC_API_URL=/api/v1           # passa pelo proxy do Next
 API_URL=http://localhost:3001         # destino do proxy (em produção, a URL da API)
+# NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x...  # opcional: liga o CAPTCHA (a site key pública do Turnstile)
 ```
 
 O `npm run dev` sobe em **HTTPS**, porque a câmera só funciona em contexto seguro, inclusive pelo celular na rede local. Gere um certificado local com o [mkcert](https://github.com/FiloSottile/mkcert) antes:
@@ -133,9 +138,9 @@ src/
 
 ## Próximos passos
 
-- Testes (componentes e fluxos principais com Playwright) e CI no GitHub Actions.
-- Exportação do estoque em CSV.
-- Concentrar na API as escritas que hoje vão direto ao Supabase, para que regras como o modo somente leitura de assinaturas expiradas valham em todos os fluxos.
+- Testes de ponta a ponta dos fluxos principais com Playwright (as regras de `src/lib` já têm testes no Vitest, rodados na CI a cada push).
+- Content Security Policy bloqueando de verdade (hoje só relata no console).
+- Ligar o CAPTCHA: criar o widget na Cloudflare, pôr a site key na Vercel e ativar no Supabase Auth.
 - Arquivo `.env.example` e prints das telas internas neste README.
 
 ## Autor
