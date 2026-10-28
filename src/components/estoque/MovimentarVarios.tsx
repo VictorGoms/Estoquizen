@@ -16,13 +16,12 @@ import {
   type LinhaLote, type ProdutoLote,
 } from "@/lib/lote";
 import BuscaProduto from "@/components/estoque/BuscaProduto";
-import { MinusIcon, PlusIcon, XIcon, ScanIcon, CheckIcon, Spinner } from "@/components/ui/icons";
+import { MinusIcon, PlusIcon, XIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 type ProdutoTela = ProdutoLote & { image_url: string | null; icon: string | null };
 
 /* A lista fica guardada neste navegador até ser registrada (recarregar a página não perde nada) */
 const chaveRascunho = (ws: string) => `estoquizen_lote:${ws}`;
-const CHAVE_CAMERA  = "estoquizen_lote_camera";
 
 /* Assinatura curta da lista, para a Idempotency-Key mudar quando a lista muda (EQZ-67) */
 function assinatura(linhas: LinhaLote[]): string {
@@ -70,17 +69,18 @@ function Quantidade({ valor, unidade, onMudar }: { valor: number; unidade: strin
  * campo de busca) ou pela busca pelo nome, para quem não tem código de barras. Na saída, produto com
  * mais do que o estoque bloqueia o registro, com aviso na linha (decisão do João). Regras em lib/lote.ts.
  */
-export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
+export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar, camera }: {
   workspaceId:   string;
   tipo:          MovementType;
   podeCadastrar: boolean;
+  /** Jeito escolhido na tela de entrada e saída: câmera (leitura contínua) ou busca pelo nome */
+  camera:        boolean;
 }) {
   const { products, loading } = useProducts(workspaceId);
   const [linhas, setLinhas]           = useState<LinhaLote[]>([]);
   const [restaurado, setRestaurado]   = useState(false);
   const [semCadastro, setSemCadastro] = useState<string[]>([]);
   const [motivo, setMotivo]           = useState<Motivo>("venda");
-  const [camera, setCamera]           = useState(true);
   /* Última linha que entrou ou somou, para a pessoa ver que a leitura valeu */
   const [destaque, setDestaque]       = useState<string | null>(null);
   const [enviando, setEnviando]       = useState(false);
@@ -101,7 +101,6 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
       if (Array.isArray(salvo?.linhas)) {
         setLinhas(salvo.linhas.filter((l) => typeof l?.id === "string" && typeof l?.qtd === "number" && l.qtd > 0));
       }
-      if (localStorage.getItem(CHAVE_CAMERA) === "0") setCamera(false);
     } catch { /* navegador sem armazenamento */ }
     setRestaurado(true);
   }, [workspaceId]);
@@ -137,13 +136,6 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
     else setSemCadastro((s) => (s.includes(codigo) ? s : [codigo, ...s].slice(0, 20)));
   }, [porCodigo, adicionar]);
 
-  function alternarCamera() {
-    setCamera((c) => {
-      try { localStorage.setItem(CHAVE_CAMERA, c ? "0" : "1"); } catch { /* sem armazenamento */ }
-      return !c;
-    });
-  }
-
   async function registrar() {
     if (!validas.length || bloqueado || enviando) return;
     setEnviando(true);
@@ -177,8 +169,9 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Câmera (leitura contínua) */}
-      {camera && (
+      {/* Só o jeito escolhido na tela (câmera em leitura contínua ou busca pelo nome). A busca também
+          recebe o leitor de mão, que digita o código e dá Enter */}
+      {camera ? (
         loading ? (
           <div className="h-[200px] rounded-5xl bg-surface flex items-center justify-center gap-3 text-fg-muted font-bold">
             <Spinner /> Carregando os produtos…
@@ -186,23 +179,15 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
         ) : (
           <BarcodeScanner variant="embedded" continuo onDetect={lerCodigo} />
         )
+      ) : (
+        <BuscaProduto
+          produtos={produtos}
+          carregando={loading}
+          onEscolher={(p) => adicionar(p.id)}
+          onCodigoDesconhecido={lerCodigo}
+          rotulo="Procure pelo nome ou código"
+        />
       )}
-      <button
-        type="button"
-        onClick={alternarCamera}
-        className="self-center flex items-center gap-2 min-h-[40px] px-4 rounded-full text-sm font-extrabold text-fg-muted cursor-pointer hover:text-fg"
-      >
-        <ScanIcon className="w-4 h-4" /> {camera ? "Fechar a câmera (buscar pelo nome)" : "Abrir a câmera"}
-      </button>
-
-      {/* Busca pelo nome; também recebe o leitor de mão, que digita o código e dá Enter */}
-      <BuscaProduto
-        produtos={produtos}
-        carregando={loading}
-        onEscolher={(p) => adicionar(p.id)}
-        onCodigoDesconhecido={lerCodigo}
-        rotulo="Procure pelo nome ou código"
-      />
 
       {/* Códigos lidos que não estão cadastrados */}
       {semCadastro.length > 0 && (
@@ -252,7 +237,9 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
       {validas.length === 0 ? (
         !feito && (
           <p className="py-8 px-6 text-center text-sm font-bold text-fg-subtle border-2 border-dashed border-white/8 rounded-5xl">
-            Leia os códigos ou busque pelo nome. Cada produto entra na lista; ler de novo soma 1.
+            {camera
+              ? "Aponte a câmera para o código de cada produto. Ele entra na lista; ler de novo soma 1."
+              : "Procure cada produto pelo nome e toque nele para pôr na lista. Escolher de novo soma 1."}
           </p>
         )
       ) : (

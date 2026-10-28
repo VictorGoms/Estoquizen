@@ -77,7 +77,8 @@ export default function BottomNav() {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              /* "Escanear" abre direto na câmera, mesmo para quem costuma procurar pelo nome (EQZ-69) */
+              href={item.href === "/scanner" ? "/scanner?jeito=camera" : item.href}
               aria-current={active ? "page" : undefined}
               className={`flex flex-col items-center justify-center gap-1 min-h-[56px] text-[11px] transition-colors duration-200 ${
                 active || item.primary ? "text-fg font-black" : "text-fg-muted font-extrabold hover:text-fg"

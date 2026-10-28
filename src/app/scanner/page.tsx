@@ -37,6 +37,9 @@ const REASON_FALLBACK: Record<MovementType, string> = {
   entrada: "Entrada via scanner",
   saida:   "Saída via scanner",
 };
+type Jeito = "nome" | "camera";
+const CHAVE_JEITO = "estoquizen_movimentar_jeito";
+
 const REASON_PELO_NOME: Record<MovementType, string> = {
   entrada: "Entrada",
   saida:   "Saída",
@@ -65,7 +68,11 @@ export default function ScannerPage() {
      e saída" (tela inicial e Estoque) abre com ?tipo=entrada|saida&modo=um|varios */
   const [quantos, setQuantos]         = useState<"um" | "varios">("um");
   const [wsId, setWsId]               = useState<string | null>(null);
-  /* Modo "Um produto": busca pelo nome, para quem não tem código de barras */
+  /* Como achar o produto (pedido do João: com a câmera sempre na tela, quem não tem código de barras
+     achava que só dava por ela). "nome" é o padrão; a escolha fica neste aparelho. ?jeito=camera
+     (botão "Escanear" da barra) abre direto na câmera sem mudar a escolha guardada */
+  const [jeito, setJeito]             = useState<Jeito>("nome");
+  /* Busca pelo nome, para quem não tem código de barras */
   const { products, loading: carregandoProdutos } = useProducts(wsId ?? undefined);
   useEffect(() => {
     setWsId(getWorkspace()?.id ?? null);
@@ -73,7 +80,18 @@ export default function ScannerPage() {
     if (params.get("modo") === "varios") setQuantos("varios");
     const tipo = params.get("tipo");
     if (tipo === "entrada" || tipo === "saida") { modeRef.current = tipo; setMode(tipo); }
+    const pedido = params.get("jeito");
+    if (pedido === "camera" || pedido === "nome") { setJeito(pedido); return; }
+    try {
+      const salvo = localStorage.getItem(CHAVE_JEITO);
+      if (salvo === "camera" || salvo === "nome") setJeito(salvo);
+    } catch { /* navegador sem armazenamento */ }
   }, []);
+
+  function trocarJeito(j: Jeito) {
+    setJeito(j);
+    try { localStorage.setItem(CHAVE_JEITO, j); } catch { /* navegador sem armazenamento */ }
+  }
 
   /* Escolhido pela busca: vai direto para a quantidade, como se tivesse lido o código */
   function escolherPeloNome(p: (typeof products)[number]) {
@@ -203,9 +221,38 @@ export default function ScannerPage() {
           })}
         </div>
 
+        {/* Como achar o produto: a câmera só abre para quem escolher o código de barras */}
+        {(quantos === "varios" || step === "scanning") && (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-[13px] font-extrabold text-fg-muted mb-2 px-1">Como achar o produto?</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { id: "nome",   label: "Pelo nome",       Icon: SearchIcon },
+                { id: "camera", label: "Código de barras", Icon: ScanIcon },
+              ] as const).map((o) => {
+                const ativo = jeito === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    aria-pressed={ativo}
+                    onClick={() => trocarJeito(o.id)}
+                    className={`min-h-[48px] px-3 rounded-full text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors ${
+                      ativo ? "bg-surface-2 text-fg font-black ring-2 ring-accent" : "bg-surface text-fg-muted font-extrabold hover:text-fg"
+                    }`}
+                  >
+                    <o.Icon className="w-[18px] h-[18px] shrink-0" />
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+
         {quantos === "varios" && (
           wsId && canMove
-            ? <MovimentarVarios workspaceId={wsId} tipo={mode} podeCadastrar={canEdit} />
+            ? <MovimentarVarios workspaceId={wsId} tipo={mode} podeCadastrar={canEdit} camera={jeito === "camera"} />
             : role !== null && <p className="text-sm font-bold text-fg-muted text-center">Escolha um workspace para continuar.</p>
         )}
 
@@ -214,23 +261,18 @@ export default function ScannerPage() {
             <div className="h-[260px] rounded-5xl bg-surface flex items-center justify-center gap-3 text-fg-muted font-bold">
               <Spinner /> Buscando produto…
             </div>
+          ) : jeito === "camera" ? (
+            <BarcodeScanner variant="embedded" onDetect={handleDetect} />
           ) : (
-            <>
-              <BarcodeScanner variant="embedded" onDetect={handleDetect} />
-              {/* Quem não tem código de barras escolhe pelo nome (EQZ-69) */}
-              {canMove && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[13px] font-extrabold text-fg-muted text-center">Sem código de barras? Procure pelo nome:</p>
-                  <BuscaProduto
-                    produtos={products}
-                    carregando={carregandoProdutos}
-                    onEscolher={escolherPeloNome}
-                    onCodigoDesconhecido={(c) => void handleDetect(c)}
-                    rotulo="Nome do produto"
-                  />
-                </div>
-              )}
-            </>
+            canMove && (
+              <BuscaProduto
+                produtos={products}
+                carregando={carregandoProdutos}
+                onEscolher={escolherPeloNome}
+                onCodigoDesconhecido={(c) => void handleDetect(c)}
+                rotulo="Nome do produto"
+              />
+            )
           )
         )}
 
