@@ -38,12 +38,38 @@ export default function PlanSelectionPage() {
 
   const semTeste = teste?.disponivel === false;
   const pendente = teste?.pendente ?? null;
+  const [aviso, setAviso] = useState("");
+
+  /* O passo 1 guarda nome e ramo até o workspace ficar de vez (com teste ou pago) */
+  function limparPendentes() {
+    sessionStorage.removeItem("pendingWorkspaceName");
+    sessionStorage.removeItem("pendingSegment");
+    sessionStorage.removeItem("pendingSegmentOther");
+  }
+
+  /* Fechou o pagamento logo depois de criar (2026-10-28): a API desfaz o workspace (confere antes no Stripe
+     se já foi pago) e a pessoa fica aqui, com o nome guardado. Se não der, ele fica esperando pagamento */
+  async function desistir() {
+    if (!pagando) return;
+    const id = pagando.workspaceId;
+    setPagando(null);
+    setLoading(true);
+    try {
+      await api.post(`/workspaces/${id}/desistir`, {});
+      setAviso("Pagamento cancelado: o workspace não foi criado.");
+      setLoading(false);
+    } catch {
+      limparPendentes();
+      router.push("/select-workspace");
+    }
+  }
 
   async function handleContinue() {
     if (!selectedPlan) return;
     const name = sessionStorage.getItem("pendingWorkspaceName") ?? "Minha Empresa";
     setLoading(true);
     setError("");
+    setAviso("");
 
     try {
       const cpf = sessionStorage.getItem("pendingCpf") ?? "";
@@ -56,9 +82,6 @@ export default function PlanSelectionPage() {
 
       /* trial: false = já usou o teste (1 por pessoa e por CPF) ou escolheu o Pro */
       const ws = await api.post<{ id: string; trial?: boolean }>("/workspaces", body);
-      sessionStorage.removeItem("pendingWorkspaceName");
-      sessionStorage.removeItem("pendingSegment");
-      sessionStorage.removeItem("pendingSegmentOther");
 
       /* Todo plano começa com o teste grátis (lib/teste.ts); só quem já usou o teste paga na hora */
       const pagaAgora = !ws.trial;
@@ -69,6 +92,7 @@ export default function PlanSelectionPage() {
         return;
       }
 
+      limparPendentes();
       if (pagaAgora) {
         const checkout = await api.post<{ url: string }>("/billing/checkout", {
           workspace_id: ws.id,
@@ -94,8 +118,8 @@ export default function PlanSelectionPage() {
           workspaceId={pagando.workspaceId}
           plan={pagando.plan}
           planLabel={PLANS.find((p) => p.id === pagando.plan)?.name ?? pagando.plan}
-          onFechar={() => router.push("/select-workspace?checkout=canceled")}
-          onConcluido={() => router.push("/select-workspace?checkout=success")}
+          onFechar={desistir}
+          onConcluido={() => { limparPendentes(); router.push("/select-workspace?checkout=success"); }}
         />
       )}
       <div className="flex flex-col flex-1 py-10 px-4 sm:px-6">
@@ -159,6 +183,7 @@ export default function PlanSelectionPage() {
             )}
           </p>
 
+          {aviso && <p role="status" className="text-sm font-bold text-fg-soft text-center mb-3">{aviso}</p>}
           {error && <p role="alert" className="text-sm font-bold text-zero text-center mb-3">{error}</p>}
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 w-full max-w-lg mx-auto">
