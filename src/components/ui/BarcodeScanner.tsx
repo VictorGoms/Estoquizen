@@ -29,9 +29,16 @@ interface BarcodeScannerProps {
   preferQr?: boolean;  // tenta maior resolução para QR codes
   /** "overlay": tela cheia com barra própria (padrão). "embedded": só a câmera, dentro da página. */
   variant?: "overlay" | "embedded";
+  /** Lê um código atrás do outro sem fechar a câmera (modo Vários, EQZ-69). O mesmo código só conta
+      de novo depois de sair da frente da câmera por REPETIR_MS */
+  continuo?: boolean;
   onDetect: (code: string) => void;
   onClose?: () => void;
 }
+
+/* Modo contínuo: o código parado na frente da câmera é visto em todo quadro; só vale de novo depois
+   de sumir por este tempo (para somar 2, afasta e aproxima o produto, ou usa o + da lista) */
+const REPETIR_MS = 1500;
 
 export default function BarcodeScanner({
   title = "Escanear código",
@@ -39,9 +46,24 @@ export default function BarcodeScanner({
   hint,
   preferQr = false,
   variant = "overlay",
+  continuo = false,
   onDetect,
   onClose,
 }: BarcodeScannerProps) {
+  /* Ref: trocar a função do pai não reinicia a câmera (no modo contínuo ela muda a cada item) */
+  const onDetectRef = useRef(onDetect);
+  useEffect(() => { onDetectRef.current = onDetect; }, [onDetect]);
+  const ultimoRef = useRef<{ codigo: string; visto: number } | null>(null);
+
+  /** Modo contínuo: true se o código ainda é o mesmo que está na frente da câmera */
+  const repetido = useCallback((codigo: string) => {
+    const agora = Date.now();
+    const u     = ultimoRef.current;
+    const igual = !!u && u.codigo === codigo && agora - u.visto < REPETIR_MS;
+    ultimoRef.current = { codigo, visto: agora };
+    return igual;
+  }, []);
+
   const videoRef  = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef    = useRef<number>(0);
@@ -164,10 +186,14 @@ export default function BarcodeScanner({
         try {
           const barcodes = await detector.detect(videoRef.current);
           if (barcodes.length > 0 && !stale()) {
-            playBeep();
-            stopCamera();
-            onDetect(barcodes[0].rawValue as string);
-            return;
+            const codigo = barcodes[0].rawValue as string;
+            if (!continuo) {
+              playBeep();
+              stopCamera();
+              onDetectRef.current(codigo);
+              return;
+            }
+            if (!repetido(codigo)) { playBeep(); onDetectRef.current(codigo); }
           }
         } catch { /* non-fatal */ }
         if (!stale()) rafRef.current = requestAnimationFrame(tick);
@@ -189,13 +215,18 @@ export default function BarcodeScanner({
       let detected = false;
       const controls = await reader.decodeFromStream(stream, videoRef.current!, (result) => {
         if (!result || detected || stale()) return;
+        if (continuo) {
+          const codigo = result.getText();
+          if (!repetido(codigo)) { playBeep(); onDetectRef.current(codigo); }
+          return;
+        }
         detected = true;
         playBeep();
         controls.stop();
         stream!.getTracks().forEach((t) => t.stop());
         if (videoRef.current) { videoRef.current.pause(); videoRef.current.srcObject = null; }
         streamRef.current = null;
-        onDetect(result.getText());
+        onDetectRef.current(result.getText());
       });
 
       if (stale()) { controls.stop(); return; }
@@ -203,7 +234,7 @@ export default function BarcodeScanner({
     } catch {
       if (!stale()) setScanState("unsupported");
     }
-  }, [stopCamera, onDetect, preferQr]);
+  }, [stopCamera, preferQr, continuo, repetido]);
 
   useEffect(() => {
     activeRef.current = true;
@@ -224,6 +255,7 @@ export default function BarcodeScanner({
     e.preventDefault();
     const code = manualCode.trim();
     if (!code) return;
+    if (continuo) { setManualCode(""); onDetectRef.current(code); return; }
     stopCamera();
     onDetect(code);
   }

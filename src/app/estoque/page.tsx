@@ -246,6 +246,10 @@ export default function EstoquePage() {
             </div>
 
             <div className="hidden lg:flex items-center gap-3">
+              {/* EQZ-69: entrada ou saída de vários de uma vez, também pela busca pelo nome (todos os papéis) */}
+              <Link href="/scanner?modo=varios" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
+                <PlusMinusIcon /> Vários de uma vez
+              </Link>
               {canNota && (
                 <Link href="/nota" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
                   <DocumentIcon /> Ler nota de compra

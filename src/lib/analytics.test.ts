@@ -39,6 +39,8 @@ describe("eventos do funil (EQZ-01)", () => {
   });
   it("movimentação diz se foi entrada ou saída", () => {
     expect(eventoDaChamada("POST", "/products/abc/adjust", { delta: 5 }, null)?.props.tipo).toBe("entrada");
+    expect(eventoDaChamada("POST", "/products/adjust-batch", { tipo: "saida", motivo: "venda", itens: [{}, {}, {}] }, null))
+      .toEqual({ nome: "movimentacao_em_lote", props: { tipo: "saida", motivo: "venda", produtos: 3 } });
     expect(eventoDaChamada("POST", "/products/abc/adjust", { delta: -2, motivo: "perda", reason: "quebrou" }, null))
       .toEqual({ nome: "movimentacao_registrada", props: { tipo: "saida", motivo: "perda" } });
   });

@@ -107,7 +107,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/membros`             — Lista de membros
 - `/membros/[id]`        — Edição de membro (dados pela API `GET /members`)
 - `/membros/novo`        — Convidar membro
-- `/scanner`             — Leitor de código de barras (câmera)
+- `/scanner`             — Leitor de código de barras (câmera). "Um por vez" (como sempre) ou **"Vários de uma vez"** (EQZ-69, `?modo=varios`, atalho no Estoque): `components/estoque/MovimentarVarios.tsx`
 - `/configuracoes`       — Configurações do workspace
 - `/notificacoes`        — Notificações
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
@@ -144,6 +144,7 @@ components/
 
   estoque/
     StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
+    MovimentarVarios.tsx — EQZ-69: lista de produtos e registro único (POST /products/adjust-batch). Entra pela câmera em leitura contínua, pelo leitor de mão (digita o código + Enter no campo de busca) ou pela busca pelo nome (quem não tem código de barras). Ler de novo soma 1; quantidade com fração; na saída, produto com mais do que o estoque bloqueia, com aviso na linha; total em R$ pelo preço de venda (não é PDV: sem pagamento nem cupom). Código não cadastrado fica fora, com "Cadastrar". A lista fica no localStorage (`estoquizen_lote:<ws>`) até ser registrada
     IconPicker.tsx — escolha do ícone do produto (automático, só iniciais ou um dos 231, com busca), na tela do produto
     # ProductAvatar (EQZ-30): foto (da pessoa ou da embalagem do Open Food Facts, mostrada inteira em fundo branco) → ícone escolhido (`products.icon`) → ícone pelo nome → iniciais. Passe `icon={p.icon}` onde houver o produto
 
@@ -186,6 +187,7 @@ components/
 - **`senhaVazada.ts`** — EQZ-65: cadastro, `/reset-password` e `/set-password` recusam senha que já apareceu em vazamento (HaveIBeenPwned por k-anonimato: só 5 caracteres do SHA-1 saem do navegador). Se a consulta falhar, deixa passar. Substitui o bloqueio nativo do Supabase, que só existe no Pro
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
+- **`lote.ts`** — EQZ-69: regras da lista do modo "Vários" (somar, mudar quantidade, o que falta na saída, valor, busca pelo nome sem acento ou pelo começo do código, mapa de códigos)
 - **`codigoBarras.ts`** — EQZ-53: `buscarPorCodigo(ean)` no cadastro de produto. Consulta juntas as 4 bases abertas (Open Food Facts, Open Products Facts, Open Beauty Facts, Open Pet Food Facts; mesma API, CORS liberado) e o catálogo próprio (`GET /catalogo/:codigo` da API, só nome confiável); nome das bases primeiro, depois o do catálogo; foto só dos servidores de imagem das bases (`ehFotoDeBaseAberta`). Devolve a fonte para o aviso "Nome sugerido pelo …"
 - **`iconeProduto.ts`** — EQZ-30: 231 ícones Fluent Emoji 3D em `public/icones/produtos/<chave>.webp` (14 grupos; eram 80 até 2026-10-20), dicionário de sinônimos do comércio, palavras do Unicode CLDR em português escolhidas à mão e `iconeDoNome` (expressões → palavras fortes → CLDR → genéricas, com plural); `iconeDoProduto(nome, icon)` respeita a escolha manual (`"nenhum"` = só iniciais); `buscarIcones` alimenta a busca do seletor. Ícone novo: PNG 3D do Fluent convertido para WebP 128 px + entrada em `ICONES` e nos sinônimos (a chave precisa casar com o CHECK `^[a-z]{2,20}$` de `products.icon`). Antes de mexer no dicionário, rodar uma lista de nomes nas versões antiga e nova e comparar
 - **`segmentos.ts`** — EQZ-13: os 7 ramos (`workspaces.segment`), com atalhos de unidade (`ordenarUnidades`: só muda a ordem da lista única), termo (insumos × produtos), dica de rotina e a lista pronta. Os nomes dos itens batem com o dicionário de ícones. Ramo também em Configurações

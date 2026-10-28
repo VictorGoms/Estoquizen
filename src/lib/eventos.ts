@@ -38,6 +38,10 @@ export function eventoDaChamada(metodo: string, caminho: string, corpo: unknown,
     const delta = numero(c.delta);
     return { nome: "movimentacao_registrada", props: { tipo: delta === null ? null : delta > 0 ? "entrada" : "saida", motivo: texto(c.motivo) } };
   }
+  /* EQZ-69: vários produtos de uma vez (só o tamanho da lista, nunca os produtos) */
+  if (rota === "/products/adjust-batch") {
+    return { nome: "movimentacao_em_lote", props: { tipo: texto(c.tipo), motivo: texto(c.motivo), produtos: Array.isArray(c.itens) ? c.itens.length : null } };
+  }
   if (/^\/products\/[^/]+\/count$/.test(rota)) return { nome: "contagem_feita", props: {} };
   if (rota === "/shopping-list")      return { nome: "item_na_lista_de_compras", props: {} };
   if (rota === "/members/invite")     return { nome: "membro_convidado", props: { papel: texto(c.role) } };

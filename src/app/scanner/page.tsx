@@ -7,6 +7,7 @@ import BarcodeScanner from "@/components/ui/BarcodeScanner";
 import ProductAvatar from "@/components/estoque/ProductAvatar";
 import StatusChip from "@/components/estoque/StatusChip";
 import MovementForm, { type MovementType } from "@/components/estoque/MovementForm";
+import MovimentarVarios from "@/components/estoque/MovimentarVarios";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
@@ -50,6 +51,14 @@ export default function ScannerPage() {
   const [result, setResult]           = useState<{ delta: number; newQty: number } | null>(null);
   const [looking, setLooking]         = useState(false);
   const [errorMsg, setErrorMsg]       = useState("");
+  /* EQZ-69: "um" produto por vez (como sempre) ou "varios" de uma vez (lista + registro único).
+     /scanner?modo=varios já abre na lista (atalho do Estoque) */
+  const [quantos, setQuantos]         = useState<"um" | "varios">("um");
+  const [wsId, setWsId]               = useState<string | null>(null);
+  useEffect(() => {
+    setWsId(getWorkspace()?.id ?? null);
+    if (new URLSearchParams(window.location.search).get("modo") === "varios") setQuantos("varios");
+  }, []);
 
   /* Refs para o handler da câmera não mudar de identidade (o que reiniciaria a câmera) */
   const modeRef    = useRef<MovementType>("entrada");
@@ -130,9 +139,28 @@ export default function ScannerPage() {
           >
             <ArrowLeftIcon className="w-[22px] h-[22px]" strokeWidth={2.2} />
           </Link>
-          <h1 className="text-lg font-black">Escanear produto</h1>
+          <h1 className="text-lg font-black">{quantos === "varios" ? "Vários produtos" : "Escanear produto"}</h1>
           <span className="w-12" aria-hidden="true" />
         </header>
+
+        <div role="group" aria-label="Quantos produtos" className="flex gap-1 p-1 rounded-full bg-surface">
+          {([
+            { id: "um",     label: "Um por vez" },
+            { id: "varios", label: "Vários de uma vez" },
+          ] as const).map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={quantos === o.id}
+              onClick={() => { setQuantos(o.id); scanAgain(); }}
+              className={`flex-1 min-h-[40px] rounded-full text-sm cursor-pointer transition-colors duration-200 ${
+                quantos === o.id ? "bg-inverse text-ink font-black" : "text-fg-muted font-extrabold hover:text-fg"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
 
         <div role="group" aria-label="Tipo de movimentação" className="flex gap-1 p-[5px] rounded-full bg-surface">
           {(["entrada", "saida"] as const).map((t) => {
@@ -154,7 +182,13 @@ export default function ScannerPage() {
           })}
         </div>
 
-        {step === "scanning" && (
+        {quantos === "varios" && (
+          wsId && canMove
+            ? <MovimentarVarios workspaceId={wsId} tipo={mode} podeCadastrar={canEdit} />
+            : role !== null && <p className="text-sm font-bold text-fg-muted text-center">Escolha um workspace para continuar.</p>
+        )}
+
+        {quantos === "um" && step === "scanning" && (
           looking ? (
             <div className="h-[260px] rounded-5xl bg-surface flex items-center justify-center gap-3 text-fg-muted font-bold">
               <Spinner /> Buscando produto…
