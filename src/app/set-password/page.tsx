@@ -19,7 +19,7 @@ export default function SetPasswordPage() {
   const [checking, setChecking]         = useState(true);
   const [error, setError]               = useState("");
   const [workspaceName, setWorkspaceName] = useState<string | null>(null);
-  const [linkWorkspace, setLinkWorkspace] = useState<string | null>(null);
+  const [conviteWorkspace, setConviteWorkspace] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -33,11 +33,10 @@ export default function SetPasswordPage() {
         return;
       }
 
-      /* O workspace vem do link do convite (EQZ-56). O do metadata fica só para convite enviado
-         antes desta mudança, enquanto o link dele não expira */
-      const doLink = workspaceDoLink(window.location.search);
-      setLinkWorkspace(doLink);
-      const wsId  = doLink ?? (session.user.user_metadata.workspace_id as string);
+      /* O workspace vem do link do convite (EQZ-56). Sem ele (a pessoa chegou sem clicar no e-mail),
+         vale o do metadata, e o nome dele aparece na tela antes de aceitar */
+      const wsId  = workspaceDoLink(window.location.search) ?? (session.user.user_metadata.workspace_id as string | undefined) ?? null;
+      setConviteWorkspace(wsId);
       const userId = session.user.id;
 
       // Verifica se o convite ainda existe (pode ter sido revogado)
@@ -80,9 +79,8 @@ export default function SetPasswordPage() {
       const { error: pwErr } = await supabase.auth.updateUser({ password });
       if (pwErr) throw new Error(authErrorPt(pwErr.message));
 
-      const { error: rpcErr } = linkWorkspace
-        ? await supabase.rpc("accept_workspace_invite", { p_workspace_id: linkWorkspace })
-        : await supabase.rpc("accept_workspace_invite");
+      if (!conviteWorkspace) throw new Error("Não achamos o convite. Abra de novo o link do e-mail de convite.");
+      const { error: rpcErr } = await supabase.rpc("accept_workspace_invite", { p_workspace_id: conviteWorkspace });
       if (rpcErr) throw new Error(rpcErr.message);
 
       router.replace("/select-workspace");
