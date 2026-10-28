@@ -13,7 +13,7 @@ export const DADOS_LEGAIS = {
   responsavel: "João Victor da Silva Gomes",
   contato:     CONTATO,
   foro:        "São Paulo/SP",
-  atualizado:  "21 de outubro de 2026",
+  atualizado:  "28 de outubro de 2026",
 };
 
 export function Secao({ titulo, id, children }: { titulo: string; id?: string; children: React.ReactNode }) {

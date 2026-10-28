@@ -1,4 +1,5 @@
 import { CheckIcon, XIcon } from "@/components/ui/icons";
+import PrecoPlano from "@/components/PrecoPlano";
 
 interface Feature {
   text: string;
@@ -62,14 +63,15 @@ export default function PlanCard({
         </span>
       </div>
 
-      <div className="mt-5 flex items-baseline gap-1.5">
-        <span className="text-[34px] font-black tracking-tight leading-none">{price}</span>
-        {priceNote && <span className={`text-sm font-extrabold ${muted}`}>{priceNote}</span>}
-      </div>
-      {trialNote && (
-        <span className={`self-start mt-2.5 text-xs font-black px-2.5 py-1 rounded-full ${selected ? "bg-emerald-200 text-emerald-900" : "bg-ok/15 text-ok"}`}>
-          {trialNote}
-        </span>
+      {trialNote ? (
+        <div className="mt-5">
+          <PrecoPlano price={price} priceNote={priceNote ?? ""} tamanho="text-[34px]" muted={muted} />
+        </div>
+      ) : (
+        <div className="mt-5 flex items-baseline gap-1.5">
+          <span className="text-[34px] font-black tracking-tight leading-none">{price}</span>
+          {priceNote && <span className={`text-sm font-extrabold ${muted}`}>{priceNote}</span>}
+        </div>
       )}
 
       <span className={`my-5 border-t-2 border-dashed ${selected ? "border-ink/15" : "border-white/12"}`} />

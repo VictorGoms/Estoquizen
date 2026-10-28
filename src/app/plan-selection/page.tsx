@@ -11,7 +11,7 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 import { PLANOS as PLANS } from "@/lib/planos";
 import PagamentoEmbutido from "@/components/pagamento/PagamentoEmbutido";
 import { pagamentoEmbutido } from "@/lib/pagamento";
-import { TESTE_GRATIS } from "@/lib/teste";
+import { GRATIS_ATE, TESTE_GRATIS } from "@/lib/teste";
 
 const BackIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -117,7 +117,9 @@ export default function PlanSelectionPage() {
             {selected && (
               <>
                 Plano <span className="text-fg font-black">{selected.name}</span> selecionado
-                {selected.price !== "Grátis" && <> · {selected.price}{selected.priceNote}</>}
+                {selected.trialNote
+                  ? <> · grátis até {GRATIS_ATE}, depois {selected.price}{selected.priceNote}</>
+                  : <> · {selected.price}{selected.priceNote}</>}
               </>
             )}
           </p>

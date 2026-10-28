@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { PLANOS } from "@/lib/planos";
 import { CheckIcon, XIcon } from "@/components/ui/icons";
-import { DIAS_TESTE, OFERTA_ATE, TESTE_GRATIS } from "@/lib/teste";
+import PrecoPlano from "@/components/PrecoPlano";
+import { GRATIS_ATE, TESTE_GRATIS } from "@/lib/teste";
 
 /* Preços na landing (EQZ-02): os mesmos planos da escolha de plano, mais a reversão de risco. */
 const GARANTIAS = [
@@ -20,8 +21,8 @@ export default function Pricing() {
             Planos simples, sem fidelidade
           </h2>
           <p className="mt-4 text-lg 3xl:text-xl font-semibold text-fg-muted leading-relaxed 3xl:leading-7">
-            Cobrança mensal no cartão de crédito. Teste qualquer plano por {DIAS_TESTE} dias, sem cartão: oferta de lançamento
-            para quem começar até {OFERTA_ATE}.
+            Oferta de lançamento: todos os planos de graça até {GRATIS_ATE}, sem cartão. Depois, cobrança mensal no cartão
+            de crédito, no plano que você escolher.
           </p>
         </div>
 
@@ -37,14 +38,15 @@ export default function Pricing() {
               <h3 className="text-2xl 3xl:text-[28px] font-black">{p.name}</h3>
               <p className="text-sm 3xl:text-base font-bold text-fg-muted">{p.description}</p>
 
-              {/* O selo do teste fica na linha do preço para as listas dos 3 cartões começarem na mesma altura */}
-              <div className="mt-5 flex items-center flex-wrap gap-x-3 gap-y-2">
-                <p className="flex items-baseline gap-1.5">
-                  <span className="text-[38px] 3xl:text-[46px] font-black tracking-tight leading-none">{p.price}</span>
-                  <span className="text-sm font-extrabold text-fg-muted">{p.priceNote}</span>
-                </p>
-                {p.trialNote && (
-                  <span className="text-xs font-black px-2.5 py-1 rounded-full bg-ok/15 text-ok">{p.trialNote}</span>
+              {/* Mesmo bloco nos 3 cartões, para as listas começarem na mesma altura */}
+              <div className="mt-5">
+                {p.trialNote ? (
+                  <PrecoPlano price={p.price} priceNote={p.priceNote} tamanho="text-[38px] 3xl:text-[46px]" muted="text-fg-muted" />
+                ) : (
+                  <p className="flex items-baseline gap-1.5">
+                    <span className="text-[38px] 3xl:text-[46px] font-black tracking-tight leading-none">{p.price}</span>
+                    <span className="text-sm font-extrabold text-fg-muted">{p.priceNote}</span>
+                  </p>
                 )}
               </div>
 
@@ -72,7 +74,7 @@ export default function Pricing() {
                   p.highlighted ? "bg-accent text-ink hover:brightness-110" : "bg-surface-2 hover:bg-white/10"
                 }`}
               >
-                {p.trialNote ? `Testar ${TESTE_GRATIS}` : `Começar no ${p.name}`}
+                {p.trialNote ? "Começar grátis" : `Começar no ${p.name}`}
               </Link>
             </article>
           ))}

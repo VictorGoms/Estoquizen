@@ -1,10 +1,14 @@
 /*
- * Teste grátis (decisão do João em 2026-10-21, oferta de lançamento): 30 dias em todos os planos,
- * Pro incluído, para quem começar até 30/11/2026. Os textos do site usam estas constantes.
- * Em 01/12 o João decide se volta para 14: mudar aqui e em `src/lib/trial.ts` da API.
+ * Teste grátis. Lançamento (decisão do João em 2026-10-28; substitui os 30 dias de 2026-10-21): todos os planos
+ * de graça até 05/01/2027, inclusive, sem cartão, para vender sem CNPJ; a cobrança começa em 06/01. Quem começar
+ * a partir de 23/12 ganha pelo menos DIAS_MINIMOS. A regra vale na API (`src/lib/trial.ts`); aqui ficam os textos.
+ * **Depois de 05/01:** voltar os textos para "14 dias grátis" e tirar o preço riscado (`components/PrecoPlano.tsx`).
  */
-export const DIAS_TESTE = 30;
-export const OFERTA_ATE = "30/11";
+export const GRATIS_ATE      = "05/01";
+export const GRATIS_ATE_ANO  = "05/01/2027";
+export const COBRA_DESDE_ANO = "06/01/2027";
+export const MINIMO_DESDE    = "23/12/2026";
+export const DIAS_MINIMOS    = 14;
 
-/** "30 dias grátis" */
-export const TESTE_GRATIS = `${DIAS_TESTE} dias grátis`;
+/** "Grátis até 05/01" */
+export const TESTE_GRATIS = `Grátis até ${GRATIS_ATE}`;

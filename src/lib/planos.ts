@@ -3,7 +3,8 @@
  * Os limites seguem o PLAN_INFO (usePlan.ts) e a tabela fechada pelo João em 2026-10-17 (EQZ-27).
  * Preços da EQZ-11 (Basic R$ 24,90, Growth R$ 39,90, Pro R$ 59,90), os mesmos dos preços do Stripe
  * (STRIPE_PRICE_* no Railway) desde 2026-10-20. Mudou aqui? Mude no Stripe também.
- * Todos os planos têm o teste grátis (TESTE_GRATIS, oferta de lançamento de 2026-10-21).
+ * Todos os planos têm o teste grátis (`trialNote`; lançamento grátis até 05/01/2027, ver lib/teste.ts):
+ * com ele, a landing e a escolha de plano mostram o preço riscado e "R$ 0,00 até 05/01" (PrecoPlano).
  */
 import { TESTE_GRATIS } from "@/lib/teste";
 

@@ -2,7 +2,7 @@ import { PLANOS } from "@/lib/planos";
 import { PERGUNTAS } from "@/lib/perguntas";
 import { SEGMENTOS } from "@/lib/segmentos";
 import { SITE_URL, CONTATO, PRAZO_RESPOSTA } from "@/lib/site";
-import { OFERTA_ATE, TESTE_GRATIS } from "@/lib/teste";
+import { COBRA_DESDE_ANO, GRATIS_ATE_ANO } from "@/lib/teste";
 
 /*
  * Texto do /llms.txt (EQZ-47, formato de llmstxt.org): o resumo do Estoquizen para assistentes de IA
@@ -14,7 +14,7 @@ export function textoLlms(): string {
 
   const planos = PLANOS.map((p) => {
     const inclui = p.features.filter((f) => f.included).map((f) => f.text).join("; ");
-    const teste  = p.trialNote ? `${p.trialNote}, sem cartão` : "começa pago, sem teste grátis";
+    const teste  = p.trialNote ? `grátis até ${GRATIS_ATE_ANO}, sem cartão` : "começa pago, sem teste grátis";
     return `- **${p.name}** (${p.price}${p.priceNote}, ${teste}): ${inclui}.`;
   });
 
@@ -23,7 +23,7 @@ export function textoLlms(): string {
   return [
     "# Estoquizen",
     "",
-    `> App brasileiro de controle de estoque para pequenos negócios (${ramos.join(", ")}). Funciona no navegador do celular, do tablet e do computador, sem instalar nada. ${TESTE_GRATIS} em todos os planos, sem cartão (oferta de lançamento até ${OFERTA_ATE}).`,
+    `> App brasileiro de controle de estoque para pequenos negócios (${ramos.join(", ")}). Funciona no navegador do celular, do tablet e do computador, sem instalar nada. Oferta de lançamento: todos os planos de graça até ${GRATIS_ATE_ANO}, sem cartão; a cobrança começa em ${COBRA_DESDE_ANO}, no plano escolhido.`,
     "",
     "O que o Estoquizen faz:",
     "",
