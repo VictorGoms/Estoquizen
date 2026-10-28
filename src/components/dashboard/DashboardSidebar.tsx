@@ -9,7 +9,7 @@ import { useRole } from "@/hooks/useRole";
 import { useUser } from "@/lib/userContext";
 import { personInitials } from "@/lib/stock";
 import {
-  HomeIcon, BoxIcon, ScanIcon, CartIcon, ClockIcon, DocumentIcon, ChartIcon, UsersIcon, SlidersIcon, ChevronsUpDownIcon,
+  HomeIcon, BoxIcon, PlusMinusIcon, CartIcon, ClockIcon, DocumentIcon, ChartIcon, UsersIcon, SlidersIcon, ChevronsUpDownIcon,
 } from "@/components/ui/icons";
 
 interface DashboardSidebarProps {
@@ -34,7 +34,8 @@ export const NAV_SECTIONS = [
     items: [
       { href: "/dashboard",          label: "Início",          roles: ALL,      Icon: HomeIcon },
       { href: "/estoque",            label: "Estoque",         roles: ALL,      Icon: BoxIcon },
-      { href: "/scanner",            label: "Escanear",        roles: ALL,      Icon: ScanIcon },
+      /* EQZ-69: a tela tem "Um produto" e "Vários de uma vez", pela câmera ou pelo nome */
+      { href: "/scanner",            label: "Entrada e saída", roles: ALL,      Icon: PlusMinusIcon },
       { href: "/compras",            label: "Lista de compras", roles: ALL,     Icon: CartIcon },
       { href: "/nota",               label: "Ler nota de compra", roles: MANAGERS, Icon: DocumentIcon },
       { href: "/dashboard-metricas", label: "Métricas",        roles: MANAGERS, Icon: ChartIcon },

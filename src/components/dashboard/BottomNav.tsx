@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRole, type WorkspaceRole } from "@/hooks/useRole";
 import { isNavActive, NAV_SECTIONS } from "@/components/dashboard/DashboardSidebar";
-import { HomeIcon, BoxIcon, ScanIcon, ChartIcon, GridIcon, XIcon } from "@/components/ui/icons";
+import EscolherMovimentacao from "@/components/estoque/EscolherMovimentacao";
+import { HomeIcon, BoxIcon, ScanIcon, ChartIcon, GridIcon, XIcon, PlusMinusIcon } from "@/components/ui/icons";
 
 const ALL: WorkspaceRole[]      = ["owner", "admin", "member"];
 const MANAGERS: WorkspaceRole[] = ["owner", "admin"];
@@ -32,6 +33,8 @@ export default function BottomNav() {
   const pathname = usePathname();
   const role = useRole() ?? "member";
   const [moreOpen, setMoreOpen] = useState(false);
+  /* EQZ-69: "Entrada e saída" no topo do "Mais" (pedido do João): abre a escolha um produto ou vários */
+  const [movimentar, setMovimentar] = useState(false);
   const moreBtnRef = useRef<HTMLButtonElement>(null);
   const closeRef   = useRef<HTMLButtonElement>(null);
 
@@ -147,6 +150,20 @@ export default function BottomNav() {
               </button>
             </div>
 
+            <button
+              type="button"
+              onClick={() => { setMoreOpen(false); setMovimentar(true); }}
+              className="flex items-center gap-3.5 min-h-[60px] p-2.5 pr-4 rounded-[22px] bg-accent text-ink text-left cursor-pointer hover:brightness-110 transition-[filter]"
+            >
+              <span className="w-11 h-11 rounded-full bg-ink text-accent flex items-center justify-center shrink-0">
+                <PlusMinusIcon className="w-5 h-5" strokeWidth={2.2} />
+              </span>
+              <span className="flex-1 min-w-0 flex flex-col">
+                <span className="text-[15px] font-black">Entrada e saída</span>
+                <span className="text-[13px] font-bold text-ink/70 truncate">Um produto ou vários de uma vez</span>
+              </span>
+            </button>
+
             {moreSections.map((section) => (
               <div key={section.label} className="flex flex-col gap-1.5">
                 <p className="px-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-fg-subtle">{section.label}</p>
@@ -182,6 +199,8 @@ export default function BottomNav() {
           </div>
         </div>
       )}
+
+      {movimentar && <EscolherMovimentacao onFechar={() => setMovimentar(false)} />}
     </>
   );
 }

@@ -26,6 +26,7 @@ import { useForecast } from "@/hooks/useForecast";
 import { useLastOutflow } from "@/hooks/useLastOutflow";
 import { usePlan, planInfo } from "@/hooks/usePlan";
 import { PlusIcon, SearchIcon, ScanIcon, DocumentIcon, PlusMinusIcon, BoxIcon, UploadIcon } from "@/components/ui/icons";
+import EscolherMovimentacao from "@/components/estoque/EscolherMovimentacao";
 
 type Filter = "todos" | StockStatus | "parados";
 type Sort   = "nome" | "menor" | "valor";
@@ -123,6 +124,8 @@ export default function EstoquePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetId, setSheetId]       = useState<string | null>(null);
   const [addOpen, setAddOpen]       = useState(false);
+  /* EQZ-69: escolha "Entrada e saída" (um produto ou vários de uma vez) */
+  const [movimentar, setMovimentar] = useState(false);
   const [scanning, setScanning]     = useState(false);
   const [toast, setToast]           = useState("");
 
@@ -246,10 +249,12 @@ export default function EstoquePage() {
             </div>
 
             <div className="hidden lg:flex items-center gap-3">
-              {/* EQZ-69: entrada ou saída de vários de uma vez, também pela busca pelo nome (todos os papéis) */}
-              <Link href="/scanner?modo=varios" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
-                <PlusMinusIcon /> Vários de uma vez
-              </Link>
+              {/* EQZ-69: entrada e saída de um produto ou de vários de uma vez (todos os papéis) */}
+              {canMove && (
+                <button type="button" onClick={() => setMovimentar(true)} className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold cursor-pointer hover:bg-surface-2 transition-colors">
+                  <PlusMinusIcon /> Entrada e saída
+                </button>
+              )}
               {canNota && (
                 <Link href="/nota" className="flex items-center gap-2.5 min-h-[48px] px-5 rounded-full bg-surface text-[15px] font-extrabold hover:bg-surface-2 transition-colors">
                   <DocumentIcon /> Ler nota de compra
@@ -267,11 +272,11 @@ export default function EstoquePage() {
               )}
             </div>
 
-            {canEdit && (
+            {(canEdit || canMove) && (
               <div className="lg:hidden relative">
                 <button
                   type="button"
-                  aria-label="Adicionar produto"
+                  aria-label="Adicionar ou movimentar"
                   aria-expanded={addOpen}
                   aria-controls="estoque-add-menu"
                   onClick={() => setAddOpen((o) => !o)}
@@ -288,20 +293,34 @@ export default function EstoquePage() {
                       onKeyDown={(e) => { if (e.key === "Escape") setAddOpen(false); }}
                       className="absolute right-0 top-[60px] z-30 w-60 p-2 rounded-3xl bg-surface-2 shadow-lift flex flex-col"
                     >
-                      <Link href="/estoque/novo" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
-                        <PlusIcon /> Adicionar manualmente
-                      </Link>
-                      {canNota && (
-                        <Link href="/nota" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
-                          <DocumentIcon /> Ler nota de compra
-                        </Link>
+                      {/* EQZ-69: primeiro o uso do dia a dia (entrada e saída), depois os cadastros */}
+                      {canMove && (
+                        <button
+                          type="button"
+                          onClick={() => { setAddOpen(false); setMovimentar(true); }}
+                          className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-left text-[15px] font-extrabold cursor-pointer hover:bg-white/10"
+                        >
+                          <PlusMinusIcon /> Entrada e saída
+                        </button>
                       )}
-                      <Link href="/estoque/importar" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
-                        <UploadIcon /> Importar planilha
-                      </Link>
-                      <Link href="/estoque/modelo" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
-                        <BoxIcon /> Lista pronta do ramo
-                      </Link>
+                      {canEdit && (
+                        <>
+                          <Link href="/estoque/novo" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                            <PlusIcon /> Cadastrar produto
+                          </Link>
+                          {canNota && (
+                            <Link href="/nota" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                              <DocumentIcon /> Ler nota de compra
+                            </Link>
+                          )}
+                          <Link href="/estoque/importar" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                            <UploadIcon /> Importar planilha
+                          </Link>
+                          <Link href="/estoque/modelo" className="flex items-center gap-3 min-h-[48px] px-3 rounded-2xl text-[15px] font-extrabold hover:bg-white/10">
+                            <BoxIcon /> Lista pronta do ramo
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -488,6 +507,7 @@ export default function EstoquePage() {
       </div>
 
       <BottomNav />
+      {movimentar && <EscolherMovimentacao onFechar={() => setMovimentar(false)} />}
     </div>
   );
 }

@@ -12,10 +12,11 @@ import { mutateMovements } from "@/hooks/useMovements";
 import { sanitizeCode } from "@/lib/sanitize";
 import { formatQty, formatBRL, parseQtyInput, MOTIVOS, MOTIVOS_SAIDA, type Motivo } from "@/lib/stock";
 import {
-  somarNaLista, mudarQuantidade, faltandoNaSaida, valorDaLista, mapaDeCodigos, buscarNoEstoque,
+  somarNaLista, mudarQuantidade, faltandoNaSaida, valorDaLista, mapaDeCodigos,
   type LinhaLote, type ProdutoLote,
 } from "@/lib/lote";
-import { MinusIcon, PlusIcon, XIcon, SearchIcon, ScanIcon, CheckIcon, Spinner } from "@/components/ui/icons";
+import BuscaProduto from "@/components/estoque/BuscaProduto";
+import { MinusIcon, PlusIcon, XIcon, ScanIcon, CheckIcon, Spinner } from "@/components/ui/icons";
 
 type ProdutoTela = ProdutoLote & { image_url: string | null; icon: string | null };
 
@@ -79,7 +80,6 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
   const [restaurado, setRestaurado]   = useState(false);
   const [semCadastro, setSemCadastro] = useState<string[]>([]);
   const [motivo, setMotivo]           = useState<Motivo>("venda");
-  const [busca, setBusca]             = useState("");
   const [camera, setCamera]           = useState(true);
   /* Última linha que entrou ou somou, para a pessoa ver que a leitura valeu */
   const [destaque, setDestaque]       = useState<string | null>(null);
@@ -87,7 +87,6 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
   const [erro, setErro]               = useState("");
   const [feito, setFeito]             = useState<{ tipo: MovementType; produtos: number; valor: number } | null>(null);
   const chave    = useRef<string | null>(null);
-  const campoRef = useRef<HTMLInputElement>(null);
 
   const produtos = useMemo<ProdutoTela[]>(() => products.map((p) => ({
     id: p.id, name: p.name, code: p.code, qty: Number(p.qty), unit: p.unit, price: Number(p.price), image_url: p.image_url, icon: p.icon,
@@ -120,7 +119,6 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
   const faltando  = tipo === "saida" ? faltandoNaSaida(validas, porId) : new Set<string>();
   const bloqueado = faltando.size > 0;
   const valor     = valorDaLista(validas, porId);
-  const resultados = busca.trim() ? buscarNoEstoque(produtos, busca, 6) : [];
 
   const adicionar = useCallback((id: string) => {
     setLinhas((l) => somarNaLista(l, id));
@@ -138,17 +136,6 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
     if (p) adicionar(p.id);
     else setSemCadastro((s) => (s.includes(codigo) ? s : [codigo, ...s].slice(0, 20)));
   }, [porCodigo, adicionar]);
-
-  function enviarBusca(e: React.FormEvent) {
-    e.preventDefault();
-    const termo = busca.trim();
-    if (!termo) return;
-    /* Leitor de mão: digita o código inteiro e dá Enter */
-    const exato = porCodigo.get(sanitizeCode(termo));
-    if (exato) { adicionar(exato.id); setBusca(""); return; }
-    if (resultados.length === 1) { adicionar(resultados[0].id); setBusca(""); return; }
-    if (!resultados.length && /^\d{8,14}$/.test(termo)) { lerCodigo(termo); setBusca(""); }
-  }
 
   function alternarCamera() {
     setCamera((c) => {
@@ -209,40 +196,13 @@ export default function MovimentarVarios({ workspaceId, tipo, podeCadastrar }: {
       </button>
 
       {/* Busca pelo nome; também recebe o leitor de mão, que digita o código e dá Enter */}
-      <form onSubmit={enviarBusca} className="relative">
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle pointer-events-none" />
-        <input
-          ref={campoRef}
-          type="search"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          autoComplete="off"
-          enterKeyHint="enter"
-          aria-label="Buscar produto pelo nome ou código"
-          placeholder="Buscar pelo nome ou código"
-          className="w-full h-[52px] pl-12 pr-4 rounded-full bg-surface text-[15px] font-semibold text-fg outline-hidden placeholder:text-fg-subtle focus-visible:ring-2 focus-visible:ring-accent"
-        />
-        {resultados.length > 0 && (
-          <ul className="mt-2 p-1.5 rounded-4xl bg-surface-2 flex flex-col">
-            {resultados.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => { adicionar(p.id); setBusca(""); campoRef.current?.focus(); }}
-                  className="w-full flex items-center gap-3 min-h-[48px] px-3 rounded-3xl text-left cursor-pointer hover:bg-white/10"
-                >
-                  <span className="flex-1 min-w-0 text-[15px] font-extrabold truncate">{p.name}</span>
-                  <span className="text-[13px] font-bold text-fg-muted shrink-0">tem {formatQty(p.qty)} {p.unit}</span>
-                  <PlusIcon className="w-4 h-4 text-accent shrink-0" strokeWidth={2.6} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {busca.trim() && !resultados.length && !loading && (
-          <p className="mt-2 px-4 text-[13px] font-bold text-fg-subtle">Nenhum produto com esse nome ou código.</p>
-        )}
-      </form>
+      <BuscaProduto
+        produtos={produtos}
+        carregando={loading}
+        onEscolher={(p) => adicionar(p.id)}
+        onCodigoDesconhecido={lerCodigo}
+        rotulo="Procure pelo nome ou código"
+      />
 
       {/* Códigos lidos que não estão cadastrados */}
       {semCadastro.length > 0 && (

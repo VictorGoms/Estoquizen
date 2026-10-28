@@ -107,7 +107,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/membros`             — Lista de membros
 - `/membros/[id]`        — Edição de membro (dados pela API `GET /members`)
 - `/membros/novo`        — Convidar membro
-- `/scanner`             — Leitor de código de barras (câmera). "Um por vez" (como sempre) ou **"Vários de uma vez"** (EQZ-69, `?modo=varios`, atalho no Estoque): `components/estoque/MovimentarVarios.tsx`
+- `/scanner`             — **Entrada e saída** (EQZ-69): "Um produto" (câmera ou busca pelo nome, para quem não tem código de barras) ou "Vários de uma vez" (`components/estoque/MovimentarVarios.tsx`). Abre com `?tipo=entrada|saida&modo=um|varios`. A porta de entrada é a escolha `components/estoque/EscolherMovimentacao.tsx` (pôr ou tirar; um ou vários, com exemplo), no cartão "Entrada e saída" da tela inicial, no botão do Estoque (computador), no menu "+" do Estoque e no topo do "Mais" (celular). No menu lateral o item se chama "Entrada e saída"; na barra do celular continua "Escanear"
 - `/configuracoes`       — Configurações do workspace
 - `/notificacoes`        — Notificações
 - `/historico`           — Histórico por funcionário (Pro; owner/admin): movimentações filtradas por pessoa, tipo e período
@@ -144,6 +144,8 @@ components/
 
   estoque/
     StatusChip.tsx / ProductAvatar.tsx / LevelBar.tsx / MovementForm.tsx / MovementSheet.tsx / ProductPanel.tsx
+    EscolherMovimentacao.tsx — EQZ-69: janela "Entrada e saída" (1. pôr ou tirar do estoque; 2. um produto ou vários de uma vez, com exemplo) que leva ao /scanner no modo certo. Pedido do João em 2026-10-28: o modo Vários escondido no Escanear não era didático
+    BuscaProduto.tsx — busca pelo nome ou código (leitor de mão: código + Enter), usada nos dois modos da entrada e saída
     MovimentarVarios.tsx — EQZ-69: lista de produtos e registro único (POST /products/adjust-batch). Entra pela câmera em leitura contínua, pelo leitor de mão (digita o código + Enter no campo de busca) ou pela busca pelo nome (quem não tem código de barras). Ler de novo soma 1; quantidade com fração; na saída, produto com mais do que o estoque bloqueia, com aviso na linha; total em R$ pelo preço de venda (não é PDV: sem pagamento nem cupom). Código não cadastrado fica fora, com "Cadastrar". A lista fica no localStorage (`estoquizen_lote:<ws>`) até ser registrada
     IconPicker.tsx — escolha do ícone do produto (automático, só iniciais ou um dos 231, com busca), na tela do produto
     # ProductAvatar (EQZ-30): foto (da pessoa ou da embalagem do Open Food Facts, mostrada inteira em fundo branco) → ícone escolhido (`products.icon`) → ícone pelo nome → iniciais. Passe `icon={p.icon}` onde houver o produto

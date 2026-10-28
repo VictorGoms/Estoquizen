@@ -24,8 +24,9 @@ import { classesABC, itensDoDia, sequencia, diaBrasil } from "@/lib/contagem";
 import { useForecast } from "@/hooks/useForecast";
 import { useMemberNames } from "@/hooks/useMemberNames";
 import {
-  ScanIcon, DocumentIcon, BoxIcon, PlusIcon, ArrowRightIcon, ArrowUpRightIcon, InIcon, OutIcon, CheckIcon,
+  DocumentIcon, BoxIcon, PlusIcon, PlusMinusIcon, ArrowRightIcon, ArrowUpRightIcon, InIcon, OutIcon, CheckIcon,
 } from "@/components/ui/icons";
+import EscolherMovimentacao from "@/components/estoque/EscolherMovimentacao";
 
 type Period = 7 | 30 | 90;
 const PERIODS: { days: Period; label: string }[] = [
@@ -97,6 +98,8 @@ export default function DashboardPage() {
   const [userId, setUserId]     = useState("");
   const [wsName, setWsName]     = useState("");
   const [wsId, setWsId]         = useState<string | undefined>(undefined);
+  /* EQZ-69: escolha "Entrada e saída" (um produto ou vários de uma vez) */
+  const [movimentar, setMovimentar] = useState(false);
   const [role, setRole]         = useState<WorkspaceRole>("member");
   const [period, setPeriod]     = useState<Period>(7);
   /* Métricas por plano (EQZ-27): o Basic vai até 30 dias */
@@ -251,28 +254,31 @@ export default function DashboardPage() {
               )}
             </section>
 
-            <Link
-              href="/scanner"
-              className="group bg-inverse text-ink rounded-4xl lg:rounded-5xl p-3.5 lg:p-[22px] flex flex-col gap-2.5 lg:gap-3.5 transition-transform duration-200 hover:-translate-y-0.5"
+            {/* EQZ-69: abre a escolha (pôr ou tirar; um produto ou vários de uma vez) em vez de ir direto
+                para a câmera, que não servia para quem não tem código de barras */}
+            <button
+              type="button"
+              onClick={() => setMovimentar(true)}
+              className="group bg-inverse text-ink rounded-4xl lg:rounded-5xl p-3.5 lg:p-[22px] flex flex-col gap-2.5 lg:gap-3.5 text-left cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
             >
               <span className="flex justify-between items-start">
                 <span className="w-11 h-11 lg:w-14 lg:h-14 rounded-full bg-ink text-accent flex items-center justify-center">
-                  <ScanIcon className="w-[22px] h-[22px] lg:w-[26px] lg:h-[26px]" />
+                  <PlusMinusIcon className="w-[22px] h-[22px] lg:w-[26px] lg:h-[26px]" />
                 </span>
                 <ArrowUpRightIcon className="w-5 h-5 text-inverse-muted" strokeWidth={2.2} />
               </span>
               <span className="flex flex-col gap-0.5 lg:gap-1">
-                <span className="text-[17px] lg:text-[21px] font-black tracking-tight">Escanear<span className="hidden lg:inline"> produto</span></span>
-                <span className="text-[13px] lg:text-sm font-bold text-inverse-muted">Entrada ou saída<span className="hidden lg:inline"> pela câmera</span></span>
+                <span className="text-[17px] lg:text-[21px] font-black tracking-tight">Entrada e saída</span>
+                <span className="text-[13px] lg:text-sm font-bold text-inverse-muted">Um produto ou vários<span className="hidden lg:inline"> de uma vez</span></span>
               </span>
               <span className="mt-auto border-t-2 border-dashed border-ink/15" />
               <span className="flex justify-between items-center">
-                <span className="text-sm lg:text-[15px] font-black">Abrir câmera</span>
+                <span className="text-sm lg:text-[15px] font-black">Registrar</span>
                 <span className="hidden lg:flex w-11 h-11 rounded-full bg-ink text-fg items-center justify-center transition-transform duration-200 group-hover:translate-x-0.5">
                   <ArrowRightIcon />
                 </span>
               </span>
-            </Link>
+            </button>
 
             <Link
               href={canNota ? "/nota" : "/estoque"}
@@ -555,6 +561,7 @@ export default function DashboardPage() {
       </main>
 
       <BottomNav />
+      {movimentar && <EscolherMovimentacao onFechar={() => setMovimentar(false)} />}
     </div>
   );
 }

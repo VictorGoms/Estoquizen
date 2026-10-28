@@ -8,10 +8,11 @@ import ProductAvatar from "@/components/estoque/ProductAvatar";
 import StatusChip from "@/components/estoque/StatusChip";
 import MovementForm, { type MovementType } from "@/components/estoque/MovementForm";
 import MovimentarVarios from "@/components/estoque/MovimentarVarios";
+import BuscaProduto from "@/components/estoque/BuscaProduto";
 import { supabase } from "@/lib/supabase";
 import { getWorkspace } from "@/hooks/useWorkspace";
 import { useRole, can } from "@/hooks/useRole";
-import { mutateProducts } from "@/hooks/useProducts";
+import { useProducts, mutateProducts } from "@/hooks/useProducts";
 import { mutateStats } from "@/hooks/useStats";
 import { mutateMovements } from "@/hooks/useMovements";
 import { sanitizeCode } from "@/lib/sanitize";
@@ -36,6 +37,10 @@ const REASON_FALLBACK: Record<MovementType, string> = {
   entrada: "Entrada via scanner",
   saida:   "Saída via scanner",
 };
+const REASON_PELO_NOME: Record<MovementType, string> = {
+  entrada: "Entrada",
+  saida:   "Saída",
+};
 
 export default function ScannerPage() {
   const router  = useRouter();
@@ -51,19 +56,35 @@ export default function ScannerPage() {
   const [result, setResult]           = useState<{ delta: number; newQty: number } | null>(null);
   const [looking, setLooking]         = useState(false);
   const [errorMsg, setErrorMsg]       = useState("");
-  /* EQZ-69: "um" produto por vez (como sempre) ou "varios" de uma vez (lista + registro único).
-     /scanner?modo=varios já abre na lista (atalho do Estoque) */
-  const [quantos, setQuantos]         = useState<"um" | "varios">("um");
-  const [wsId, setWsId]               = useState<string | null>(null);
-  useEffect(() => {
-    setWsId(getWorkspace()?.id ?? null);
-    if (new URLSearchParams(window.location.search).get("modo") === "varios") setQuantos("varios");
-  }, []);
-
   /* Refs para o handler da câmera não mudar de identidade (o que reiniciaria a câmera) */
   const modeRef    = useRef<MovementType>("entrada");
   const canEditRef = useRef(false);
   useEffect(() => { canEditRef.current = canEdit; }, [canEdit]);
+
+  /* EQZ-69: "um" produto por vez ou "varios" de uma vez (lista + registro único). A escolha "Entrada
+     e saída" (tela inicial e Estoque) abre com ?tipo=entrada|saida&modo=um|varios */
+  const [quantos, setQuantos]         = useState<"um" | "varios">("um");
+  const [wsId, setWsId]               = useState<string | null>(null);
+  /* Modo "Um produto": busca pelo nome, para quem não tem código de barras */
+  const { products, loading: carregandoProdutos } = useProducts(wsId ?? undefined);
+  useEffect(() => {
+    setWsId(getWorkspace()?.id ?? null);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("modo") === "varios") setQuantos("varios");
+    const tipo = params.get("tipo");
+    if (tipo === "entrada" || tipo === "saida") { modeRef.current = tipo; setMode(tipo); }
+  }, []);
+
+  /* Escolhido pela busca: vai direto para a quantidade, como se tivesse lido o código */
+  function escolherPeloNome(p: (typeof products)[number]) {
+    setScannedCode("");
+    setErrorMsg("");
+    setProduct({
+      id: p.id, name: p.name, code: p.code, qty: Number(p.qty), unit: p.unit, min_qty: Number(p.min_qty ?? 0),
+      location: p.location, image_url: p.image_url, icon: p.icon,
+    });
+    setStep("confirm");
+  }
 
   function changeMode(m: MovementType) {
     modeRef.current = m;
@@ -139,13 +160,13 @@ export default function ScannerPage() {
           >
             <ArrowLeftIcon className="w-[22px] h-[22px]" strokeWidth={2.2} />
           </Link>
-          <h1 className="text-lg font-black">{quantos === "varios" ? "Vários produtos" : "Escanear produto"}</h1>
+          <h1 className="text-lg font-black">Entrada e saída</h1>
           <span className="w-12" aria-hidden="true" />
         </header>
 
         <div role="group" aria-label="Quantos produtos" className="flex gap-1 p-1 rounded-full bg-surface">
           {([
-            { id: "um",     label: "Um por vez" },
+            { id: "um",     label: "Um produto" },
             { id: "varios", label: "Vários de uma vez" },
           ] as const).map((o) => (
             <button
@@ -194,22 +215,37 @@ export default function ScannerPage() {
               <Spinner /> Buscando produto…
             </div>
           ) : (
-            <BarcodeScanner variant="embedded" onDetect={handleDetect} />
+            <>
+              <BarcodeScanner variant="embedded" onDetect={handleDetect} />
+              {/* Quem não tem código de barras escolhe pelo nome (EQZ-69) */}
+              {canMove && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[13px] font-extrabold text-fg-muted text-center">Sem código de barras? Procure pelo nome:</p>
+                  <BuscaProduto
+                    produtos={products}
+                    carregando={carregandoProdutos}
+                    onEscolher={escolherPeloNome}
+                    onCodigoDesconhecido={(c) => void handleDetect(c)}
+                    rotulo="Nome do produto"
+                  />
+                </div>
+              )}
+            </>
           )
         )}
 
-        {step !== "scanning" && scannedCode && (
+        {step !== "scanning" && (scannedCode || (step === "confirm" && product)) && (
           <div className="flex items-center gap-3 p-2 pl-4 rounded-full bg-surface">
-            <ScanIcon className="w-5 h-5 text-accent shrink-0" />
+            {scannedCode ? <ScanIcon className="w-5 h-5 text-accent shrink-0" /> : <SearchIcon className="w-5 h-5 text-accent shrink-0" />}
             <span className="flex-1 min-w-0 text-sm font-extrabold text-fg tracking-wide truncate">
-              <span className="sr-only">Código lido: </span>{scannedCode}
+              {scannedCode ? <><span className="sr-only">Código lido: </span>{scannedCode}</> : "Escolhido pelo nome"}
             </span>
             <button
               type="button"
               onClick={scanAgain}
               className="min-h-[44px] px-4 rounded-full bg-surface-2 text-sm font-extrabold shrink-0 cursor-pointer hover:bg-white/10"
             >
-              Escanear outro
+              {scannedCode ? "Escanear outro" : "Escolher outro"}
             </button>
           </div>
         )}
@@ -231,7 +267,7 @@ export default function ScannerPage() {
                 type={mode}
                 onTypeChange={changeMode}
                 hideTypeToggle
-                reasonFallback={REASON_FALLBACK}
+                reasonFallback={scannedCode ? REASON_FALLBACK : REASON_PELO_NOME}
                 onDone={handleDone}
               />
             ) : (
@@ -259,7 +295,7 @@ export default function ScannerPage() {
                 onClick={scanAgain}
                 className="min-h-[54px] rounded-full bg-accent text-ink text-base font-black flex items-center justify-center gap-2 cursor-pointer hover:brightness-110 transition-[filter]"
               >
-                <ScanIcon /> Escanear próximo
+                <ScanIcon /> Próximo produto
               </button>
               <Link
                 href={`/estoque/${product.id}`}
