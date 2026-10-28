@@ -29,6 +29,7 @@ async function request<T>(
   method: string,
   path: string,
   body?: unknown,
+  extraHeaders?: Record<string, string>,
 ): Promise<T> {
   const token = await getToken();
 
@@ -39,6 +40,7 @@ async function request<T>(
       headers: {
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...extraHeaders,
       },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
@@ -72,7 +74,8 @@ export function acordarApi() {
 
 export const api = {
   get:    <T>(path: string)                  => request<T>("GET",    path),
-  post:   <T>(path: string, body: unknown)   => request<T>("POST",   path, body),
+  /* headers: ex. Idempotency-Key na entrada/saída (EQZ-67) */
+  post:   <T>(path: string, body: unknown, headers?: Record<string, string>) => request<T>("POST", path, body, headers),
   patch:  <T>(path: string, body: unknown)   => request<T>("PATCH",  path, body),
   delete: <T>(path: string)                  => request<T>("DELETE", path),
 };

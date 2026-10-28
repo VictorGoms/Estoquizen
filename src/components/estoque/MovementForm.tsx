@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { api } from "@/lib/api";
 import { sanitizeText } from "@/lib/sanitize";
 import { formatQty, parseQtyInput, MOTIVOS, MOTIVOS_SAIDA, type Motivo } from "@/lib/stock";
@@ -41,6 +41,8 @@ export default function MovementForm({
   const [motivo, setMotivo]       = useState<Motivo>("venda");
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState("");
+  /* Idempotency-Key do envio em andamento; criada no envio e trocada só depois de dar certo */
+  const chave = useRef<string | null>(null);
 
   const type = typeProp ?? innerType;
   const isIn = type === "entrada";
@@ -74,13 +76,16 @@ export default function MovementForm({
     setSaving(true);
     setError("");
     const delta = isIn ? amount : -amount;
+    /* A mesma chave até dar certo (EQZ-67): dois toques ou um reenvio contam uma vez só na API */
+    chave.current ??= crypto.randomUUID();
 
     try {
       const result = await api.post<{ qty?: number } | null>(`/products/${product.id}/adjust`, {
         delta,
         reason: sanitizeText(reason, 300) || reasonFallback?.[type] || undefined,
         ...(isIn ? {} : { motivo }),
-      });
+      }, { "Idempotency-Key": `${chave.current}:${delta}` });
+      chave.current = null;
       const newQty = result && result.qty !== undefined ? Number(result.qty) : product.qty + delta;
       setQtyText("1");
       setReason("");
