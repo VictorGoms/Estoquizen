@@ -94,7 +94,7 @@ Apenas 3: `owner`, `admin`, `member`
 - `/auth/callback`       — Callback OAuth do Supabase
 - `/select-workspace`    — Seleção de workspace
 - `/register-company`    — Onboarding empresa, com "Qual é o seu negócio?" (EQZ-13; obrigatório, "Outro" com texto) guardado no sessionStorage e mandado no `POST /workspaces` pela escolha de plano
-- `/plan-selection`      — Escolha de plano
+- `/plan-selection`      — Escolha de plano. Ao abrir, pergunta à API se a conta ainda tem o teste (`GET /workspaces/teste-disponivel`, 2026-10-28): quem já usou (1 por pessoa e por CPF) vê o preço normal e o aviso "Seu teste grátis já foi usado"; com um workspace esperando pagamento, o aviso leva à escolha de workspace e o "Continuar" fica desativado (a API também recusa)
 - `/dashboard`           — Home do workspace
 - `/dashboard-metricas`  — Métricas
 - `/estoque`             — Lista de produtos

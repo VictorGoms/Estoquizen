@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import OnboardingShell from "@/components/onboarding/OnboardingShell";
 import PlanCard from "@/components/onboarding/PlanCard";
@@ -26,6 +26,18 @@ export default function PlanSelectionPage() {
   const [error, setError] = useState("");
   /* Basic e Pro pagam na hora: dentro do app quando há a chave pública do Stripe */
   const [pagando, setPagando] = useState<{ workspaceId: string; plan: string } | null>(null);
+  /* Teste ainda disponível? (2026-10-28) Quem já usou (1 por pessoa e por CPF) vê o preço normal e o aviso
+     antes de criar. Com um workspace esperando pagamento, a API recusa criar outro, e a tela avisa antes */
+  const [teste, setTeste] = useState<{ disponivel: boolean; pendente: { id: string; name: string } | null } | null>(null);
+
+  useEffect(() => {
+    api.get<{ disponivel: boolean; pendente: { id: string; name: string } | null }>("/workspaces/teste-disponivel")
+      .then(setTeste)
+      .catch(() => {});
+  }, []);
+
+  const semTeste = teste?.disponivel === false;
+  const pendente = teste?.pendente ?? null;
 
   async function handleContinue() {
     if (!selectedPlan) return;
@@ -95,6 +107,29 @@ export default function PlanSelectionPage() {
             <p className="text-[15px] font-bold text-fg-muted">Você pode mudar de plano a qualquer momento.</p>
           </div>
 
+          {pendente ? (
+            <div role="status" className="max-w-2xl w-full mx-auto mb-8 rounded-3xl bg-surface-2 px-5 py-4 flex flex-col items-center gap-3 text-center">
+              <p className="text-[15px] font-bold text-fg-soft">
+                Você já tem o workspace <span className="text-fg font-black">{pendente.name}</span> esperando pagamento.
+                Assine por ele ou exclua-o em Configurações antes de criar outro.
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push("/select-workspace")}
+                className="min-h-[44px] px-5 rounded-full bg-accent text-ink text-sm font-black cursor-pointer hover:brightness-110"
+              >
+                Ir para a escolha de workspace
+              </button>
+            </div>
+          ) : semTeste && (
+            <div role="status" className="max-w-2xl w-full mx-auto mb-8 rounded-3xl bg-surface-2 px-5 py-4 text-center">
+              <p className="text-[15px] font-black">Seu teste grátis já foi usado</p>
+              <p className="text-sm font-bold text-fg-muted mt-1">
+                O teste grátis é 1 por pessoa e por CPF. Este workspace começa pago: escolha o plano e pague para continuar.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch mb-8">
             {PLANS.map((plan) => (
               <PlanCard
@@ -106,7 +141,7 @@ export default function PlanSelectionPage() {
                 features={plan.features}
                 highlighted={plan.highlighted}
                 badge={plan.badge}
-                trialNote={plan.trialNote}
+                trialNote={semTeste ? undefined : plan.trialNote}
                 selected={selectedPlan === plan.id}
                 onSelect={() => setSelectedPlan(plan.id)}
               />
@@ -117,7 +152,7 @@ export default function PlanSelectionPage() {
             {selected && (
               <>
                 Plano <span className="text-fg font-black">{selected.name}</span> selecionado
-                {selected.trialNote
+                {selected.trialNote && !semTeste
                   ? <> · grátis até {GRATIS_ATE}, depois {selected.price}{selected.priceNote}</>
                   : <> · {selected.price}{selected.priceNote}</>}
               </>
@@ -134,13 +169,13 @@ export default function PlanSelectionPage() {
             >
               Voltar
             </SecondaryButton>
-            <PrimaryButton onClick={handleContinue} loading={loading} disabled={!selectedPlan} className="flex-1">
+            <PrimaryButton onClick={handleContinue} loading={loading} disabled={!selectedPlan || !!pendente} className="flex-1">
               Continuar <ArrowRightIcon className="w-5 h-5" strokeWidth={2.4} />
             </PrimaryButton>
           </div>
 
           <p className="text-center text-[13px] font-bold text-fg-subtle mt-5">
-            {TESTE_GRATIS}, sem cartão · Cancele quando quiser · Sem fidelidade
+            {semTeste ? "Cancele quando quiser · Sem fidelidade" : `${TESTE_GRATIS}, sem cartão · Cancele quando quiser · Sem fidelidade`}
           </p>
 
         </div>
