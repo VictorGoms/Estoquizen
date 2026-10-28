@@ -7,6 +7,7 @@ import { authErrorPt } from "@/lib/authMessages";
 import AuthLayout from "@/components/auth/AuthLayout";
 import InputField from "@/components/auth/InputField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
+import Captcha, { captchaLigado, MSG_CAPTCHA } from "@/components/auth/Captcha";
 import { MailIcon } from "@/components/ui/icons";
 
 const COOLDOWN_S = 60;
@@ -18,6 +19,9 @@ export default function ForgotPasswordPage() {
   const [sent, setSent]           = useState(false);
   const [error, setError]         = useState("");
   const [cooldown, setCooldown]   = useState(0);
+  /* CAPTCHA (EQZ-65): o token vale uma tentativa; trocar `captchaVez` gera outro */
+  const [captcha, setCaptcha]       = useState<string | null>(null);
+  const [captchaVez, setCaptchaVez] = useState(0);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -28,6 +32,7 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (cooldown > 0) return;
+    if (captchaLigado && !captcha) { setError(MSG_CAPTCHA); return; }
     setLoading(true);
     setError("");
 
@@ -37,9 +42,12 @@ export default function ForgotPasswordPage() {
        descobrir quem tem conta. O Supabase só envia se a conta existir; a resposta é a mesma. */
     const { error: err } = await supabase.auth.resetPasswordForEmail(clean, {
       redirectTo: `${window.location.origin}/reset-password`,
+      ...(captcha ? { captchaToken: captcha } : {}),
     });
 
     setLoading(false);
+    setCaptcha(null);
+    setCaptchaVez((v) => v + 1);
     if (err) { setError(authErrorPt(err.message)); return; }
     setSent(true);
     setCooldown(COOLDOWN_S);
@@ -79,6 +87,8 @@ export default function ForgotPasswordPage() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+
+        <Captcha key={captchaVez} onToken={setCaptcha} />
 
         {error && <p role="alert" className="text-sm font-bold text-zero text-center">{error}</p>}
 

@@ -8,6 +8,7 @@ import PasswordField from "@/components/auth/PasswordField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import PageLoader from "@/components/ui/PageLoader";
 import { MIN_PASSWORD, authErrorPt, readAuthLinkError } from "@/lib/authMessages";
+import { senhaVazada, MSG_SENHA_VAZADA } from "@/lib/senhaVazada";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -48,6 +49,8 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     setError("");
+
+    if (await senhaVazada(password)) { setError(MSG_SENHA_VAZADA); setLoading(false); return; }
 
     const { error: err } = await supabase.auth.updateUser({ password });
     if (err) { setError(authErrorPt(err.message)); setLoading(false); return; }

@@ -19,6 +19,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1   # opcional, este é o padrão
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...     # chave PÚBLICA do Stripe; com ela o pagamento abre dentro do app
 NEXT_PUBLIC_POSTHOG_KEY=phc_...                    # opcional: analytics (EQZ-01). Sem ela, nada de analytics nem aviso de cookies (o normal em dev)
 NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com  # região do projeto no PostHog; destino do proxy /ingest
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x...               # opcional: CAPTCHA no login/cadastro/esqueci a senha (EQZ-65). Sem ela, não aparece CAPTCHA
 ```
 
 ## Dev local (HTTPS)
@@ -135,6 +136,7 @@ components/
 
   auth/
     AuthLayout.tsx / Divider.tsx / InputField.tsx / PasswordField.tsx / PrimaryButton.tsx / SocialButton.tsx
+    Captcha.tsx — EQZ-65: Cloudflare Turnstile no login, cadastro e "esqueci a senha"; só aparece com `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. O token vale uma tentativa: depois de cada envio a tela troca a `key` do componente
 
   dashboard/
     DashboardSidebar.tsx / DashboardTopBar.tsx / BottomNav.tsx / TrialBanner.tsx
@@ -181,6 +183,7 @@ components/
 - **`session.ts`** — sessão (2026-10-28, pedido do João: deslogava toda hora, principalmente no celular): com "Manter conectado neste aparelho" (padrão, checkbox no `/login`) a sessão vale até 30 dias sem uso, mesmo fechando o navegador; desmarcado (aparelho compartilhado), vale a regra antiga: marca no `sessionStorage` (acaba ao fechar o navegador) + 2 h de inatividade. A escolha fica em `localStorage` (`estoquizen_manter_conectado`; sem a marca = manter) e o Google a lê na volta (`lembrarEscolha` antes do redirecionamento). Regra pura em `atividadeValida` (teste em `session.test.ts`); funções: `markSessionActive(manter?)`, `manterConectado`, `isActivityValid`, `touchActivity`, `clearSession`
 - **`api.ts` → `acordarApi()`** — a API dorme no Railway e a 1ª chamada demora; o `/login` e a escolha de workspace pedem o `/health` ao abrir, sem esperar
 - **`sanitize.ts`** — sanitização de inputs: `sanitizeText`, `sanitizeEmail`, `sanitizeNumber`, `sanitizeCode`
+- **`senhaVazada.ts`** — EQZ-65: cadastro, `/reset-password` e `/set-password` recusam senha que já apareceu em vazamento (HaveIBeenPwned por k-anonimato: só 5 caracteres do SHA-1 saem do navegador). Se a consulta falhar, deixa passar. Substitui o bloqueio nativo do Supabase, que só existe no Pro
 - **`dbMessages.ts`** — `dbErrorPt(err, fallback)`: erro das escritas diretas no Supabase em português (as mensagens das triggers passam como estão)
 - **`nfe.ts`** — dígito verificador da chave, GTIN e código do item "SEM GTIN" (espelho do `nfeChave.ts` da API)
 - **`codigoBarras.ts`** — EQZ-53: `buscarPorCodigo(ean)` no cadastro de produto. Consulta juntas as 4 bases abertas (Open Food Facts, Open Products Facts, Open Beauty Facts, Open Pet Food Facts; mesma API, CORS liberado) e o catálogo próprio (`GET /catalogo/:codigo` da API, só nome confiável); nome das bases primeiro, depois o do catálogo; foto só dos servidores de imagem das bases (`ehFotoDeBaseAberta`). Devolve a fonte para o aviso "Nome sugerido pelo …"
@@ -210,7 +213,13 @@ Headers HTTP globais aplicados em todas as rotas:
 - `X-XSS-Protection: 1; mode=block`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=*, geolocation=(), microphone=()`
-- `Content-Security-Policy-Report-Only` (EQZ-59, 2026-10-24): só avisa no console do navegador o que bloquearia (Stripe, Supabase, as 4 bases abertas, PostHog pelo `/ingest`). Domínio externo novo (script, imagem, fetch, iframe) entra na lista do `next.config.ts`. Depois de uns dias sem aviso nas telas de pagamento, scanner, foto e nota, trocar para `Content-Security-Policy`
+- `Content-Security-Policy-Report-Only` (EQZ-59, 2026-10-24): só avisa no console do navegador o que bloquearia (Stripe, Supabase, as 4 bases abertas, PostHog pelo `/ingest`, Cloudflare Turnstile e `api.pwnedpasswords.com`). Domínio externo novo (script, imagem, fetch, iframe) entra na lista do `next.config.ts`. Depois de uns dias sem aviso nas telas de pagamento, scanner, foto e nota, trocar para `Content-Security-Policy`
+
+### Ligar o CAPTCHA (EQZ-65) — nesta ordem
+1. Cloudflare → Turnstile → criar widget (modo "Managed") com os domínios `estoquizen.com.br`, `www.estoquizen.com.br` e `localhost`
+2. Vercel: `NEXT_PUBLIC_TURNSTILE_SITE_KEY` = a site key (pública) e esperar o deploy ficar Ready
+3. Só então, Supabase → Authentication → Bot and Abuse Protection → Enable CAPTCHA (Turnstile) com a **secret key**. Ligar no Supabase antes do site quebra login, cadastro e "esqueci a senha"
+4. Testar: entrar, cadastrar, esqueci a senha, Google e o link de convite (o convite sai pela API com a service role e não pede CAPTCHA)
 
 ## Perfis e convites (auditoria de segurança de 2026-10-23)
 - O banco não deixa o cliente ler `profiles.cpf` (GRANT por coluna): leia `profiles` sempre com as colunas listadas, nunca `select("*")`

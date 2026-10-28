@@ -10,6 +10,7 @@ import { UsersIcon, ArrowRightIcon } from "@/components/ui/icons";
 import PageLoader from "@/components/ui/PageLoader";
 import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
 import { workspaceDoLink } from "@/lib/convite";
+import { senhaVazada, MSG_SENHA_VAZADA } from "@/lib/senhaVazada";
 
 export default function SetPasswordPage() {
   const router = useRouter();
@@ -76,6 +77,7 @@ export default function SetPasswordPage() {
     setError("");
 
     try {
+      if (await senhaVazada(password)) throw new Error(MSG_SENHA_VAZADA);
       const { error: pwErr } = await supabase.auth.updateUser({ password });
       if (pwErr) throw new Error(authErrorPt(pwErr.message));
 

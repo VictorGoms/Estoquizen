@@ -9,6 +9,7 @@ import PrimaryButton from "@/components/auth/PrimaryButton";
 import SocialButton from "@/components/auth/SocialButton";
 import Divider from "@/components/auth/Divider";
 import PageLoader from "@/components/ui/PageLoader";
+import Captcha, { captchaLigado, MSG_CAPTCHA } from "@/components/auth/Captcha";
 import { CheckIcon } from "@/components/ui/icons";
 import { markSessionActive, lembrarEscolha } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
@@ -23,6 +24,9 @@ export default function LoginPage() {
   const [manter, setManter]   = useState(true);
   /* Quem já está conectado vai direto para a escolha de workspace, sem ver o formulário piscar */
   const [verificando, setVerificando] = useState(true);
+  /* CAPTCHA (EQZ-65): o token vale uma tentativa; trocar `captchaVez` gera outro */
+  const [captcha, setCaptcha]       = useState<string | null>(null);
+  const [captchaVez, setCaptchaVez] = useState(0);
 
   useEffect(() => {
     acordarApi();
@@ -43,15 +47,19 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaLigado && !captcha) { setError(MSG_CAPTCHA); return; }
     setLoading(true);
     setError("");
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email:    values.email,
       password: values.password,
+      ...(captcha ? { options: { captchaToken: captcha } } : {}),
     });
 
     setLoading(false);
+    setCaptcha(null);
+    setCaptchaVez((v) => v + 1);
     if (authError) {
       const msg = authError.message.toLowerCase();
       if (msg.includes("invalid login") || msg.includes("invalid credentials") || msg.includes("wrong password")) {
@@ -132,6 +140,8 @@ export default function LoginPage() {
             </span>
           </span>
         </label>
+
+        <Captcha key={captchaVez} onToken={setCaptcha} />
 
         {/* Error */}
         {error && (

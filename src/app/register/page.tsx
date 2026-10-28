@@ -13,6 +13,8 @@ import { MIN_PASSWORD, authErrorPt } from "@/lib/authMessages";
 import { registrar } from "@/lib/analytics";
 import { MailIcon, CheckIcon } from "@/components/ui/icons";
 import { TESTE_GRATIS } from "@/lib/teste";
+import { senhaVazada, MSG_SENHA_VAZADA } from "@/lib/senhaVazada";
+import Captcha, { captchaLigado, MSG_CAPTCHA } from "@/components/auth/Captcha";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -21,6 +23,9 @@ export default function RegisterPage() {
   const [emailSent, setEmailSent] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsError, setTermsError] = useState(false);
+  /* CAPTCHA (EQZ-65): o token vale uma tentativa; trocar `captchaVez` gera outro */
+  const [captcha, setCaptcha]       = useState<string | null>(null);
+  const [captchaVez, setCaptchaVez] = useState(0);
   const [values, setValues] = useState({
     name: "",
     email: "",
@@ -44,8 +49,15 @@ export default function RegisterPage() {
       setError(`A senha deve ter pelo menos ${MIN_PASSWORD} caracteres.`);
       return;
     }
+    if (captchaLigado && !captcha) { setError(MSG_CAPTCHA); return; }
     setLoading(true);
     setError("");
+
+    if (await senhaVazada(values.password)) {
+      setError(MSG_SENHA_VAZADA);
+      setLoading(false);
+      return;
+    }
 
     /* Garante que não há sessão de outro usuário ativa */
     await supabase.auth.signOut({ scope: "local" });
@@ -53,10 +65,12 @@ export default function RegisterPage() {
     const { data, error: authError } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
-      options: { data: { name: values.name } },
+      options: { data: { name: values.name }, ...(captcha ? { captchaToken: captcha } : {}) },
     });
 
     setLoading(false);
+    setCaptcha(null);
+    setCaptchaVez((v) => v + 1);
     if (authError) { setError(authErrorPt(authError.message)); return; }
     registrar("cadastro_criado", { metodo: "email" });   // começo do funil (EQZ-01); Google conta no /auth/callback
 
@@ -174,6 +188,8 @@ export default function RegisterPage() {
             </p>
           )}
         </div>
+
+        <Captcha key={captchaVez} onToken={setCaptcha} />
 
         {/* Error */}
         {error && (

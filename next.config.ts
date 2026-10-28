@@ -6,14 +6,16 @@ import type { NextConfig } from "next";
 const STRIPE   = "https://*.stripe.com";
 const SUPABASE = "https://*.supabase.co";
 const BASES    = ["openfoodfacts", "openproductsfacts", "openbeautyfacts", "openpetfoodfacts"];
+/* EQZ-65: CAPTCHA da Cloudflare (script + iframe) e a lista de senhas vazadas (fetch) */
+const TURNSTILE = "https://challenges.cloudflare.com";
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://js.stripe.com`,
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"} https://js.stripe.com ${TURNSTILE}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: blob: ${SUPABASE} ${STRIPE} ${BASES.map((b) => `https://images.${b}.org`).join(" ")}`,
   "font-src 'self' data:",
-  `connect-src 'self' ${SUPABASE} wss://*.supabase.co https://api.stripe.com ${STRIPE} ${BASES.map((b) => `https://world.${b}.org`).join(" ")}`,
-  `frame-src https://js.stripe.com ${STRIPE}`,
+  `connect-src 'self' ${SUPABASE} wss://*.supabase.co https://api.stripe.com ${STRIPE} ${BASES.map((b) => `https://world.${b}.org`).join(" ")} https://api.pwnedpasswords.com`,
+  `frame-src https://js.stripe.com ${STRIPE} ${TURNSTILE}`,
   "media-src 'self' blob:",
   "worker-src 'self' blob:",
   "object-src 'none'",
