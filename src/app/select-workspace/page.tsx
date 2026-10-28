@@ -9,7 +9,7 @@ import SecondaryButton from "@/components/workspace/SecondaryButton";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import PageLoader from "@/components/ui/PageLoader";
 import { supabase } from "@/lib/supabase";
-import { api } from "@/lib/api";
+import { api, acordarApi } from "@/lib/api";
 import { setWorkspace, type WorkspaceRole } from "@/hooks/useWorkspace";
 import { estaBloqueada, guardarSubscription, lembrarBloqueio, type Subscription } from "@/hooks/useSubscription";
 import { ArrowRightIcon } from "@/components/ui/icons";
@@ -69,6 +69,8 @@ export default function SelectWorkspacePage() {
   }, []);
 
   async function load() {
+    /* A lista vem do Supabase; os selos e o painel dependem da API, que pode estar dormindo */
+    acordarApi();
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) { router.replace("/login"); return; }
 

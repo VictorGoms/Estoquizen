@@ -2,7 +2,7 @@
 
 /**
  * SessionGuard — wrap every protected page with this.
- * On mount: checks if the session is still valid (browser session + inactivity).
+ * On mount: checks if the session is still valid (inactivity; browser session só sem "Manter conectado").
  * In background: listens for user activity to keep the session alive.
  * Signs out and redirects to /login when either check fails.
  */
@@ -18,6 +18,7 @@ import {
   askOtherTabs,
   answerOtherTabs,
   joinBrowserSession,
+  manterConectado,
 } from "@/lib/session";
 
 const ACTIVITY_EVENTS = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"] as const;
@@ -44,14 +45,17 @@ export default function SessionGuard({ children }: { children: React.ReactNode }
     }
 
     async function start() {
-      // ── 1. Sessão do navegador: aba nova pergunta às outras antes de sair ──
+      // ── 1. Sessão do navegador: só para quem desmarcou "Manter conectado" (aparelho
+      //       compartilhado). Aba nova pergunta às outras antes de sair ──
       if (!isBrowserSessionActive()) {
-        const alive = await askOtherTabs();
-        if (cancelled) return;
-        if (!alive) {
-          // Nenhuma aba aberta respondeu: o navegador foi fechado
-          forceSignOut();
-          return;
+        if (!manterConectado()) {
+          const alive = await askOtherTabs();
+          if (cancelled) return;
+          if (!alive) {
+            // Nenhuma aba aberta respondeu: o navegador foi fechado
+            forceSignOut();
+            return;
+          }
         }
         joinBrowserSession();
       }

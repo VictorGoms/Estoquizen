@@ -1,17 +1,37 @@
 /**
- * Session management — two layers:
- * 1. sessionStorage marker: cleared automatically when browser/tab closes
- * 2. Inactivity timeout: signs out after INACTIVITY_MS of no user interaction
+ * Sessão (pedido do João em 2026-10-28: o app deslogava toda hora, principalmente no celular, que
+ * fecha as abas sozinho). Duas regras, escolhidas no login por "Manter conectado neste aparelho":
+ * - marcado (padrão): continua conectado até INACTIVITY_MS sem usar o app, mesmo fechando o navegador;
+ * - desmarcado (aparelho compartilhado, como o computador do caixa): a regra antiga. A sessão acaba
+ *   ao fechar o navegador (marca no sessionStorage) ou após INACTIVITY_CURTA_MS sem uso.
  */
 
-export const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
+export const INACTIVITY_MS       = 30 * 24 * 60 * 60 * 1000; // 30 dias
+export const INACTIVITY_CURTA_MS = 2 * 60 * 60 * 1000;       // 2 horas
 const SESSION_KEY  = "estoquizen_session_active";
 const ACTIVITY_KEY = "estoquizen_last_activity";
+const MANTER_KEY   = "estoquizen_manter_conectado";
 
-/** Called right after a successful login */
-export function markSessionActive() {
+/** Called right after a successful login. Sem o parâmetro, vale a última escolha deste aparelho */
+export function markSessionActive(manter = manterConectado()) {
   sessionStorage.setItem(SESSION_KEY, "1");
   localStorage.setItem(ACTIVITY_KEY, String(Date.now()));
+  lembrarEscolha(manter);
+}
+
+/** Guarda a escolha antes de sair para o Google (o /auth/callback a usa ao voltar) */
+export function lembrarEscolha(manter: boolean) {
+  localStorage.setItem(MANTER_KEY, manter ? "1" : "0");
+}
+
+/** Sem a marca (quem entrou antes desta mudança) conta como "manter conectado" */
+export function manterConectado(): boolean {
+  return localStorage.getItem(MANTER_KEY) !== "0";
+}
+
+/** A última atividade ainda vale? Regra pura, testada em session.test.ts */
+export function atividadeValida(ultima: number, manter: boolean, agora = Date.now()): boolean {
+  return ultima > 0 && agora - ultima < (manter ? INACTIVITY_MS : INACTIVITY_CURTA_MS);
 }
 
 /** Returns true if the browser session marker is present (same browser session) */
@@ -54,10 +74,9 @@ export function joinBrowserSession() {
   sessionStorage.setItem(SESSION_KEY, "1");
 }
 
-/** Returns true if user was active within the inactivity window */
+/** Returns true if user was active within the inactivity window (30 dias ou 2 h, pela escolha) */
 export function isActivityValid(): boolean {
-  const last = Number(localStorage.getItem(ACTIVITY_KEY) ?? "0");
-  return last > 0 && Date.now() - last < INACTIVITY_MS;
+  return atividadeValida(Number(localStorage.getItem(ACTIVITY_KEY) ?? "0"), manterConectado());
 }
 
 /** Update last-activity timestamp — called on every user interaction */
@@ -71,4 +90,5 @@ export function clearSession() {
      (antes só os dois primeiros saíam e o resto ficava para o próximo login) */
   sessionStorage.clear();
   localStorage.removeItem(ACTIVITY_KEY);
+  localStorage.removeItem(MANTER_KEY);
 }

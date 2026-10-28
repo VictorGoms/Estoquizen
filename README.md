@@ -69,7 +69,7 @@ Interface web do **Estoquizen**, um SaaS de gestão de estoque para pequenos neg
 - Onboarding em duas etapas: dados da empresa, depois escolha do plano (Basic, Growth com trial, Pro). Os planos pagos redirecionam para o checkout do Stripe.
 - Configurações com plano atual, barra de uso do limite, acesso ao portal de assinatura do Stripe e encerramento da conta com confirmação.
 - Perfil com foto (upload para o Supabase Storage).
-- Sessão encerrada ao fechar o navegador ou após 2h de inatividade.
+- Sessão mantida por até 30 dias sem uso ("Manter conectado neste aparelho", o padrão). Em computador compartilhado, desmarcando a opção, a sessão acaba ao fechar o navegador ou após 2h de inatividade.
 
 ## Stack
 

@@ -8,22 +8,31 @@ import PasswordField from "@/components/auth/PasswordField";
 import PrimaryButton from "@/components/auth/PrimaryButton";
 import SocialButton from "@/components/auth/SocialButton";
 import Divider from "@/components/auth/Divider";
-import { markSessionActive } from "@/lib/session";
+import PageLoader from "@/components/ui/PageLoader";
+import { CheckIcon } from "@/components/ui/icons";
+import { markSessionActive, lembrarEscolha } from "@/lib/session";
 import { supabase } from "@/lib/supabase";
+import { acordarApi } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
   const [values, setValues]   = useState({ email: "", password: "" });
+  /* Desmarcado em aparelho compartilhado: a sessão acaba ao fechar o navegador ou em 2 h (lib/session.ts) */
+  const [manter, setManter]   = useState(true);
+  /* Quem já está conectado vai direto para a escolha de workspace, sem ver o formulário piscar */
+  const [verificando, setVerificando] = useState(true);
 
   useEffect(() => {
+    acordarApi();
     /* O /auth/callback manda para cá quando o link do e-mail expirou ou já foi usado */
     if (new URLSearchParams(window.location.search).get("link") === "expirado") {
       setError("Este link expirou ou já foi usado. Entre com sua senha ou peça um novo link.");
     }
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) router.replace("/select-workspace");
+      else setVerificando(false);
     });
   }, [router]);
 
@@ -54,9 +63,11 @@ export default function LoginPage() {
       }
       return;
     }
-    markSessionActive();
+    markSessionActive(manter);
     router.push("/select-workspace");
   }
+
+  if (verificando) return <PageLoader />;
 
   return (
     <AuthLayout
@@ -96,6 +107,32 @@ export default function LoginPage() {
           }
         />
 
+        {/* Manter conectado (padrão). Mesmo visual do aceite dos termos no cadastro */}
+        <label className="flex items-start gap-3 cursor-pointer">
+          <span className="relative shrink-0">
+            <input
+              type="checkbox"
+              className="peer sr-only"
+              checked={manter}
+              onChange={(e) => setManter(e.target.checked)}
+            />
+            <span
+              aria-hidden="true"
+              className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface ${
+                manter ? "bg-accent text-ink" : "bg-ink ring-1 ring-white/15"
+              }`}
+            >
+              {manter && <CheckIcon className="w-4 h-4" strokeWidth={3} />}
+            </span>
+          </span>
+          <span className="text-sm font-semibold text-fg-muted leading-snug pt-0.5">
+            Manter conectado neste aparelho
+            <span className="block text-xs font-semibold text-fg-subtle mt-0.5">
+              Desmarque em computador compartilhado: aí a sessão acaba ao fechar o navegador.
+            </span>
+          </span>
+        </label>
+
         {/* Error */}
         {error && (
           <p role="alert" className="text-sm font-bold text-zero text-center">{error}</p>
@@ -110,6 +147,8 @@ export default function LoginPage() {
 
         {/* Google */}
         <SocialButton onClick={async () => {
+          /* O /auth/callback lê a escolha ao voltar do Google */
+          lembrarEscolha(manter);
           await supabase.auth.signInWithOAuth({
             provider: "google",
             options: { redirectTo: `${window.location.origin}/auth/callback` },

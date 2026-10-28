@@ -60,6 +60,16 @@ async function request<T>(
   return (json?.data ?? undefined) as T;
 }
 
+/*
+ * A API dorme no Railway quando fica um tempo sem uso, e a primeira chamada depois disso leva alguns
+ * segundos (2026-10-28: a escolha de workspace e o painel demoravam). O login e a escolha de
+ * workspace chamam isto ao abrir: a API acorda enquanto a pessoa digita ou escolhe. Não espera a
+ * resposta nem mostra erro.
+ */
+export function acordarApi() {
+  fetch(`${BASE}/health`).catch(() => {});
+}
+
 export const api = {
   get:    <T>(path: string)                  => request<T>("GET",    path),
   post:   <T>(path: string, body: unknown)   => request<T>("POST",   path, body),
