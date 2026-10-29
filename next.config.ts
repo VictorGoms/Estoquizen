@@ -69,6 +69,15 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // Link do WhatsApp para a bio do Instagram/TikTok: o Instagram recodifica o "%20" do wa.me e a
+  // mensagem chega quebrada, então o link público é /whatsapp e quem monta a mensagem é o site
+  async redirects() {
+    const mensagem = encodeURIComponent("Oi! Vim pelo Instagram e quero saber mais sobre o Estoquizen.");
+    return [
+      { source: "/whatsapp", destination: `https://wa.me/5511959191339?text=${mensagem}`, permanent: false },
+    ];
+  },
+
   async headers() {
     return [
       {
