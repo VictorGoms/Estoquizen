@@ -9,7 +9,7 @@ import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import { PLANOS, precoEmNumero } from "@/lib/planos";
 import type { Metadata } from "next";
-import { SITE_URL, SITE_NOME, CONTATO, TITULO_PADRAO, DESCRICAO_PADRAO } from "@/lib/site";
+import { SITE_URL, SITE_NOME, CONTATO, TITULO_PADRAO, DESCRICAO_PADRAO, REDES_SOCIAIS } from "@/lib/site";
 
 /* O openGraph da página substitui o do layout inteiro, por isso repete tudo */
 export const metadata: Metadata = {
@@ -38,6 +38,7 @@ const jsonLd = {
       name: SITE_NOME,
       url: `${SITE_URL}/`,
       logo: `${SITE_URL}/apple-icon.png`,
+      sameAs: REDES_SOCIAIS,
       email: CONTATO,
       contactPoint: { "@type": "ContactPoint", contactType: "customer support", email: CONTATO, availableLanguage: "Portuguese" },
     },

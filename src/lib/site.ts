@@ -11,6 +11,8 @@ export const SITE_NOME = "Estoquizen";
 export const CONTATO   = "contato@estoquizen.com.br";
 /** Prazo de resposta do contato (decisão do João em 2026-10-21) */
 export const PRAZO_RESPOSTA = "1 dia útil";
+/** Perfis oficiais nas redes (2026-10-29): vão no `sameAs` da Organization para o Google ligar a marca */
+export const REDES_SOCIAIS = ["https://www.instagram.com/estoquizen/", "https://www.tiktok.com/@estoquizen"];
 
 export const TITULO_PADRAO    = "Estoquizen — Controle de estoque simples e inteligente";
 export const DESCRICAO_PADRAO =
